@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login</title>
+
+     <link rel="stylesheet" href="../../css/style.css">
+
+    <script src="../../js/pages/conta/login.js" defer></script>
+</head>
+<body>
+     <!-- ===== CABEÇALHO ===== -->
+    <header class="header">
+        <div class="container header__inner">
+            <a href="main.html" class="logo">
+                <img src="../../assets/img/logo_horizontal_cor.png" alt="Busca Peças">
+            </a>
+        </div>
+    </header>
+
+    <main>
+        <section class="login">
+            <div class="container login__inner">
+                <h1>Entrar na sua conta</h1>
+
+                <form class="login__form" id="form-login">
+                    <label for="email">E-mail</label>
+                    <input type="email" name="email" id="email" placeholder="Digite seu e-mail" required>
+
+                    <label for="senha">Senha</label>
+                    <input type="password" name="senha" id="senha" placeholder="Digite sua senha" required>
+
+                    <button type="submit">Entrar</button>
+                </form>
+
+                <p class="login__cadastro">Não tem uma conta? <a href="../conta/cadastro.html">Cadastre-se</a></p>
+            </div>
+        </section>
+
+</body>
+</html>

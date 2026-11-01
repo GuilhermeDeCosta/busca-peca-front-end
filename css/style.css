@@ -476,3 +476,88 @@ header__voltar { margin-left: auto; }
 .campo__erro:empty { display: none; }
 .campo--erro input { border-color: #b42318; background: #fffafa; }
  
+
+/* Senha com botão Mostrar/Ocultar dentro do campo */
+.campo__senha { position: relative; }
+.campo__senha input { padding-right: 84px; }
+.campo__mostrar {
+    position: absolute;
+    top: 50%;
+    right: 6px;
+    transform: translateY(-50%);
+    min-height: 32px;
+    padding: 0 10px;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--azul-escuro);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+}
+.campo__mostrar:hover { background: var(--cinza-fundo); }
+.campo__mostrar:focus-visible { outline: 3px solid #f2b705; outline-offset: 1px; }
+ 
+/* Linha "Manter conectado" + "Esqueci minha senha" */
+.acesso__opcoes {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin: 4px 0 20px;
+    font-size: 14px;
+}
+.checkbox { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+.checkbox input { width: 18px; height: 18px; accent-color: var(--verde); }
+ 
+.acesso__link { color: var(--azul-escuro); font-weight: 600; }
+.acesso__link:hover { text-decoration: underline; }
+ 
+.acesso__cadastro { text-align: center; font-size: 14px; margin-top: 20px; color: var(--texto-suave); }
+
+
+/* ----- Avisos de erro e sucesso ----- */
+.alerta {
+    display: flex;
+    gap: 10px;
+    padding: 12px 14px;
+    border-radius: var(--raio);
+    border: 1px solid transparent;
+    font-size: 14px;
+    margin-bottom: 18px;
+}
+.alerta[hidden] { display: none; }   /* sem isto o display:flex ignora o hidden */
+.alerta p { font-size: 13px; }
+.alerta__icone {
+    flex-shrink: 0;
+    width: 20px;
+    height: 20px;
+    border: 1.5px solid currentColor;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    font-size: 12px;
+    font-weight: 700;
+}
+.alerta--erro { background: #fdecee; border-color: #f5c2c7; color: #b42318; }
+.alerta--sucesso { background: #e5f2e9; border-color: #b9dfc4; color: var(--verde); }
+ 
+/* ----- Responsivo ----- */
+@media (max-width: 900px) {
+    .acesso__inner { grid-template-columns: 1fr; }
+    .acesso__card { order: -1; }          /* formulário aparece primeiro */
+    .acesso__painel { padding: 28px; }
+    .acesso__painel h2 { font-size: 28px; }
+}
+ 
+@media (max-width: 560px) {
+    .acesso { padding: 24px 0 40px; }
+    .acesso__card { padding: 20px; }
+    .acesso__card h1 { font-size: 24px; }
+    .header__voltar { padding: 8px 12px; font-size: 13px; }
+    .header__inner { flex-wrap: nowrap; }
+    .logo img { width: 150px; height: auto; }
+}
+ 
+

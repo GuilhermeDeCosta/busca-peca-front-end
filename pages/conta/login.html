@@ -10,33 +10,57 @@
     <script src="../../js/pages/conta/login.js" defer></script>
 </head>
 <body>
-     <!-- ===== CABEÇALHO ===== -->
-    <header class="header">
+ <header class="header">
         <div class="container header__inner">
             <a href="main.html" class="logo">
                 <img src="../../assets/img/logo_horizontal_cor.png" alt="Busca Peças">
             </a>
+            <a href="/pages/busca/main.html" class="btn btn--contorno header__voltar">Voltar ao marketplace</a>
         </div>
     </header>
+ 
 
-    <main>
-        <section class="login">
-            <div class="container login__inner">
-                <h1>Entrar na sua conta</h1>
-
-                <form class="login__form" id="form-login">
-                    <label for="email">E-mail</label>
-                    <input type="email" name="email" id="email" placeholder="Digite seu e-mail" required>
-
-                    <label for="senha">Senha</label>
-                    <input type="password" name="senha" id="senha" placeholder="Digite sua senha" required>
-
-                    <button type="submit">Entrar</button>
-                </form>
-
-                <p class="login__cadastro">Não tem uma conta? <a href="../conta/cadastro.html">Cadastre-se</a></p>
-            </div>
-        </section>
+    <main class="acesso">
+        <div class="container acesso__inner">
+ 
+            <section class="acesso__painel" aria-labelledby="painel-titulo">
+                <span class="etiqueta">UM ACESSO. TODAS AS POSSIBILIDADES.</span>
+                <h2 id="painel-titulo">Seu próximo negócio começa aqui.</h2>
+                <p>Compre peças para a oficina. Crie uma loja e venda seu estoque. Tudo na mesma conta.</p>
+ 
+                <hr class="acesso__divisor">
+ 
+                <ul class="acesso__lista">
+                    <li>Pedidos organizados por loja</li>
+                    <li>Códigos e aplicações na mesma busca</li>
+                    <li>Conversa direta com compradores e vendedores</li>
+                </ul>
+ 
+                <small class="acesso__aviso">Ambiente demonstrativo • lojas, preços e estoques fictícios</small>
+            </section>
+ 
+        <!-- ===== CARTÃO DO FORMULÁRIO ===== -->
+            <section class="acesso__card" aria-labelledby="login-titulo">
+                <h1 id="login-titulo">Entre no Busca Peça</h1>
+                <p class="acesso__sub">Acesse seus pedidos, favoritos e sua loja.</p>
+ 
+                <!-- Avisos (o JS mostra/esconde) -->
+                <div class="alerta alerta--erro" id="alerta-erro" role="alert" hidden>
+                    <span class="alerta__icone" aria-hidden="true">!</span>
+                    <div>
+                        <strong id="alerta-erro-titulo">E-mail ou senha incorretos</strong>
+                        <p id="alerta-erro-texto">Confira seus dados ou use a recuperação de senha.</p>
+                    </div>
+                </div>
+ 
+                <div class="alerta alerta--sucesso" id="alerta-sucesso" role="status" hidden>
+                    <span class="alerta__icone" aria-hidden="true">✓</span>
+                    <div>
+                        <strong>Acesso confirmado</strong>
+                        <p id="alerta-sucesso-texto">Seus pedidos e sua loja estão disponíveis.</p>
+                    </div>
+                </div>
+ 
 
 </body>
 </html>

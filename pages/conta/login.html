@@ -44,7 +44,6 @@
                 <h1 id="login-titulo">Entre no Busca Peça</h1>
                 <p class="acesso__sub">Acesse seus pedidos, favoritos e sua loja.</p>
  
-                <!-- Avisos (o JS mostra/esconde) -->
                 <div class="alerta alerta--erro" id="alerta-erro" role="alert" hidden>
                     <span class="alerta__icone" aria-hidden="true">!</span>
                     <div>
@@ -61,6 +60,46 @@
                     </div>
                 </div>
  
+                <form id="form-login" novalidate>
+                    <div class="campo">
+                        <label for="email">E-mail</label>
+                        <input type="email" name="email" id="email" placeholder="seu@email.com"
+                               autocomplete="email" required aria-describedby="erro-email">
+                        <span class="campo__erro" id="erro-email"></span>
+                    </div>
+ 
+                    <div class="campo">
+                        <label for="senha">Senha</label>
+                        <div class="campo__senha">
+                            <input type="password" name="senha" id="senha" placeholder="Digite sua senha"
+                                   autocomplete="current-password" required aria-describedby="erro-senha">
+                            <button type="button" class="campo__mostrar" id="mostrar-senha"
+                                    aria-controls="senha" aria-pressed="false">Mostrar</button>
+                        </div>
+                        <span class="campo__erro" id="erro-senha"></span>
+                    </div>
+ 
+                    <div class="acesso__opcoes">
+                        <label class="checkbox">
+                            <input type="checkbox" name="manterConectado" id="manter-conectado" checked>
+                            Manter conectado
+                        </label>
+                        <a href="recuperar-senha.html" class="acesso__link">Esqueci minha senha</a>
+                    </div>
+ 
+                    <button type="submit" class="btn btn--verde btn--bloco" id="btn-entrar">Entrar</button>
+                </form>
+ 
+                <p class="acesso__cadastro">
+                    Ainda não tenho conta • <a href="cadastro.html" class="acesso__link">Cadastrar</a>
+                </p>
+            </section>
+ 
+        </div>
+    </main>
+ 
+
+
 
 </body>
 </html>

@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Busca Peças • Início</title>
+
+    <link rel="stylesheet" href="../../css/style.css">
+
+    <script src="../../js/pages/busca/main.js" defer></script>
+</head>
+<body>
+    <!-- ===== CABEÇALHO ===== -->
+    <header class="header">
+        <div class="container header__inner">
+            <a href="main.html" class="logo">
+                <img src="../../assets/img/logo_horizontal_cor.png" alt="Busca Peças">
+            </a>
+
+            <form class="search" id="form-busca-topo">
+                <input type="search" name="q" placeholder="Busque por peça, OEM, SKU ou placa" aria-label="Buscar peça">
+                <button type="submit">Buscar</button>
+            </form>
+
+            <div class="header__actions">
+                <a href="../conta/login.html" class="header__login">
+                    <small>Olá, mecânico</small>
+                    <strong>Entrar ou cadastrar</strong>
+                </a>
+                <a href="../compra/carrinho.html" class="cart" aria-label="Carrinho">
+                    🛒 <span class="cart__count" id="cart-count">0</span>
+                </a>
+            </div>
+        </div>
+
+        <nav class="nav">
+            <div class="container nav__inner">
+                <a href="main.html" class="ativo">Início</a>
+                <a href="resultados.html">Buscar peças</a>
+                <a href="#categorias">Categorias</a>
+                <a href="#">Favoritos</a>
+                <a href="../conta/pedidos.html">Meus pedidos</a>
+                <a href="../minha-loja/main.html">Minha loja</a>
+                <a href="../conta/perfil.html">Meu perfil</a>
+                <a href="../minha-loja/main.html" class="nav__destaque">+ Anunciar suas peças</a>
+            </div>
+        </nav>
+    </header>
+
+    <main>
+        <!-- ===== HERO ===== -->
+        <section class="hero">
+            <div class="container hero__inner">
+                <div class="hero__texto">
+                    <span class="selo">De oficina para oficina, na sua região</span>
+                    <h1>Encontre a peça certa para sua oficina</h1>
+                    <p>Compre de lojas próximas e transforme seu estoque parado em novas oportunidades. Uma conta, dois caminhos para o seu negócio.</p>
+
+                    <form class="hero__busca" id="form-busca-hero">
+                        <input type="search" name="q" placeholder="Ex: filtro óleo Onix 2020, OEM ou placa">
+                        <button type="submit" class="btn btn--verde">Buscar peças</button>
+                    </form>
+                    <small class="hero__dica">Dica: busque pela placa para filtrar só o que serve no carro.</small>
+                </div>
+
+                <div class="hero__imagem">
+                    <div class="hero__foto">🔧</div>
+                    <span class="hero__legenda">Estoque disponível. Negócio direto.</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===== CATEGORIAS (preenchidas pelo JS) ===== -->
+        <section class="secao container" id="categorias">
+            <h2>O que sua oficina precisa hoje?</h2>
+            <div class="categorias" id="lista-categorias"></div>
+        </section>
+
+        <!-- ===== PEÇAS EM DESTAQUE (preenchidas pelo JS) ===== -->
+        <section class="secao container">
+            <div class="secao__topo">
+                <h2>Peças em destaque</h2>
+                <a href="resultados.html" class="btn btn--contorno">Ver todas as peças</a>
+            </div>
+            <div class="grade grade--4" id="lista-destaques"></div>
+        </section>
+
+        <!-- ===== PRÓXIMA REVISÃO ===== -->
+        <section class="secao container">
+            <h2>Disponíveis para sua próxima revisão</h2>
+            <p class="secao__sub">Retire ou receba sem sair da região. Confirme retirada ou entrega diretamente com o vendedor.</p>
+            <div class="grade grade--3" id="lista-revisao"></div>
+        </section>
+
+        <!-- ===== COMO FUNCIONA ===== -->
+        <section class="secao container comofunciona">
+            <article class="caixa">
+                <h3>Comprar sem complicar</h3>
+                <span class="etiqueta">Para quem procura a peça</span>
+                <ol>
+                    <li>Encontre pelo nome ou código e confira a compatibilidade.</li>
+                    <li>Compare loja, entrega e condições de pagamento.</li>
+                    <li>Envie seu pedido e combine pagamento e entrega com a loja.</li>
+                </ol>
+                <a href="resultados.html" class="btn btn--contorno">Encontrar peças</a>
+            </article>
+
+            <article class="caixa">
+                <h3>Seu estoque pode ir mais longe</h3>
+                <span class="etiqueta">Para quem quer vender</span>
+                <ol>
+                    <li>Crie sua loja com o mesmo login que você já usa.</li>
+                    <li>Cadastre fotos, código, preço e estoque com clareza.</li>
+                    <li>Receba pedidos e converse diretamente com compradores.</li>
+                </ol>
+                <a href="../minha-loja/main.html" class="btn btn--contorno">Criar minha loja</a>
+            </article>
+        </section>
+
+        <!-- ===== CTA ANUNCIE ===== -->
+        <section class="container">
+            <div class="cta">
+                <div>
+                    <h2>Anuncie suas peças</h2>
+                    <p>A próxima oficina pode estar procurando exatamente o que está no seu estoque.</p>
+                </div>
+                <a href="../minha-loja/main.html" class="btn btn--verde">+ Começar a vender</a>
+            </div>
+        </section>
+    </main>
+
+    <!-- ===== RODAPÉ ===== -->
+    <footer class="footer">
+        <div class="container footer__inner">
+            <div>
+                <strong class="footer__logo">BUSCA PEÇAS</strong>
+                <p>Conectamos quem tem a peça a quem precisa dela.</p>
+            </div>
+            <div>
+                <h4>Institucional</h4>
+                <a href="../institucional/sobre.html">Sobre o Busca Peça</a>
+                <a href="../institucional/termos.html">Termos de uso</a>
+                <a href="../institucional/privacidade.html">Privacidade</a>
+            </div>
+            <div>
+                <h4>Fale com a gente</h4>
+                <p>contato@buscapeca.com.br</p>
+                <p>Segunda a sexta, das 8h às 18h</p>
+            </div>
+        </div>
+        <p class="footer__copy">© 2026 Busca Peças • Projeto acadêmico</p>
+    </footer>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+</body>
+</html>

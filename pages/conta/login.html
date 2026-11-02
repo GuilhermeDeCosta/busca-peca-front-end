@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login</title>
+
+     <link rel="stylesheet" href="../../css/style.css">
+
+    <script src="../../js/pages/conta/login.js" defer></script>
+</head>
+<body>
+ <header class="header">
+        <div class="container header__inner">
+            <a href="main.html" class="logo">
+                <img src="../../assets/img/logo_horizontal_cor.png" alt="Busca Peças">
+            </a>
+            <a href="/pages/busca/main.html" class="btn btn--contorno header__voltar">Voltar ao marketplace</a>
+        </div>
+    </header>
+ 
+
+    <main class="acesso">
+        <div class="container acesso__inner">
+ 
+            <section class="acesso__painel" aria-labelledby="painel-titulo">
+                <span class="etiqueta">UM ACESSO. TODAS AS POSSIBILIDADES.</span>
+                <h2 id="painel-titulo">Seu próximo negócio começa aqui.</h2>
+                <p>Compre peças para a oficina. Crie uma loja e venda seu estoque. Tudo na mesma conta.</p>
+ 
+                <hr class="acesso__divisor">
+ 
+                <ul class="acesso__lista">
+                    <li>Pedidos organizados por loja</li>
+                    <li>Códigos e aplicações na mesma busca</li>
+                    <li>Conversa direta com compradores e vendedores</li>
+                </ul>
+ 
+                <small class="acesso__aviso">Ambiente demonstrativo • lojas, preços e estoques fictícios</small>
+            </section>
+ 
+        <!-- ===== CARTÃO DO FORMULÁRIO ===== -->
+            <section class="acesso__card" aria-labelledby="login-titulo">
+                <h1 id="login-titulo">Entre no Busca Peça</h1>
+                <p class="acesso__sub">Acesse seus pedidos, favoritos e sua loja.</p>
+ 
+                <div class="alerta alerta--erro" id="alerta-erro" role="alert" hidden>
+                    <span class="alerta__icone" aria-hidden="true">!</span>
+                    <div>
+                        <strong id="alerta-erro-titulo">E-mail ou senha incorretos</strong>
+                        <p id="alerta-erro-texto">Confira seus dados ou use a recuperação de senha.</p>
+                    </div>
+                </div>
+ 
+                <div class="alerta alerta--sucesso" id="alerta-sucesso" role="status" hidden>
+                    <span class="alerta__icone" aria-hidden="true">✓</span>
+                    <div>
+                        <strong>Acesso confirmado</strong>
+                        <p id="alerta-sucesso-texto">Seus pedidos e sua loja estão disponíveis.</p>
+                    </div>
+                </div>
+ 
+                <form id="form-login" novalidate>
+                    <div class="campo">
+                        <label for="email">E-mail</label>
+                        <input type="email" name="email" id="email" placeholder="seu@email.com"
+                               autocomplete="email" required aria-describedby="erro-email">
+                        <span class="campo__erro" id="erro-email"></span>
+                    </div>
+ 
+                    <div class="campo">
+                        <label for="senha">Senha</label>
+                        <div class="campo__senha">
+                            <input type="password" name="senha" id="senha" placeholder="Digite sua senha"
+                                   autocomplete="current-password" required aria-describedby="erro-senha">
+                            <button type="button" class="campo__mostrar" id="mostrar-senha"
+                                    aria-controls="senha" aria-pressed="false">Mostrar</button>
+                        </div>
+                        <span class="campo__erro" id="erro-senha"></span>
+                    </div>
+ 
+                    <div class="acesso__opcoes">
+                        <label class="checkbox">
+                            <input type="checkbox" name="manterConectado" id="manter-conectado" checked>
+                            Manter conectado
+                        </label>
+                        <a href="recuperar-senha.html" class="acesso__link">Esqueci minha senha</a>
+                    </div>
+ 
+                    <button type="submit" class="btn btn--verde btn--bloco" id="btn-entrar">Entrar</button>
+                </form>
+ 
+                <p class="acesso__cadastro">
+                    Ainda não tenho conta • <a href="cadastro.html" class="acesso__link">Cadastrar</a>
+                </p>
+            </section>
+ 
+        </div>
+    </main>
+ 
+
+    <!-- ===== RODAPÉ ===== -->
+    <footer class="footer">
+        <div class="container footer__inner">
+            <div>
+                <strong class="footer__logo">BUSCA PEÇAS</strong>
+                <p>Conectamos quem tem a peça a quem precisa dela.</p>
+            </div>
+            <div>
+                <h4>Institucional</h4>
+                <a href="#">Sobre o Busca Peça</a>
+                <a href="#">Como funciona</a>
+                <a href="#">Termos de uso</a>
+                <a href="#">Privacidade</a>
+            </div>
+            <div>
+                <h4>Conte com a gente</h4>
+                <a href="mailto:contato@buscapeca.example.com">contato@buscapeca.example.com</a>
+                <p>Segunda a sexta, das 8h às 18h</p>
+            </div>
+        </div>
+        <p class="footer__copy">Ambiente demonstrativo • lojas, preços e estoques fictícios</p>
+    </footer>
+</body>
+</html>
+ 
+
+
+</body>
+</html>

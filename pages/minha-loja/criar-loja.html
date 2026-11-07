@@ -213,6 +213,69 @@
               </div>
             </section>
 
+            <!-- Endereço de retirada -->
+            <section class="card mb-4" aria-labelledby="titulo-endereco">
+              <div class="card-body p-4">
+                <h2 id="titulo-endereco" class="card-title mb-1">Endereço de retirada</h2>
+                <p class="small text-secondary mb-3">Usado para calcular a distância até o comprador.</p>
+
+                <div class="row g-3">
+                  <div class="col-md-6">
+                    <label for="cep" class="form-label">CEP</label>
+                    <div class="position-relative">
+                      <input id="cep" type="text" class="form-control" inputmode="numeric" required
+                             placeholder="00000-000" autocomplete="postal-code"
+                             :value="form.cep" @input="aoDigitarCep($event)"
+                             :class="{ 'is-invalid': erros.cep }" aria-describedby="erro-cep">
+                      <div x-show="buscandoCep" x-cloak class="spinner-border spinner-border-sm text-secondary position-absolute top-50 end-0 translate-middle-y me-3"
+                           role="status"><span class="visually-hidden">Buscando endereço</span></div>
+                      <div id="erro-cep" class="invalid-feedback" x-text="erros.cep"></div>
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <label for="cidade" class="form-label">Cidade / UF</label>
+                    <div class="input-group has-validation">
+                      <input id="cidade" type="text" class="form-control" maxlength="80" required
+                             placeholder="Cidade" autocomplete="address-level2"
+                             x-model.trim="form.cidade" :class="{ 'is-invalid': erros.cidade || erros.estado }"
+                             aria-describedby="erro-cidade">
+                      <select id="estado" class="form-select flex-grow-0 w-auto" aria-label="UF" required
+                              x-model="form.estado" :class="{ 'is-invalid': erros.estado }">
+                        <option value="">UF</option>
+                        <template x-for="uf in ufs" :key="uf">
+                          <option :value="uf" x-text="uf"></option>
+                        </template>
+                      </select>
+                      <div id="erro-cidade" class="invalid-feedback" x-text="erros.cidade || erros.estado"></div>
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <label for="logradouro" class="form-label">Rua</label>
+                    <input id="logradouro" type="text" class="form-control" maxlength="150" required
+                           placeholder="Ex.: Rua das Oficinas" autocomplete="address-line1"
+                           x-model.trim="form.logradouro" :class="{ 'is-invalid': erros.logradouro }"
+                           aria-describedby="erro-logradouro">
+                    <div id="erro-logradouro" class="invalid-feedback" x-text="erros.logradouro"></div>
+                  </div>
+                  <div class="col-4 col-md-2">
+                    <label for="numero" class="form-label">Número</label>
+                    <input id="numero" type="text" class="form-control" maxlength="10" required
+                           placeholder="S/N"
+                           x-model.trim="form.numero" :class="{ 'is-invalid': erros.numero }"
+                           aria-describedby="erro-numero">
+                    <div id="erro-numero" class="invalid-feedback" x-text="erros.numero"></div>
+                  </div>
+                  <div class="col-8 col-md-4">
+                    <label for="bairro" class="form-label">Bairro</label>
+                    <input id="bairro" type="text" class="form-control" maxlength="80" required
+                           placeholder="Ex.: Centro"
+                           x-model.trim="form.bairro" :class="{ 'is-invalid': erros.bairro }"
+                           aria-describedby="erro-bairro">
+                    <div id="erro-bairro" class="invalid-feedback" x-text="erros.bairro"></div>
+                  </div>
+                </div>
+              </div>
+            </section>
 
 
           </form>

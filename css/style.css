@@ -561,3 +561,71 @@ header__voltar { margin-left: auto; }
 }
  
 
+/* =========================================================
+   CADASTRO (Fluxo D • etapa 01 • BP1-2)
+   ========================================================= */
+
+/* Corrige a regra "header__voltar" (sem o ponto) que já existe acima */
+.header__voltar { margin-left: auto; white-space: nowrap; }
+
+/* Logo sem distorcer a proporção */
+.logo img { object-fit: contain; object-position: left center; }
+
+/* Selo "Um acesso. Todas as possibilidades." no painel azul */
+.acesso__painel .etiqueta {
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .02em;
+    margin-bottom: 20px;
+}
+
+/* Texto de ajuda embaixo do campo (ex.: regra da senha) */
+.campo__ajuda { font-size: 12px; color: var(--texto-suave); }
+
+/* Caixa de aceite dos termos */
+.campo .checkbox input {         
+    width: 18px;
+    height: 18px;
+    min-height: 0;
+    padding: 0;
+}
+.checkbox--aceite {
+    align-items: flex-start;
+    font-size: 14px;
+    line-height: 1.45;
+}
+.campo .checkbox--aceite { font-weight: 400; }
+.checkbox--aceite input { flex-shrink: 0; margin-top: 1px; }
+.checkbox--aceite a {
+    color: var(--azul-escuro);
+    font-weight: 600;
+    text-decoration: underline;
+}
+.campo--erro .checkbox input { outline: 2px solid #b42318; outline-offset: 1px; }
+
+/* Frase "A conta permite comprar..." antes do botão */
+.acesso__nota { font-size: 13px; color: var(--texto-suave); margin-bottom: 16px; }
+
+/* Título em negrito dentro do alerta de sucesso */
+.alerta strong { display: block; }
+
+/* Indicador de carregamento dentro do botão */
+.btn__girando {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    margin-right: 8px;
+    vertical-align: -3px;
+    border: 2px solid rgba(255, 255, 255, .45);
+    border-top-color: var(--branco);
+    border-radius: 50%;
+    animation: girar .8s linear infinite;
+}
+.btn__girando[hidden] { display: none; }
+@keyframes girar { to { transform: rotate(360deg); } }
+
+.footer__logo img { width: 200px; height: auto; }
+
+@media (prefers-reduced-motion: reduce) {
+    .btn__girando { animation-duration: 2s; }
+}

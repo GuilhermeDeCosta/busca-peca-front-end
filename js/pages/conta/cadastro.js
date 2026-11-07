@@ -1,0 +1,61 @@
+/* =========================================================
+   CADASTRO DE CONTA • cadastro.html
+   Caso de uso BP1-2 • Fluxo D, etapa 01
+   - Sem escolha de perfil: a conta nasce como COMPRADOR (ADR-007)
+   - Aceite dos termos obrigatório (ADR-013)
+   - A API confere tudo de novo e verifica e-mail repetido (409)
+   ========================================================= */
+ 
+/* Endereço da API (Documentação do Back-end: POST /api/usuarios) */
+const API_URL = 'http://localhost:8080/api';
+const TEMPO_LIMITE_MS = 15000;
+ 
+const form = document.getElementById('form-cadastro');
+const botao = document.getElementById('botao-criar');
+const alerta = document.getElementById('alerta');
+ 
+const MSG_ERRO_GERAL = 'Não foi possível criar a conta. Revise os campos e confirme o aceite dos termos.';
+const MSG_SEM_RESPOSTA = 'Não foi possível concluir. Tente novamente.';
+ 
+let tentouEnviar = false;
+ 
+/* ---------- Funções de apoio ---------- */
+const limpar = (t) => String(t || '').replace(/\s+/g, ' ').trim();
+const emailValido = (e) => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(e.trim());
+const senhaValida = (s) => s.length >= 8 && /[A-Za-zÀ-ÿ]/.test(s) && /\d/.test(s);
+ 
+/* ---------- Regras de cada campo ---------- */
+const regras = {
+    nome(v) {
+        const t = limpar(v);
+        if (!t) return 'Informe seu nome completo.';
+        if (t.length > 150) return 'Use no máximo 150 caracteres.';
+        return '';
+    },
+    nome_exibicao(v) {
+        const t = limpar(v);
+        if (!t) return 'Informe o nome da oficina ou empresa.';
+        if (t.length > 80) return 'Use no máximo 80 caracteres.';
+        return '';
+    },
+    email(v) {
+        if (!v.trim()) return 'Informe seu e-mail.';
+        if (!emailValido(v)) return 'Informe um e-mail válido.';
+        return '';
+    },
+    senha(v) {
+        if (!v) return 'Crie uma senha.';
+        if (!senhaValida(v)) return 'Use pelo menos 8 caracteres, incluindo letras e números.';
+        if (v.length > 72) return 'Use no máximo 72 caracteres.';
+        return '';
+    },
+    confirmar_senha(v) {
+        if (!v) return 'Confirme sua senha.';
+        if (v !== form.senha.value) return 'As senhas informadas são diferentes. Digite novamente.';
+        return '';
+    },
+    aceite_termos(v, el) {
+        return el.checked ? '' : 'Confirme o aceite dos Termos de uso e da Política de Privacidade.';
+    }
+};
+ 

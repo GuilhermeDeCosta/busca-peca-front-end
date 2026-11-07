@@ -115,3 +115,89 @@ function carregando(ativo) {
     document.getElementById('botao-texto').textContent = ativo ? 'Criando conta…' : 'Criar conta';
 }
  
+/* ---------- Mostrar / ocultar senha ---------- */
+document.querySelectorAll('.campo__mostrar').forEach((btn) => {
+    btn.addEventListener('click', () => {
+        const campo = document.getElementById(btn.dataset.alvo);
+        const mostrar = campo.type === 'password';
+        campo.type = mostrar ? 'text' : 'password';
+        btn.textContent = mostrar ? 'Ocultar' : 'Mostrar';
+        btn.setAttribute('aria-pressed', String(mostrar));
+    });
+});
+ 
+/* ---------- Chamada à API: POST /api/usuarios ---------- */
+async function cadastrarUsuario(dados) {
+    const controle = new AbortController();
+    const limite = setTimeout(() => controle.abort(), TEMPO_LIMITE_MS);
+ 
+    try {
+        const resposta = await fetch(API_URL + '/usuarios', {
+            method: 'POST',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+            body: JSON.stringify(dados),
+            signal: controle.signal
+        });
+        const corpo = await resposta.json().catch(() => null);
+        return { status: resposta.status, corpo };
+    } catch {
+        return { status: 0, corpo: null };       // sem resposta ou tempo esgotado
+    } finally {
+        clearTimeout(limite);
+    }
+}
+ 
+/* ---------- Envio do formulário ---------- */
+form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    tentouEnviar = true;
+    alerta.hidden = true;
+ 
+    // Fluxo alternativo: informa quais campos precisam ser corrigidos
+    if (!validarTudo()) {
+        mostrarAlerta('erro', '', MSG_ERRO_GERAL);
+        return;
+    }
+ 
+    // Só o necessário vai para a API (sem confirmação de senha e sem perfil)
+    const dados = {
+        nome: limpar(form.nome.value),
+        nome_exibicao: limpar(form.nome_exibicao.value),
+        email: form.email.value.trim().toLowerCase(),
+        senha: form.senha.value,
+        aceite_termos: form.aceite_termos.checked
+    };
+ 
+    carregando(true);
+    const { status, corpo } = await cadastrarUsuario(dados);
+    carregando(false);
+ 
+    // 201: conta criada
+    if (status === 201 || status === 200) {
+        const nome = (corpo && corpo.nome) || dados.nome;
+        form.reset();
+        tentouEnviar = false;
+        Object.keys(regras).forEach((n) => marcarCampo(n, ''));
+        mostrarAlerta(
+            'sucesso',
+            'Conta criada com sucesso',
+            `Boas-vindas, ${nome.split(' ')[0]}. Você já pode comprar. Para vender, crie sua loja em Minha Loja.`
+        );
+        return;
+    }
+ 
+    // 400 ou 409: marca os campos que a API devolveu e mantém o que foi digitado
+    const campos = (corpo && corpo.campos) || {};
+    if (status === 409 && !campos.email) {
+        campos.email = 'Este e-mail já tem uma conta. Entre ou recupere sua senha.';
+    }
+    Object.entries(campos).forEach(([nome, msg]) => marcarCampo(nome, msg));
+    const primeiro = Object.keys(campos)[0];
+    if (primeiro && form.elements[primeiro]) form.elements[primeiro].focus();
+ 
+    if (status === 400) mostrarAlerta('erro', '', MSG_ERRO_GERAL);
+    else if (status === 409) mostrarAlerta('erro', '', (corpo && corpo.mensagem) || 'E-mail já cadastrado.');
+    else mostrarAlerta('erro', '', MSG_SEM_RESPOSTA);
+});
+ 

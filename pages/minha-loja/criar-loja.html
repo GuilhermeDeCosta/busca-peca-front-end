@@ -80,6 +80,10 @@
     .lista-mudancas li { display: flex; gap: .5rem; font-size: .875rem; margin-bottom: .625rem; }
     .lista-mudancas .bi { color: var(--bp-verde); }
 
+    .resultado { border-radius: .5rem; padding: .875rem 1rem; font-size: .875rem; }
+    .resultado--sucesso { background: #e6f4ea; color: #17633a; }
+    .resultado--erro { background: #fdecea; color: #b42318; }
+
     /* Cabeçalho e rodapé provisórios (substituídos pelos componentes) */
     .faixa-topo { background: var(--bp-azul); color: #fff; font-size: .75rem; }
     .faixa-topo a { color: #fff; text-decoration: none; }
@@ -277,11 +281,126 @@
               </div>
             </section>
 
+            <!-- Como você atende -->
+            <section class="card mb-4" aria-labelledby="titulo-atendimento">
+              <div class="card-body p-4">
+                <h2 id="titulo-atendimento" class="card-title mb-1">Como você atende</h2>
+                <p class="small text-secondary mb-3">Você pode mudar depois em Configurações da loja.</p>
 
+                <fieldset class="mb-3">
+                  <legend class="visually-hidden">Formas de entrega</legend>
+                  <div class="form-check mb-2">
+                    <input class="form-check-input" type="checkbox" id="retiradaBalcao" x-model="form.retiradaBalcao">
+                    <label class="form-check-label small" for="retiradaBalcao">Retirada no balcão</label>
+                  </div>
+                  <div class="form-check mb-2">
+                    <input class="form-check-input" type="checkbox" id="entregaCombinar" x-model="form.entregaCombinar">
+                    <label class="form-check-label small" for="entregaCombinar">Entrega a combinar com o comprador</label>
+                  </div>
+                  <div class="form-check mb-2">
+                    <input class="form-check-input" type="checkbox" id="motoboyProprio" x-model="form.motoboyProprio">
+                    <label class="form-check-label small" for="motoboyProprio">Motoboy próprio</label>
+                  </div>
+                  <div class="small text-danger" x-show="erros.atendimento" x-cloak x-text="erros.atendimento"></div>
+                </fieldset>
+
+                <fieldset>
+                  <legend class="form-label fs-6 small">Formas aceitas pela loja</legend>
+                  <div class="form-check mb-2">
+                    <input class="form-check-input" type="checkbox" id="pagPix" value="PIX" x-model="form.metodosPagamento">
+                    <label class="form-check-label small" for="pagPix">Pix</label>
+                  </div>
+                  <div class="form-check mb-2">
+                    <input class="form-check-input" type="checkbox" id="pagBoleto" value="FATURADO" x-model="form.metodosPagamento">
+                    <label class="form-check-label small" for="pagBoleto">Boleto para CNPJ</label>
+                  </div>
+                  <div class="form-check mb-2">
+                    <input class="form-check-input" type="checkbox" id="pagCartao" value="CARTAO" x-model="form.metodosPagamento">
+                    <label class="form-check-label small" for="pagCartao">Cartão na loja</label>
+                  </div>
+                  <div class="small text-danger" x-show="erros.metodosPagamento" x-cloak x-text="erros.metodosPagamento"></div>
+                  <p class="small text-secondary mt-2 mb-0">O pagamento é combinado direto com a loja, fora da plataforma.</p>
+                </fieldset>
+
+                <hr class="my-4">
+
+                <div class="form-check mb-4">
+                  <input class="form-check-input" type="checkbox" id="aceiteTermos" required
+                         x-model="form.aceiteTermos" :class="{ 'is-invalid': erros.aceiteTermos }"
+                         aria-describedby="erro-aceiteTermos">
+                  <label class="form-check-label small" for="aceiteTermos">
+                    Li e aceito os <a href="../institucional/termos-de-uso.html" target="_blank" rel="noopener">Termos do vendedor</a>
+                    e a <a href="../institucional/politica-de-privacidade.html" target="_blank" rel="noopener">Política de Privacidade</a>.
+                  </label>
+                  <div id="erro-aceiteTermos" class="invalid-feedback" x-text="erros.aceiteTermos"></div>
+                </div>
+
+                <div class="d-flex gap-2" x-show="estado !== 'sucesso'">
+                  <button type="submit" class="btn btn-primary px-3" :disabled="enviando"> Criar loja
+                    <span x-show="enviando" x-cloak class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>
+                    <span x-text="enviando ? 'Criando loja…' : 'Criar loja'">Criar loja</span>
+                  </button>
+                  <button type="button" class="btn btn-outline-secondary px-3" @click="cancelar" :disabled="enviando">Cancelar</button>
+                </div>
+              </div>
+            </section>
           </form>
         </div>
 
+        <!-- Coluna lateral -->
+        <aside class="col-lg-4">
+          <div class="d-flex flex-column gap-4 sticky-lg-top" style="top: 1rem; z-index: 1;">
 
+            <section class="card" aria-labelledby="titulo-previa">
+              <div class="card-body p-4">
+                <h2 id="titulo-previa" class="card-title mb-3">Prévia da loja</h2>
+                <div class="d-flex align-items-center gap-3 mb-3">
+                  <div class="previa__logo" aria-hidden="true" x-text="inicialLoja">L</div>
+                  <div class="lh-sm">
+                    <div class="previa__nome" x-text="form.nomeLoja || 'Nome da sua loja'"></div>
+                    <small class="text-secondary" x-text="localPrevia"></small>
+                  </div>
+                </div>
+                <div class="d-flex flex-wrap gap-2">
+                  <span class="etiqueta etiqueta--ativa">Loja ativa</span>
+                  <span class="etiqueta etiqueta--neutra">Sem avaliações ainda</span>
+                </div>
+              </div>
+            </section>
+
+            <section class="card" aria-labelledby="titulo-mudancas">
+              <div class="card-body p-4">
+                <h2 id="titulo-mudancas" class="card-title mb-3">O que muda com a loja</h2>
+                <ul class="list-unstyled lista-mudancas mb-0">
+                  <li><i class="bi bi-check2" aria-hidden="true"></i> A mesma conta continua comprando normalmente.</li>
+                  <li><i class="bi bi-check2" aria-hidden="true"></i> Você ganha Minha Loja: anúncios, estoque e pedidos recebidos.</li>
+                  <li><i class="bi bi-check2" aria-hidden="true"></i> Cada pedido chega para você aceitar ou recusar.</li>
+                  <li class="mb-0"><i class="bi bi-check2" aria-hidden="true"></i> Nenhuma taxa ou comissão é cobrada nesta fase.</li>
+                </ul>
+              </div>
+            </section>
+
+            <!-- Resultado do envio: aparece só depois de tentar criar -->
+            <div id="resultado" aria-live="polite" tabindex="-1">
+              <div class="card" x-show="estado === 'sucesso'" x-cloak>
+                <div class="card-body p-4">
+                  <div class="resultado resultado--sucesso mb-3">
+                    <strong class="d-block mb-1">Loja criada</strong>
+                    <span x-text="(lojaCriada?.nomeLoja || form.nomeLoja) + ' já está ativa. Cadastre sua primeira peça para começar a vender.'"></span>
+                  </div>
+                  <a href="form-peca.html" class="btn btn-primary w-100">Cadastrar primeira peça</a>
+                  <a href="painel.html" class="btn btn-link w-100 mt-1 small">Ir para o painel da loja</a>
+                </div>
+              </div>
+
+              <div class="resultado resultado--erro" x-show="estado === 'erro'" x-cloak role="alert">
+                <strong class="d-block mb-1">Não foi possível criar a loja</strong>
+                <span x-text="mensagemErro"></span>
+              </div>
+            </div>
+
+          </div>
+        </aside>
       </div>
     </div>
   </main>

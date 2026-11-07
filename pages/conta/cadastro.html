@@ -37,3 +37,54 @@
                 <small class="acesso__aviso">Ambiente demonstrativo • lojas, preços e estoques fictícios</small>
             </section>
  
+            
+            <!-- Formulário (BP1-2 • sem escolha de perfil, ADR-007) -->
+            <section class="acesso__card">
+                <h1>Crie sua conta</h1>
+                <p class="acesso__sub">Sem escolher entre comprar ou vender. Você pode fazer os dois.</p>
+ 
+                <form id="form-cadastro" novalidate>
+ 
+                    <div class="campo">
+                        <label for="nome">Nome completo</label>
+                        <input type="text" id="nome" name="nome" autocomplete="name" maxlength="150" required
+                               aria-describedby="nome-erro">
+                        <span class="campo__erro" id="nome-erro"></span>
+                    </div>
+ 
+                    <div class="campo">
+                        <label for="nome_exibicao">Oficina ou empresa</label>
+                        <input type="text" id="nome_exibicao" name="nome_exibicao" autocomplete="organization"
+                               maxlength="80" required aria-describedby="nome_exibicao-ajuda nome_exibicao-erro">
+                        <span class="campo__ajuda" id="nome_exibicao-ajuda">Nome de uso profissional. Você pode editar depois.</span>
+                        <span class="campo__erro" id="nome_exibicao-erro"></span>
+                    </div>
+ 
+                    <div class="campo">
+                        <label for="email">E-mail</label>
+                        <input type="email" id="email" name="email" autocomplete="email" inputmode="email"
+                               maxlength="150" required aria-describedby="email-erro">
+                        <span class="campo__erro" id="email-erro"></span>
+                    </div>
+ 
+                    <div class="campo">
+                        <label for="senha">Crie uma senha</label>
+                        <div class="campo__senha">
+                            <input type="password" id="senha" name="senha" autocomplete="new-password"
+                                   minlength="8" maxlength="72" required aria-describedby="senha-ajuda senha-erro">
+                            <button type="button" class="campo__mostrar" data-alvo="senha" aria-pressed="false">Mostrar</button>
+                        </div>
+                        <span class="campo__ajuda" id="senha-ajuda">Use pelo menos 8 caracteres, incluindo letras e números.</span>
+                        <span class="campo__erro" id="senha-erro"></span>
+                    </div>
+ 
+                    <div class="campo">
+                        <label for="confirmar_senha">Confirmar senha</label>
+                        <div class="campo__senha">
+                            <input type="password" id="confirmar_senha" name="confirmar_senha"
+                                   autocomplete="new-password" maxlength="72" required aria-describedby="confirmar_senha-erro">
+                            <button type="button" class="campo__mostrar" data-alvo="confirmar_senha" aria-pressed="false">Mostrar</button>
+                        </div>
+                        <span class="campo__erro" id="confirmar_senha-erro"></span>
+                    </div>
+ 

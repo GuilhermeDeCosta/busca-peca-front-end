@@ -88,3 +88,42 @@
                         <span class="campo__erro" id="confirmar_senha-erro"></span>
                     </div>
  
+                    
+                    <!-- LGPD (ADR-013): desmarcado por padrão, com links -->
+                    <div class="campo">
+                        <label class="checkbox checkbox--aceite">
+                            <input type="checkbox" id="aceite_termos" name="aceite_termos" required
+                                   aria-describedby="aceite_termos-erro">
+                            <span>
+                                Li e aceito os <a href="termos-de-uso.html" target="_blank" rel="noopener">Termos de uso</a>
+                                e a <a href="politica-de-privacidade.html" target="_blank" rel="noopener">Política de Privacidade</a>.
+                            </span>
+                        </label>
+                        <span class="campo__erro" id="aceite_termos-erro"></span>
+                    </div>
+ 
+                    <p class="acesso__nota">A conta permite comprar. Criar sua loja habilita a venda.</p>
+ 
+                    <!-- Aviso de sucesso ou erro -->
+                    <div class="alerta" id="alerta" role="status" aria-live="polite" hidden>
+                        <span class="alerta__icone" aria-hidden="true"></span>
+                        <div>
+                            <strong id="alerta-titulo"></strong>
+                            <p id="alerta-texto"></p>
+                        </div>
+                    </div>
+ 
+                    <button type="submit" id="botao-criar" class="btn btn--verde btn--bloco">
+                        <span class="btn__girando" aria-hidden="true" hidden></span>
+                        <span id="botao-texto">Criar conta</span>
+                    </button>
+                </form>
+ 
+                <p class="acesso__cadastro">
+                    <a href="login.html" class="acesso__link">Já tenho conta • Entrar</a>
+                </p>
+            </section>
+ 
+        </div>
+    </main>
+ 

@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Crie sua loja • Busca Peças</title>
+  <meta name="description" content="Crie sua loja no Busca Peças e venda o estoque parado da oficina.">
+
+  <!-- Bibliotecas por CDN com versão fixa (ADR-014) -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+  <!-- CSS do projeto -->
+  <link rel="stylesheet" href="../../css/variaveis.css">
+  <link rel="stylesheet" href="../../css/base.css">
+  <link rel="stylesheet" href="../../css/componentes.css">
+
+  <!--
+    Estilos só desta tela. Os valores depois da vírgula em var() são o fallback
+    enquanto variaveis.css ainda não define as cores da marca.
+  -->
+  <style>
+    :root {
+      --bp-azul: var(--cor-primaria-escura, #0f3a64);
+      --bp-verde: var(--cor-primaria, #1e7a45);
+      --bp-verde-escuro: var(--cor-primaria-hover, #17633a);
+      --bp-fundo: var(--cor-fundo, #f3f5f8);
+      --bp-borda: var(--cor-borda, #dfe4ea);
+      --bp-texto-suave: var(--cor-texto-suave, #5b6675);
+    }
+
+    [x-cloak] { display: none !important; }
+
+    body { background: var(--bp-fundo); }
+
+    .criar-loja__titulo { color: var(--bp-azul); font-weight: 700; }
+
+    .criar-loja .card {
+      border: 1px solid var(--bp-borda);
+      border-radius: .75rem;
+    }
+    .criar-loja .card-title { color: var(--bp-azul); font-weight: 700; font-size: 1.125rem; }
+
+    .criar-loja .form-label { font-weight: 600; font-size: .875rem; margin-bottom: .375rem; }
+    .criar-loja .form-control,
+    .criar-loja .form-select { min-height: 2.75rem; }
+
+    .criar-loja .btn-primary {
+      --bs-btn-bg: var(--bp-verde);
+      --bs-btn-border-color: var(--bp-verde);
+      --bs-btn-hover-bg: var(--bp-verde-escuro);
+      --bs-btn-hover-border-color: var(--bp-verde-escuro);
+      --bs-btn-active-bg: var(--bp-verde-escuro);
+      --bs-btn-disabled-bg: var(--bp-verde);
+      --bs-btn-disabled-border-color: var(--bp-verde);
+      font-weight: 600;
+    }
+    .criar-loja .form-check-input:checked {
+      background-color: var(--bp-azul);
+      border-color: var(--bp-azul);
+    }
+
+    .previa__logo {
+      width: 3rem; height: 3rem;
+      border-radius: .5rem;
+      background: var(--bp-azul);
+      color: #fff;
+      font-weight: 700; font-size: 1.25rem;
+      display: grid; place-items: center;
+      flex-shrink: 0;
+    }
+    .previa__nome { color: var(--bp-azul); font-weight: 700; }
+    .etiqueta {
+      font-size: .75rem; font-weight: 500;
+      padding: .25rem .5rem; border-radius: .375rem;
+    }
+    .etiqueta--ativa { background: #e6f4ea; color: #17633a; }
+    .etiqueta--neutra { background: #eef1f5; color: var(--bp-texto-suave); }
+
+    .lista-mudancas li { display: flex; gap: .5rem; font-size: .875rem; margin-bottom: .625rem; }
+    .lista-mudancas .bi { color: var(--bp-verde); }
+
+    /* Cabeçalho e rodapé provisórios (substituídos pelos componentes) */
+    .faixa-topo { background: var(--bp-azul); color: #fff; font-size: .75rem; }
+    .faixa-topo a { color: #fff; text-decoration: none; }
+    .marca { color: var(--bp-azul); font-weight: 800; font-style: italic; font-size: 1.25rem; text-decoration: none; }
+    .marca .bi { color: var(--bp-verde); }
+    .menu-principal .nav-link { color: #3a4553; font-size: .875rem; padding: .75rem .75rem; }
+    .menu-principal .nav-link.active { color: var(--bp-verde); font-weight: 700; }
+    .link-anunciar { color: var(--bp-verde); font-weight: 700; font-size: .875rem; text-decoration: none; }
+    .rodape { background: var(--bp-azul); color: #dbe4ee; font-size: .8125rem; }
+    .rodape a { color: #fff; text-decoration: none; }
+  </style>
+</head>
+<body class="d-flex flex-column min-vh-100">
+
+  <!--
+    Cabeçalho: o componente js/components/cabecalho.js preenche este espaço.
+    O conteúdo abaixo é provisório, só para a tela ficar igual ao protótipo
+    enquanto o componente não existe. Quando ele existir, pode apagar o miolo.
+  -->
+  <header id="cabecalho">
+    <div class="faixa-topo py-1">
+      <div class="container-fluid px-3 px-lg-4 d-flex justify-content-between">
+        <span>Peças certas. Oficinas em movimento.</span>
+        <span class="d-none d-sm-inline">Campinas, SP • <a href="#">Alterar localização</a></span>
+      </div>
+    </div>
+    <div class="bg-white border-bottom">
+      <div class="container-fluid px-3 px-lg-4 d-flex align-items-center gap-3 py-2">
+        <a href="../../index.html" class="marca text-nowrap"><i class="bi bi-gear-wide-connected"></i> BUSCA PEÇAS</a>
+        <form class="flex-grow-1 d-none d-md-block" role="search" action="../busca/resultados.html">
+          <div class="input-group">
+            <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+            <input class="form-control border-start-0" type="search" name="q" placeholder="Busque por peça, OEM, EAN ou SKU" aria-label="Buscar peças">
+          </div>
+        </form>
+        <div class="ms-auto d-flex align-items-center gap-3">
+          <div class="text-end lh-sm d-none d-lg-block small">
+            <span class="text-secondary">Olá, Ana Martins</span><br><strong>Oficina Horizonte</strong>
+          </div>
+          <a href="../conta/favoritos.html" class="text-body fs-5" aria-label="Favoritos"><i class="bi bi-heart"></i></a>
+          <a href="../compra/carrinho.html" class="text-body fs-5" aria-label="Carrinho"><i class="bi bi-cart3"></i></a>
+        </div>
+      </div>
+      <nav class="container-fluid px-3 px-lg-4 d-flex align-items-center menu-principal overflow-auto" aria-label="Menu principal">
+        <ul class="nav flex-nowrap">
+          <li class="nav-item"><a class="nav-link ps-0" href="../../index.html">Início</a></li>
+          <li class="nav-item"><a class="nav-link" href="../busca/resultados.html">Buscar peças</a></li>
+          <li class="nav-item"><a class="nav-link" href="#">Categorias</a></li>
+          <li class="nav-item"><a class="nav-link" href="../conta/favoritos.html">Favoritos</a></li>
+          <li class="nav-item"><a class="nav-link" href="../compra/minhas-compras.html">Meus pedidos</a></li>
+          <li class="nav-item"><a class="nav-link active" aria-current="page" href="painel.html">Minha Loja</a></li>
+          <li class="nav-item"><a class="nav-link" href="../conta/perfil.html">Meu perfil</a></li>
+        </ul>
+        <a href="criar-loja.html" class="link-anunciar ms-auto text-nowrap ps-3">+ Anuncie suas peças</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="criar-loja flex-grow-1 py-4" x-data="criarLoja">
+    <div class="container-fluid px-3 px-lg-4">
+
+      <nav aria-label="Você está em">
+        <ol class="breadcrumb small mb-3">
+          <li class="breadcrumb-item"><a href="../../index.html" class="link-secondary">Início</a></li>
+          <li class="breadcrumb-item"><a href="painel.html" class="link-secondary">Minha Loja</a></li>
+          <li class="breadcrumb-item active" aria-current="page">Criar loja</li>
+        </ol>
+      </nav>
+
+      <h1 class="criar-loja__titulo h2 mb-1">Crie sua loja</h1>
+      <p class="text-secondary mb-4">Sua conta já compra. Com uma loja, você também vende o estoque parado da oficina.</p>
+
+      <div class="row g-4">
+        <!-- Formulário -->
+        <div class="col-lg-8">
+          <form id="form-criar-loja" novalidate @submit.prevent="enviar" :aria-busy="enviando">
+
+            <!-- Dados da loja -->
+            <section class="card mb-4" aria-labelledby="titulo-dados">
+              <div class="card-body p-4">
+                <h2 id="titulo-dados" class="card-title mb-1">Dados da loja</h2>
+                <p class="small text-secondary mb-3">Essas informações aparecem na página pública da loja.</p>
+
+                <div class="mb-3">
+                  <label for="nomeLoja" class="form-label">Nome da loja</label>
+                  <input id="nomeLoja" type="text" class="form-control" maxlength="100" required
+                         placeholder="Ex.: Horizonte Peças" autocomplete="organization"
+                         x-model.trim="form.nomeLoja" :class="{ 'is-invalid': erros.nomeLoja }"
+                         aria-describedby="ajuda-nomeLoja erro-nomeLoja">
+                  <div id="ajuda-nomeLoja" class="form-text">É assim que os compradores vão encontrar você.</div>
+                  <div id="erro-nomeLoja" class="invalid-feedback" x-text="erros.nomeLoja"></div>
+                </div>
+
+                <div class="mb-3">
+                  <label for="descricao" class="form-label">Descrição</label>
+                  <textarea id="descricao" class="form-control" rows="3" maxlength="1000"
+                            placeholder="Conte o que a loja vende: linhas, marcas, peças novas ou revisadas."
+                            x-model="form.descricao" :class="{ 'is-invalid': erros.descricao }"
+                            aria-describedby="erro-descricao"></textarea>
+                  <div id="erro-descricao" class="invalid-feedback" x-text="erros.descricao"></div>
+                </div>
+
+                <div class="row g-3 mb-3">
+                  <div class="col-md-6">
+                    <label for="tipoDocumento" class="form-label">Tipo de documento</label>
+                    <select id="tipoDocumento" class="form-select" x-model="form.tipoDocumento" @change="trocarTipoDocumento">
+                      <option value="CNPJ">CNPJ</option>
+                      <option value="CPF">CPF</option>
+                    </select>
+                  </div>
+                  <div class="col-md-6">
+                    <label for="documento" class="form-label" x-text="form.tipoDocumento">CNPJ</label>
+                    <input id="documento" type="text" class="form-control" inputmode="numeric" required
+                           :placeholder="form.tipoDocumento === 'CNPJ' ? '00.000.000/0000-00' : '000.000.000-00'"
+                           :value="form.documento" @input="aoDigitarDocumento($event)"
+                           :class="{ 'is-invalid': erros.documento }"
+                           aria-describedby="ajuda-documento erro-documento">
+                    <div id="ajuda-documento" class="form-text">Não aparece para os compradores.</div>
+                    <div id="erro-documento" class="invalid-feedback" x-text="erros.documento"></div>
+                  </div>
+                </div>
+
+                <div class="col-md-6 pe-md-2">
+                  <label for="telefone" class="form-label">Telefone da loja</label>
+                  <input id="telefone" type="tel" class="form-control" inputmode="numeric" required
+                         placeholder="(00) 00000-0000" autocomplete="tel"
+                         :value="form.telefone" @input="aoDigitarTelefone($event)"
+                         :class="{ 'is-invalid': erros.telefone }" aria-describedby="erro-telefone">
+                  <div id="erro-telefone" class="invalid-feedback" x-text="erros.telefone"></div>
+                </div>
+              </div>
+            </section>
+
+
+
+          </form>
+        </div>
+
+
+      </div>
+    </div>
+  </main>
+
+  <!-- Rodapé: preenchido por js/components/rodape.js (conteúdo provisório) -->
+  <footer id="rodape" class="rodape py-4 mt-4">
+    <div class="container-fluid px-3 px-lg-4">
+      <p class="mb-2">Busca Peça • Peças certas. Oficinas em movimento.</p>
+      <p class="mb-0">
+        <a href="../institucional/sobre.html">Busca Peça</a> •
+        <a href="../institucional/sobre.html">Contato</a> •
+        <a href="../institucional/termos-de-uso.html">Termos de uso</a> •
+        <a href="../institucional/politica-de-privacidade.html">Privacidade</a>
+      </p>
+    </div>
+  </footer>
+
+  <!--
+    Ordem importa: o módulo da página vem ANTES do Alpine, para registrar
+    o componente no evento alpine:init antes de o Alpine iniciar.
+  -->
+  <script type="module" src="../../js/pages/minha-loja/criar-loja.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

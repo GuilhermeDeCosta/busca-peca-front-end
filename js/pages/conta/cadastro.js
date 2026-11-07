@@ -59,3 +59,59 @@ const regras = {
     }
 };
  
+/* ---------- Mostrar erro embaixo do campo ---------- */
+function marcarCampo(nome, mensagem) {
+    const el = form.elements[nome];
+    const saida = document.getElementById(nome + '-erro');
+    if (!el || !saida) return;
+ 
+    saida.textContent = mensagem;
+    el.closest('.campo').classList.toggle('campo--erro', Boolean(mensagem));
+    el.setAttribute('aria-invalid', mensagem ? 'true' : 'false');
+}
+ 
+function validarCampo(nome) {
+    const el = form.elements[nome];
+    const mensagem = regras[nome](el.value || '', el);
+    marcarCampo(nome, mensagem);
+    return !mensagem;
+}
+ 
+function validarTudo() {
+    const invalidos = Object.keys(regras).filter((nome) => !validarCampo(nome));
+    if (invalidos.length) form.elements[invalidos[0]].focus();
+    return invalidos.length === 0;
+}
+ 
+/* Depois da primeira tentativa, os erros somem conforme o usuário corrige */
+form.addEventListener('input', (e) => {
+    const nome = e.target.name;
+    if (!tentouEnviar || !regras[nome]) return;
+    validarCampo(nome);
+    if (nome === 'senha' && form.confirmar_senha.value) validarCampo('confirmar_senha');
+});
+ 
+/* Ao sair de um campo preenchido, já confere o formato */
+form.addEventListener('focusout', (e) => {
+    const nome = e.target.name;
+    if (regras[nome] && nome !== 'aceite_termos' && e.target.value) validarCampo(nome);
+});
+ 
+/* ---------- Alerta de sucesso / erro ---------- */
+function mostrarAlerta(tipo, titulo, texto) {
+    alerta.className = 'alerta alerta--' + tipo;
+    alerta.querySelector('.alerta__icone').textContent = tipo === 'sucesso' ? '✓' : '!';
+    document.getElementById('alerta-titulo').textContent = titulo;
+    document.getElementById('alerta-texto').textContent = texto;
+    alerta.setAttribute('role', tipo === 'erro' ? 'alert' : 'status');
+    alerta.hidden = false;
+}
+ 
+/* ---------- Botão carregando (evita clique duplo) ---------- */
+function carregando(ativo) {
+    botao.disabled = ativo;
+    botao.setAttribute('aria-busy', String(ativo));
+    botao.querySelector('.btn__girando').hidden = !ativo;
+    document.getElementById('botao-texto').textContent = ativo ? 'Criando conta…' : 'Criar conta';
+}
+ 

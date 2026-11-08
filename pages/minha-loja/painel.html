@@ -346,6 +346,57 @@
         </div>
       </section>
 
+      <!-- Pedidos recebidos -->
+      <section class="card mb-4" aria-labelledby="titulo-pedidos">
+        <div class="card-body p-3 p-md-4">
+          <div class="d-flex justify-content-between align-items-baseline mb-3">
+            <h2 id="titulo-pedidos" class="card-title mb-0">Pedidos recebidos</h2>
+            <a href="pedidos.html" class="small fw-semibold text-decoration-none" style="color: var(--bp-link);">Ver todos</a>
+          </div>
+          <div class="table-responsive" :aria-busy="carregandoPedidos">
+            <table class="table tabela-painel">
+              <thead>
+                <tr>
+                  <th scope="col">Pedido / comprador</th>
+                  <th scope="col">Itens</th>
+                  <th scope="col">Data</th>
+                  <th scope="col">Valor dos itens</th>
+                  <th scope="col">Status</th>
+                  <th scope="col">Atendimento</th>
+                </tr>
+              </thead>
+              <tbody>
+                <template x-if="carregandoPedidos">
+                  <tr><td colspan="6" class="text-center text-secondary py-4">
+                    <span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>Carregando pedidos…
+                  </td></tr>
+                </template>
+                <template x-if="!carregandoPedidos && erroPedidos">
+                  <tr><td colspan="6" class="text-center py-4">
+                    <span class="text-danger" x-text="erroPedidos"></span>
+                    <button type="button" class="btn btn-link btn-sm" @click="carregarPedidos()">Tentar de novo</button>
+                  </td></tr>
+                </template>
+                <template x-if="!carregandoPedidos && !erroPedidos && !pedidos.length">
+                  <tr><td colspan="6" class="text-center text-secondary py-4">Nenhum pedido recebido ainda. Eles aparecem aqui para você aceitar ou recusar.</td></tr>
+                </template>
+                <template x-for="p in (carregandoPedidos || erroPedidos ? [] : pedidos)" :key="p.idPedido">
+                  <tr>
+                    <td class="text-nowrap"><span class="peca-nome" x-text="p.codigo + ' • ' + p.comprador"></span></td>
+                    <td x-text="p.resumoItens"></td>
+                    <td class="text-nowrap" x-text="formatarData(p.data)"></td>
+                    <td class="text-nowrap" x-text="formatarMoeda(p.valorItens)"></td>
+                    <td class="text-nowrap" x-text="textoStatusPedido(p)"></td>
+                    <td class="text-nowrap">
+                      <a :href="linkDetalhePedido(p)">Ver detalhe</a><template x-if="acaoPedido(p)"><span> / <a :href="acaoPedido(p).link" x-text="acaoPedido(p).texto"></a></span></template>
+                    </td>
+                  </tr>
+                </template>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
 
 
   </main>

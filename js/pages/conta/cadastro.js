@@ -200,4 +200,54 @@ form.addEventListener('submit', async (e) => {
     else if (status === 409) mostrarAlerta('erro', '', (corpo && corpo.mensagem) || 'E-mail já cadastrado.');
     else mostrarAlerta('erro', '', MSG_SEM_RESPOSTA);
 });
- 
+
+ /* =========================================================
+   POP-UP DE TERMOS E PRIVACIDADE (Fluxo D • etapa 02)
+   ========================================================= */
+const modalTermos = document.getElementById('modal-termos');
+const corpoTermos = document.getElementById('modal-termos-corpo');
+let ultimoFoco = null;
+
+function abrirTermos(secao) {
+    ultimoFoco = document.activeElement;
+    modalTermos.showModal();
+    document.body.classList.add('modal-aberto');
+
+    // Abre na seção do link clicado (Termos de uso ou Política de Privacidade)
+    const alvo = document.getElementById(secao);
+    corpoTermos.scrollTop = alvo ? alvo.offsetTop - corpoTermos.offsetTop : 0;
+}
+
+function fecharTermos() {
+    modalTermos.close();
+}
+
+// Os links do texto de aceite abrem o pop-up em vez de outra página
+document.querySelectorAll('[data-abrir-termos]').forEach((link) => {
+    link.addEventListener('click', (e) => {
+        e.preventDefault();
+        abrirTermos(link.dataset.abrirTermos);
+    });
+});
+
+document.querySelectorAll('[data-fechar-modal]').forEach((btn) => {
+    btn.addEventListener('click', fecharTermos);
+});
+
+// "Li e aceito" marca a caixa de aceite e fecha
+document.getElementById('modal-termos-aceitar').addEventListener('click', () => {
+    form.aceite_termos.checked = true;
+    validarCampo('aceite_termos');
+    fecharTermos();
+});
+
+// Clique fora da caixa fecha
+modalTermos.addEventListener('click', (e) => {
+    if (e.target === modalTermos) fecharTermos();
+});
+
+// Ao fechar (botão, Esc ou clique fora), devolve o foco para onde estava
+modalTermos.addEventListener('close', () => {
+    document.body.classList.remove('modal-aberto');
+    if (ultimoFoco) ultimoFoco.focus();
+});

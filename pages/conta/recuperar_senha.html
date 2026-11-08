@@ -39,6 +39,48 @@
             </section>
 
             
+            <!-- Formulário (BP1-40 • passos 3 a 7) -->
+            <section class="acesso__card">
+                <h1>Recuperar senha</h1>
+                <p class="acesso__sub">Informe seu e-mail para receber as instruções de redefinição.</p>
+ 
+                <form id="form-recuperar" novalidate>
+ 
+                    <div class="campo">
+                        <label for="email">E-mail</label>
+                        <input type="email" id="email" name="email" autocomplete="email" inputmode="email"
+                               maxlength="150" required aria-describedby="email-erro">
+                        <span class="campo__erro" id="email-erro"></span>
+                    </div>
+ 
+                    <!-- Aviso de sucesso ou erro -->
+                    <div class="alerta" id="alerta" role="status" aria-live="polite" hidden>
+                        <span class="alerta__icone" aria-hidden="true"></span>
+                        <div>
+                            <strong></strong>
+                            <p></p>
+                        </div>
+                    </div>
+ 
+                    <div class="acesso__botoes">
+                        <button type="submit" id="botao-enviar" class="btn btn--verde btn--bloco">
+                            <span class="btn__girando" aria-hidden="true" hidden></span>
+                            <span class="btn__texto">Enviar instruções</span>
+                        </button>
+                        <button type="button" id="botao-reenviar" class="btn btn--contorno btn--bloco" hidden>
+                            <span class="btn__girando" aria-hidden="true" hidden></span>
+                            <span class="btn__texto">Reenviar instruções</span>
+                        </button>
+                    </div>
+                </form>
+ 
+                <p class="acesso__cadastro">
+                    <a href="login.html" class="acesso__link">Voltar para o login</a>
+                </p>
+            </section>
+        </div>
+    </main>
+ 
 
 </body>
 </html>

@@ -31,7 +31,19 @@
     [x-cloak] { display: none !important; }
     body { background: var(--bp-fundo); }
 
+    .painel__titulo { color: var(--bp-azul); font-weight: 700; }
+    .painel .card { border: 1px solid var(--bp-borda); border-radius: .75rem; }
+    .painel .card-title { color: var(--bp-azul); font-weight: 700; font-size: 1.25rem; }
+    .painel .form-label { font-weight: 600; font-size: .875rem; }
+    .painel .form-control, .painel .form-select { min-height: 2.75rem; }
 
+    .painel .btn-primary {
+      --bs-btn-bg: var(--bp-verde); --bs-btn-border-color: var(--bp-verde);
+      --bs-btn-hover-bg: var(--bp-verde-escuro); --bs-btn-hover-border-color: var(--bp-verde-escuro);
+      --bs-btn-active-bg: var(--bp-verde-escuro); --bs-btn-disabled-bg: var(--bp-verde);
+      --bs-btn-disabled-border-color: var(--bp-verde);
+      font-weight: 600;
+    }
     .btn-contorno-azul {
       --bs-btn-color: var(--bp-azul); --bs-btn-border-color: var(--bp-borda); --bs-btn-bg: #fff;
       --bs-btn-hover-color: var(--bp-azul); --bs-btn-hover-bg: #f4f7fb; --bs-btn-hover-border-color: #c9d3df;
@@ -67,6 +79,33 @@
 
     .alerta-estoque { background: #fdf3d8; color: #7a5300; border-radius: .5rem; }
     .alerta-estoque .btn-link { color: #7a5300; font-weight: 600; }
+
+    /* Tabelas */
+    .tabela-painel { font-size: .875rem; margin-bottom: 0; }
+    .tabela-painel thead th {
+      background: var(--bp-cabecalho-tabela); color: var(--bp-texto-suave);
+      font-weight: 600; font-size: .8125rem; padding: .875rem 1rem; border-bottom: 0; white-space: nowrap;
+    }
+    .tabela-painel td { padding: .875rem 1rem; vertical-align: top; }
+    .tabela-painel .peca-nome { font-weight: 600; color: #1f2933; }
+    .tabela-painel a { color: var(--bp-link); text-decoration: none; }
+    .tabela-painel a:hover { text-decoration: underline; }
+    .tabela-painel .link-acao { background: none; border: 0; padding: 0; color: var(--bp-link); }
+    .tabela-painel .link-acao:hover { text-decoration: underline; }
+    .tabela-painel .link-acao:disabled { color: var(--bp-texto-suave); }
+    .linha-anuncio { cursor: pointer; }
+    .linha-anuncio:focus-within { outline: 2px solid var(--bp-link); outline-offset: -2px; }
+    .linha-anuncio.selecionada > td { background: #eef4fb; }
+    .linha-anuncio.selecionada > td:first-child { box-shadow: inset 3px 0 0 var(--bp-link); }
+    .texto-alerta { color: #9a6700; }
+
+    .aviso { border-radius: .5rem; padding: .875rem 1rem; font-size: .875rem; }
+    .aviso--sucesso { background: #e6f4ea; color: #17633a; }
+    .aviso--erro { background: #fdecea; color: #b42318; }
+    .citacao-conversa { color: var(--bp-texto-suave); }
+
+    .paginacao .page-link { color: var(--bp-azul); }
+    .paginacao .active > .page-link { background: var(--bp-azul); border-color: var(--bp-azul); color: #fff; }
 
     /* Cabeçalho e rodapé provisórios (substituídos pelos componentes) */
     .faixa-topo { background: var(--bp-azul); color: #fff; font-size: .75rem; }

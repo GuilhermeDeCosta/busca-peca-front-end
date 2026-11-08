@@ -719,3 +719,37 @@ body.modal-aberto { overflow: hidden; }
     .modal__topo, .modal__corpo, .modal__rodape { padding-left: 16px; padding-right: 16px; }
     .modal__rodape .btn { flex: 1; }
 }
+
+/* =========================================================
+   RECUPERAR SENHA E NOVA SENHA (Fluxo D • etapas 04 e 05 • BP1-40)
+   ========================================================= */
+ 
+/* Sem isto o display dos botões ignora o atributo hidden
+   (mesmo problema que o .alerta[hidden] resolve lá em cima) */
+.btn[hidden] { display: none; }
+ 
+/* Botões empilhados: Enviar / Reenviar e Salvar / Voltar para o login */
+.acesso__botoes {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+ 
+/* Indicador de carregamento visível também no botão branco */
+.btn--contorno .btn__girando {
+    border-color: rgba(15, 61, 104, .25);
+    border-top-color: var(--azul-escuro);
+}
+ 
+/* Aviso amarelo: "Link expirado" */
+.alerta--atencao { background: #fff4d6; border-color: #f3d58a; color: #7a5200; }
+ 
+/* E-mail comprido dentro do aviso não estoura o cartão */
+.alerta p { overflow-wrap: anywhere; }
+ 
+/* Título do aviso recebe foco ao mudar de estado, sem contorno amarelo */
+.alerta strong:focus { outline: none; }
+ 
+/* E-mail do rodapé não estoura a tela no celular */
+.footer a { overflow-wrap: anywhere; }
+ 

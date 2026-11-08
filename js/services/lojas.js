@@ -6,10 +6,11 @@
 // QUANDO A API E O api.js ESTIVEREM PRONTOS:
 //   1. Descomente o import do api.js abaixo.
 //   2. Troque USAR_SIMULACAO para false.
-//   3. Apague as funções simular*() do fim do arquivo.
+//   3. Apague as funções simular*() do fim do arquivo e o import de ./simulacao.js.
 // Nenhuma outra mudança é necessária na tela.
 
 // import { api } from '../api.js';
+import { esperar as esperarSimulacao, lojaSimulada, anunciosSimulados, pedidosSimulados, ultimaConversaSimulada } from './simulacao.js';
 
 const USAR_SIMULACAO = true;
 
@@ -34,6 +35,20 @@ export async function criarLoja(dados) {
 export async function buscarEnderecoPorCep(cep) {
   if (USAR_SIMULACAO) return simularBuscarCep(cep);
   return null; // trocar pela rota quando ela existir, ex.: api.get(`/enderecos/cep/${cep}`)
+}
+
+/**
+ * GET /api/lojas/minha/painel — dados do painel da Minha Loja (BP1-32, 52, 65).
+ * @returns {Promise<{
+ *   loja: object,
+ *   indicadores: { anunciosAtivos: number, baixoEstoque: number, pedidosRecebidos: number, aguardandoAceite: number },
+ *   alertasEstoque: { idPeca: number, titulo: string, quantidadeEstoque: number }[],
+ *   ultimaConversa: object | null
+ * }>}
+ */
+export async function obterPainel() {
+  if (USAR_SIMULACAO) return simularPainel();
+  // return api.get('/lojas/minha/painel');
 }
 
 // ---------------------------------------------------------------------------
@@ -72,4 +87,21 @@ async function simularBuscarCep(cep) {
     return { logradouro: 'Rua das Oficinas', bairro: 'Centro', cidade: 'Campinas', estado: 'SP' };
   }
   return null;
+}
+
+async function simularPainel() {
+  await esperarSimulacao(500);
+  const ativos = anunciosSimulados.filter((p) => p.status === 'ATIVO');
+  const baixos = ativos.filter((p) => p.quantidadeEstoque <= p.limiteAlertaEstoque);
+  return {
+    loja: { ...lojaSimulada },
+    indicadores: {
+      anunciosAtivos: ativos.length,
+      baixoEstoque: baixos.length,
+      pedidosRecebidos: pedidosSimulados.length,
+      aguardandoAceite: pedidosSimulados.filter((p) => p.status === 'AGUARDANDO_ACEITE').length,
+    },
+    alertasEstoque: baixos.map(({ idPeca, titulo, quantidadeEstoque }) => ({ idPeca, titulo, quantidadeEstoque })),
+    ultimaConversa: { ...ultimaConversaSimulada },
+  };
 }

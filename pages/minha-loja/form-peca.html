@@ -333,6 +333,94 @@
               </div>
             </section>
 
+            <!-- 2b. Compatibilidade -->
+            <section id="secao-compatibilidade" data-etapa="2" class="card mb-4" aria-labelledby="titulo-compatibilidade">
+              <div class="card-body p-3 p-md-4">
+                <h2 id="titulo-compatibilidade" class="card-title mb-2">Compatibilidade</h2>
+                <p class="text-secondary mb-3">Informe somente aplicações verificadas pela sua loja.</p>
+
+                <div class="row g-3 mb-3">
+                  <div class="col-md-6">
+                    <label for="marcaVeiculo" class="form-label">Marca do veículo</label>
+                    <select id="marcaVeiculo" class="form-select" x-model="novaAplicacao.marca" @change="aoTrocarMarcaVeiculo()"
+                            :class="{ 'is-invalid': errosAplicacao.marca }" aria-describedby="erro-marcaVeiculo">
+                      <option value="">Escolha a marca</option>
+                      <template x-for="marca in marcasVeiculo" :key="marca">
+                        <option :value="marca" x-text="marca"></option>
+                      </template>
+                    </select>
+                    <div id="erro-marcaVeiculo" class="invalid-feedback" x-text="errosAplicacao.marca"></div>
+                  </div>
+                  <div class="col-md-6">
+                    <label for="modeloVeiculo" class="form-label">Modelo</label>
+                    <select id="modeloVeiculo" class="form-select" x-model="novaAplicacao.modelo"
+                            :disabled="!novaAplicacao.marca || carregandoModelos"
+                            :class="{ 'is-invalid': errosAplicacao.modelo }" aria-describedby="erro-modeloVeiculo">
+                      <option value="" x-text="carregandoModelos ? 'Carregando modelos…' : (novaAplicacao.marca ? 'Escolha o modelo' : 'Escolha a marca primeiro')"></option>
+                      <template x-for="modelo in modelos" :key="modelo">
+                        <option :value="modelo" x-text="modelo"></option>
+                      </template>
+                    </select>
+                    <div id="erro-modeloVeiculo" class="invalid-feedback" x-text="errosAplicacao.modelo"></div>
+                  </div>
+                  <div class="col-md-6">
+                    <label for="anoInicial" class="form-label">Ano inicial / final</label>
+                    <div class="input-group has-validation">
+                      <input id="anoInicial" type="text" inputmode="numeric" maxlength="4" class="form-control" placeholder="Ex.: 2002"
+                             x-model="novaAplicacao.anoInicial" @input="novaAplicacao.anoInicial = $event.target.value.replace(/\D/g, '')"
+                             :class="{ 'is-invalid': errosAplicacao.ano }" aria-describedby="erro-ano">
+                      <span class="input-group-text bg-white">/</span>
+                      <input type="text" inputmode="numeric" maxlength="4" class="form-control" placeholder="Ex.: 2012"
+                             aria-label="Ano final" x-model="novaAplicacao.anoFinal"
+                             @input="novaAplicacao.anoFinal = $event.target.value.replace(/\D/g, '')"
+                             :class="{ 'is-invalid': errosAplicacao.ano }">
+                      <div id="erro-ano" class="invalid-feedback" x-text="errosAplicacao.ano"></div>
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <label for="versaoVeiculo" class="form-label">Versão / motorização</label>
+                    <input id="versaoVeiculo" type="text" class="form-control" maxlength="80" placeholder="Ex.: 1.0 / 1.4"
+                           x-model="novaAplicacao.versao" @keydown.enter.prevent="adicionarAplicacao()">
+                  </div>
+                </div>
+
+                <button type="button" class="btn btn-contorno-azul px-3 mb-2" @click="adicionarAplicacao()">Adicionar aplicação</button>
+                <div class="small text-danger mb-2" x-show="errosAplicacao.geral || erros.aplicacoes" x-cloak
+                     x-text="errosAplicacao.geral || erros.aplicacoes" role="alert"></div>
+
+                <div class="table-responsive mt-2" x-show="aplicacoes.length" x-cloak>
+                  <table class="table tabela-form">
+                    <caption class="visually-hidden">Aplicações verificadas</caption>
+                    <thead>
+                      <tr>
+                        <th scope="col">Marca</th>
+                        <th scope="col">Modelo</th>
+                        <th scope="col">Ano</th>
+                        <th scope="col">Versão</th>
+                        <th scope="col"><span class="visually-hidden">Remover</span></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <template x-for="a in aplicacoes" :key="a.id">
+                        <tr>
+                          <td class="fw-semibold" x-text="a.marca"></td>
+                          <td x-text="a.modelo"></td>
+                          <td class="text-nowrap" x-text="textoAnos(a)"></td>
+                          <td class="texto-versao" x-text="a.versao || 'Todas'"></td>
+                          <td class="text-end">
+                            <button type="button" class="btn btn-sm btn-link text-danger p-0" @click="removerAplicacao(a)"
+                                    :aria-label="'Remover ' + a.marca + ' ' + a.modelo + ' ' + textoAnos(a)">
+                              <i class="bi bi-trash" aria-hidden="true"></i>
+                            </button>
+                          </td>
+                        </tr>
+                      </template>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </section>
+
           </form>
         </div>
 

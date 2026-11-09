@@ -224,7 +224,114 @@
               </div>
             </section>
 
+            <!-- 2a. Informações da peça -->
+            <section id="secao-informacoes" data-etapa="2" class="card mb-4" aria-labelledby="titulo-informacoes">
+              <div class="card-body p-3 p-md-4">
+                <h2 id="titulo-informacoes" class="card-title mb-3">Informações da peça</h2>
 
+                <div class="mb-3">
+                  <label for="titulo" class="form-label">Título do anúncio</label>
+                  <input id="titulo" type="text" class="form-control" maxlength="150" required
+                         placeholder="Ex.: Alternador Bosch 90A • linha GM"
+                         x-model="form.titulo" @input="limparErro('titulo')"
+                         :class="{ 'is-invalid': erros.titulo }" aria-describedby="erro-titulo">
+                  <div id="erro-titulo" class="invalid-feedback" x-text="erros.titulo"></div>
+                </div>
+
+                <div class="mb-3">
+                  <label for="descricao" class="form-label">Descrição técnica</label>
+                  <textarea id="descricao" class="form-control" rows="3" maxlength="3000"
+                            placeholder="Estado, especificações, o que vem na embalagem e o que conferir antes de comprar."
+                            x-model="form.descricao" :class="{ 'is-invalid': erros.descricao }" aria-describedby="erro-descricao"></textarea>
+                  <div id="erro-descricao" class="invalid-feedback" x-text="erros.descricao"></div>
+                </div>
+
+                <div class="row g-3 mb-3">
+                  <div class="col-md-6">
+                    <label for="idCategoria" class="form-label">Categoria</label>
+                    <select id="idCategoria" class="form-select" required x-model="form.idCategoria" @change="limparErro('idCategoria')"
+                            :class="{ 'is-invalid': erros.idCategoria }" aria-describedby="erro-idCategoria">
+                      <option value="">Escolha a categoria</option>
+                      <template x-for="grupo in categoriasAgrupadas" :key="grupo.idCategoria">
+                        <optgroup :label="grupo.nome">
+                          <template x-for="sub in grupo.subcategorias" :key="sub.idCategoria">
+                            <option :value="String(sub.idCategoria)" x-text="grupo.nome + ' / ' + sub.nome"
+                                    :selected="String(form.idCategoria) === String(sub.idCategoria)"></option>
+                          </template>
+                        </optgroup>
+                      </template>
+                    </select>
+                    <div id="erro-idCategoria" class="invalid-feedback" x-text="erros.idCategoria"></div>
+                  </div>
+                  <div class="col-md-6">
+                    <label for="marcaPeca" class="form-label">Marca da peça</label>
+                    <select id="marcaPeca" class="form-select" x-model="form.marcaPeca">
+                      <option value="">Escolha a marca</option>
+                      <template x-for="marca in marcasPeca" :key="marca">
+                        <option :value="marca" x-text="marca" :selected="form.marcaPeca === marca"></option>
+                      </template>
+                    </select>
+                  </div>
+                </div>
+
+                <div class="row g-3 mb-3">
+                  <div class="col-md-4">
+                    <label for="codigoOem" class="form-label">OEM</label>
+                    <input id="codigoOem" type="text" class="form-control" maxlength="50" required autocomplete="off"
+                           placeholder="Código do fabricante"
+                           :value="form.codigoOem" @input="aoDigitarCodigo('codigoOem', 'OEM', $event)"
+                           :class="{ 'is-invalid': erros.codigoOem }" aria-describedby="erro-codigoOem">
+                    <div id="erro-codigoOem" class="invalid-feedback" x-text="erros.codigoOem"></div>
+                  </div>
+                  <div class="col-md-4">
+                    <label for="codigoEan" class="form-label">EAN</label>
+                    <input id="codigoEan" type="text" class="form-control" inputmode="numeric" maxlength="14" autocomplete="off"
+                           placeholder="Não informado"
+                           :value="form.codigoEan" @input="aoDigitarCodigo('codigoEan', 'EAN', $event)"
+                           :class="{ 'is-invalid': erros.codigoEan }" aria-describedby="erro-codigoEan">
+                    <div id="erro-codigoEan" class="invalid-feedback" x-text="erros.codigoEan"></div>
+                  </div>
+                  <div class="col-md-4">
+                    <label for="codigoSku" class="form-label">SKU da loja</label>
+                    <input id="codigoSku" type="text" class="form-control" maxlength="50" autocomplete="off"
+                           placeholder="Seu código interno"
+                           :value="form.codigoSku" @input="aoDigitarCodigo('codigoSku', 'SKU', $event)"
+                           :class="{ 'is-invalid': erros.codigoSku }" aria-describedby="erro-codigoSku">
+                    <div id="erro-codigoSku" class="invalid-feedback" x-text="erros.codigoSku"></div>
+                  </div>
+                </div>
+
+                <div class="mb-3">
+                  <label for="caracteristicas" class="form-label">Características técnicas</label>
+                  <input id="caracteristicas" type="text" class="form-control" maxlength="255"
+                         placeholder="Ex.: 12 V • 90 A • polia 6 canais • conector padrão GM"
+                         x-model="form.caracteristicas">
+                </div>
+
+                <div class="row g-3">
+                  <div class="col-md-6">
+                    <label for="condicao" class="form-label">Condição</label>
+                    <select id="condicao" class="form-select" required x-model="form.condicao"
+                            :class="{ 'is-invalid': erros.condicao }" aria-describedby="erro-condicao">
+                      <template x-for="c in condicoes" :key="c.valor">
+                        <option :value="c.valor" x-text="c.texto" :selected="form.condicao === c.valor"></option>
+                      </template>
+                    </select>
+                    <div id="erro-condicao" class="invalid-feedback" x-text="erros.condicao"></div>
+                  </div>
+                  <div class="col-md-6">
+                    <label for="origem" class="form-label">Origem</label>
+                    <select id="origem" class="form-select" required x-model="form.origem"
+                            :class="{ 'is-invalid': erros.origem }" aria-describedby="erro-origem">
+                      <template x-for="o in origens" :key="o.valor">
+                        <option :value="o.valor" x-text="o.texto" :selected="form.origem === o.valor"></option>
+                      </template>
+                    </select>
+                    <div id="erro-origem" class="invalid-feedback" x-text="erros.origem"></div>
+                  </div>
+                </div>
+              </div>
+            </section>
 
           </form>
         </div>

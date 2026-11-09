@@ -561,3 +561,195 @@ header__voltar { margin-left: auto; }
 }
  
 
+/* =========================================================
+   CADASTRO (Fluxo D • etapa 01 • BP1-2)
+   ========================================================= */
+
+/* Corrige a regra "header__voltar" (sem o ponto) que já existe acima */
+.header__voltar { margin-left: auto; white-space: nowrap; }
+
+/* Logo sem distorcer a proporção */
+.logo img { object-fit: contain; object-position: left center; }
+
+/* Selo "Um acesso. Todas as possibilidades." no painel azul */
+.acesso__painel .etiqueta {
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .02em;
+    margin-bottom: 20px;
+}
+
+/* Texto de ajuda embaixo do campo (ex.: regra da senha) */
+.campo__ajuda { font-size: 12px; color: var(--texto-suave); }
+
+/* Caixa de aceite dos termos */
+.campo .checkbox input {         
+    width: 18px;
+    height: 18px;
+    min-height: 0;
+    padding: 0;
+}
+.checkbox--aceite {
+    align-items: flex-start;
+    font-size: 14px;
+    line-height: 1.45;
+}
+.campo .checkbox--aceite { font-weight: 400; }
+.checkbox--aceite input { flex-shrink: 0; margin-top: 1px; }
+.checkbox--aceite a {
+    color: var(--azul-escuro);
+    font-weight: 600;
+    text-decoration: underline;
+}
+.campo--erro .checkbox input { outline: 2px solid #b42318; outline-offset: 1px; }
+
+/* Frase "A conta permite comprar..." antes do botão */
+.acesso__nota { font-size: 13px; color: var(--texto-suave); margin-bottom: 16px; }
+
+/* Título em negrito dentro do alerta de sucesso */
+.alerta strong { display: block; }
+
+/* Indicador de carregamento dentro do botão */
+.btn__girando {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    margin-right: 8px;
+    vertical-align: -3px;
+    border: 2px solid rgba(255, 255, 255, .45);
+    border-top-color: var(--branco);
+    border-radius: 50%;
+    animation: girar .8s linear infinite;
+}
+.btn__girando[hidden] { display: none; }
+@keyframes girar { to { transform: rotate(360deg); } }
+
+.footer__logo img { width: 200px; height: auto; }
+
+@media (prefers-reduced-motion: reduce) {
+    .btn__girando { animation-duration: 2s; }
+}
+
+/* =========================================================
+   POP-UP DE TERMOS E PRIVACIDADE (Fluxo D • etapa 02)
+   ========================================================= */
+.modal {
+    width: min(720px, calc(100% - 32px));
+    max-height: calc(100vh - 48px);
+    margin: auto;
+    padding: 0;
+    border: 1px solid var(--cinza-borda);
+    border-radius: 12px;
+    color: var(--texto);
+    background: var(--branco);
+    box-shadow: 0 20px 50px rgba(15, 61, 104, .25);
+}
+.modal[open] { display: flex; flex-direction: column; }
+.modal::backdrop { background: rgba(15, 61, 104, .55); }
+
+.modal__topo {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+    padding: 22px 24px 16px;
+    border-bottom: 1px solid var(--cinza-borda);
+}
+.modal__topo h2 { font-size: 22px; color: var(--azul-escuro); line-height: 1.2; }
+.modal__versao { font-size: 13px; color: var(--texto-suave); margin-top: 4px; }
+
+.modal__fechar {
+    flex-shrink: 0;
+    width: 44px;
+    height: 44px;
+    border: none;
+    border-radius: var(--raio);
+    background: transparent;
+    color: var(--azul-escuro);
+    font-size: 18px;
+    cursor: pointer;
+}
+.modal__fechar:hover { background: var(--cinza-fundo); }
+.modal__fechar:focus-visible,
+.modal__corpo:focus-visible { outline: 3px solid #f2b705; outline-offset: 2px; }
+
+.modal__corpo {
+    overflow-y: auto;
+    padding: 20px 24px;
+    font-size: 14px;
+    line-height: 1.6;
+}
+.modal__corpo p { margin-bottom: 12px; }
+.modal__corpo ul { padding-left: 20px; margin-bottom: 12px; }
+.modal__corpo li { margin-bottom: 4px; }
+.modal__corpo a { color: var(--azul-escuro); font-weight: 600; text-decoration: underline; }
+.modal__corpo h4 { font-size: 15px; color: var(--azul-escuro); margin: 16px 0 4px; }
+
+.modal__secao {
+    font-size: 18px;
+    color: var(--azul-escuro);
+    margin: 20px 0 4px;
+    padding-top: 16px;
+    border-top: 1px solid var(--cinza-borda);
+    scroll-margin-top: 8px;
+}
+.modal__nota + .modal__secao { border-top: none; padding-top: 0; }
+
+.modal__nota {
+    background: #fff4d6;
+    color: #7a5200;
+    border-radius: var(--raio);
+    padding: 10px 14px;
+    font-size: 13px;
+}
+
+.modal__rodape {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    padding: 16px 24px;
+    border-top: 1px solid var(--cinza-borda);
+}
+.modal__rodape .btn { min-height: 44px; }
+
+body.modal-aberto { overflow: hidden; }
+
+@media (max-width: 560px) {
+    .modal { width: 100%; max-height: 100%; height: 100%; border-radius: 0; }
+    .modal__topo, .modal__corpo, .modal__rodape { padding-left: 16px; padding-right: 16px; }
+    .modal__rodape .btn { flex: 1; }
+}
+
+/* =========================================================
+   RECUPERAR SENHA E NOVA SENHA (Fluxo D • etapas 04 e 05 • BP1-40)
+   ========================================================= */
+ 
+/* Sem isto o display dos botões ignora o atributo hidden
+   (mesmo problema que o .alerta[hidden] resolve lá em cima) */
+.btn[hidden] { display: none; }
+ 
+/* Botões empilhados: Enviar / Reenviar e Salvar / Voltar para o login */
+.acesso__botoes {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+ 
+/* Indicador de carregamento visível também no botão branco */
+.btn--contorno .btn__girando {
+    border-color: rgba(15, 61, 104, .25);
+    border-top-color: var(--azul-escuro);
+}
+ 
+/* Aviso amarelo: "Link expirado" */
+.alerta--atencao { background: #fff4d6; border-color: #f3d58a; color: #7a5200; }
+ 
+/* E-mail comprido dentro do aviso não estoura o cartão */
+.alerta p { overflow-wrap: anywhere; }
+ 
+/* Título do aviso recebe foco ao mudar de estado, sem contorno amarelo */
+.alerta strong:focus { outline: none; }
+ 
+/* E-mail do rodapé não estoura a tela no celular */
+.footer a { overflow-wrap: anywhere; }
+ 

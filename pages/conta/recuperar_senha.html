@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="referrer" content="no-referrer">
+    <title>Recuperar senha • Busca Peça</title>
+    <link rel="stylesheet" href="../../css/style.css">
+ 
+    <script src="../../js/pages/conta/recuperar-senha.js" defer></script>
+</head>
+<body>
+ 
+     <header class="header">
+        <div class="container header__inner">
+            <a href="../busca/main.html" class="logo">
+                <img src="../../assets/img/logo_horizontal_cor.png" alt="Busca Peças">
+            </a>
+            <a href="../busca/main.html" class="btn btn--contorno header__voltar">Voltar ao marketplace</a>
+        </div>
+    </header>
+    
+ 
+    <main class="acesso">
+        <div class="container acesso__inner">
+ 
+            <!-- Painel azul -->
+            <section class="acesso__painel">
+                <span class="etiqueta">Um acesso. Todas as possibilidades.</span>
+                <h2>Seu próximo negócio começa aqui.</h2>
+                <p>Compre peças para a oficina. Crie uma loja e venda seu estoque. Tudo na mesma conta.</p>
+                <hr class="acesso__divisor">
+                <ul class="acesso__lista">
+                    <li>Pedidos organizados por loja</li>
+                    <li>Códigos e aplicações na mesma busca</li>
+                    <li>Conversa direta com compradores e vendedores</li>
+                </ul>
+                <small class="acesso__aviso">Ambiente demonstrativo • lojas, preços e estoques fictícios</small>
+            </section>
+
+            
+            <!-- Formulário (BP1-40 • passos 3 a 7) -->
+            <section class="acesso__card">
+                <h1>Recuperar senha</h1>
+                <p class="acesso__sub">Informe seu e-mail para receber as instruções de redefinição.</p>
+ 
+                <form id="form-recuperar" novalidate>
+ 
+                    <div class="campo">
+                        <label for="email">E-mail</label>
+                        <input type="email" id="email" name="email" autocomplete="email" inputmode="email"
+                               maxlength="150" required aria-describedby="email-erro">
+                        <span class="campo__erro" id="email-erro"></span>
+                    </div>
+ 
+                    <!-- Aviso de sucesso ou erro -->
+                    <div class="alerta" id="alerta" role="status" aria-live="polite" hidden>
+                        <span class="alerta__icone" aria-hidden="true"></span>
+                        <div>
+                            <strong></strong>
+                            <p></p>
+                        </div>
+                    </div>
+ 
+                    <div class="acesso__botoes">
+                        <button type="submit" id="botao-enviar" class="btn btn--verde btn--bloco">
+                            <span class="btn__girando" aria-hidden="true" hidden></span>
+                            <span class="btn__texto">Enviar instruções</span>
+                        </button>
+                        <button type="button" id="botao-reenviar" class="btn btn--contorno btn--bloco" hidden>
+                            <span class="btn__girando" aria-hidden="true" hidden></span>
+                            <span class="btn__texto">Reenviar instruções</span>
+                        </button>
+                    </div>
+                </form>
+ 
+                <p class="acesso__cadastro">
+                    <a href="login.html" class="acesso__link">Voltar para o login</a>
+                </p>
+            </section>
+        </div>
+    </main>
+ 
+    <!-- ===== RODAPÉ ===== -->
+    <footer class="footer">
+        <div class="container footer__inner">
+            <div>
+                <span class="footer__logo"><img src="../../assets/img/logo-rodape.png" alt="Busca Peças"></span>
+                <p>Conectamos quem tem a peça a quem precisa dela.</p>
+            </div>
+            <div>
+                <h4>Institucional</h4>
+                <a href="sobre.html">Sobre o Busca Peça</a>
+                <a href="sobre.html#como-funciona">Como funciona</a>
+                <a href="termos-de-uso.html">Termos de uso</a>
+                <a href="politica-de-privacidade.html">Privacidade</a>
+            </div>
+            <div>
+                <h4>Conte com a gente</h4>
+                <a href="mailto:contato@buscapeca.example.com">contato@buscapeca.example.com</a>
+                <span>Segunda a sexta, das 8h às 18h</span>
+            </div>
+        </div>
+        <p class="footer__copy">Ambiente demonstrativo • lojas, preços e estoques fictícios</p>
+    </footer>
+
+</body>
+</html>

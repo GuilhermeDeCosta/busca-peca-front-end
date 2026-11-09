@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Minha Loja • Busca Peças</title>
+  <meta name="description" content="Seu estoque e seus pedidos em um só lugar.">
+
+  <!-- Bibliotecas por CDN com versão fixa (ADR-014) -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+  <!-- CSS do projeto -->
+  <link rel="stylesheet" href="../../css/variaveis.css">
+  <link rel="stylesheet" href="../../css/base.css">
+  <link rel="stylesheet" href="../../css/componentes.css">
+
+  <!-- Estilos só desta tela. Os valores depois da vírgula em var() são o fallback enquanto variaveis.css não define as cores. -->
+  <style>
+    :root {
+      --bp-azul: var(--cor-primaria-escura, #0f3a64);
+      --bp-verde: var(--cor-primaria, #1e7a45);
+      --bp-verde-escuro: var(--cor-primaria-hover, #17633a);
+      --bp-fundo: var(--cor-fundo, #f3f5f8);
+      --bp-borda: var(--cor-borda, #dfe4ea);
+      --bp-texto-suave: var(--cor-texto-suave, #5b6675);
+      --bp-cabecalho-tabela: #e9eef5;
+      --bp-link: #1f5f99;
+    }
+
+    [x-cloak] { display: none !important; }
+    body { background: var(--bp-fundo); }
+
+    .painel__titulo { color: var(--bp-azul); font-weight: 700; }
+    .painel .card { border: 1px solid var(--bp-borda); border-radius: .75rem; }
+    .painel .card-title { color: var(--bp-azul); font-weight: 700; font-size: 1.25rem; }
+    .painel .form-label { font-weight: 600; font-size: .875rem; }
+    .painel .form-control, .painel .form-select { min-height: 2.75rem; }
+
+    .painel .btn-primary {
+      --bs-btn-bg: var(--bp-verde); --bs-btn-border-color: var(--bp-verde);
+      --bs-btn-hover-bg: var(--bp-verde-escuro); --bs-btn-hover-border-color: var(--bp-verde-escuro);
+      --bs-btn-active-bg: var(--bp-verde-escuro); --bs-btn-disabled-bg: var(--bp-verde);
+      --bs-btn-disabled-border-color: var(--bp-verde);
+      font-weight: 600;
+    }
+    .btn-contorno-azul {
+      --bs-btn-color: var(--bp-azul); --bs-btn-border-color: var(--bp-borda); --bs-btn-bg: #fff;
+      --bs-btn-hover-color: var(--bp-azul); --bs-btn-hover-bg: #f4f7fb; --bs-btn-hover-border-color: #c9d3df;
+      --bs-btn-disabled-color: var(--bp-azul); --bs-btn-disabled-bg: #fff; --bs-btn-disabled-border-color: var(--bp-borda);
+      font-weight: 600;
+    }
+    .btn-perigo-suave {
+      --bs-btn-color: #b42318; --bs-btn-bg: #fdecee; --bs-btn-border-color: #fdecee;
+      --bs-btn-hover-color: #b42318; --bs-btn-hover-bg: #fbdadf; --bs-btn-hover-border-color: #fbdadf;
+      --bs-btn-disabled-color: #b42318; --bs-btn-disabled-bg: #fdecee; --bs-btn-disabled-border-color: #fdecee;
+      font-weight: 600;
+    }
+
+    /* Destaque da loja: banner + faixa azul */
+    .loja-destaque { border-radius: .875rem; overflow: hidden; background: var(--bp-azul); }
+    .loja-destaque__banner { height: clamp(8rem, 18vw, 12.5rem); }
+    .loja-destaque__banner img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .loja-destaque__banner--vazio {
+      background:
+        repeating-linear-gradient(90deg, rgba(255,255,255,.06) 0 2px, transparent 2px 120px),
+        repeating-linear-gradient(0deg, rgba(255,255,255,.05) 0 2px, transparent 2px 48px),
+        linear-gradient(135deg, #1b4f80, #0c2f52);
+      display: grid; place-items: center;
+    }
+    .loja-destaque__nome { color: #fff; font-weight: 700; font-size: clamp(1.5rem, 2.4vw, 2rem); }
+    .loja-destaque__meta { color: #d5e1ee; }
+    .loja-destaque .btn-light { font-weight: 600; color: var(--bp-azul); }
+    .etiqueta-ativa { background: #e6f4ea; color: #17633a; font-size: .75rem; font-weight: 600; padding: .25rem .5rem; border-radius: .375rem; }
+
+    /* Indicadores */
+    .indicador__numero { color: var(--bp-azul); font-weight: 700; font-size: 2rem; line-height: 1.1; }
+    .indicador__rotulo { color: var(--bp-texto-suave); font-size: .875rem; }
+
+    .alerta-estoque { background: #fdf3d8; color: #7a5300; border-radius: .5rem; }
+    .alerta-estoque .btn-link { color: #7a5300; font-weight: 600; }
+
+    /* Tabelas */
+    .tabela-painel { font-size: .875rem; margin-bottom: 0; }
+    .tabela-painel thead th {
+      background: var(--bp-cabecalho-tabela); color: var(--bp-texto-suave);
+      font-weight: 600; font-size: .8125rem; padding: .875rem 1rem; border-bottom: 0; white-space: nowrap;
+    }
+    .tabela-painel td { padding: .875rem 1rem; vertical-align: top; }
+    .tabela-painel .peca-nome { font-weight: 600; color: #1f2933; }
+    .tabela-painel a { color: var(--bp-link); text-decoration: none; }
+    .tabela-painel a:hover { text-decoration: underline; }
+    .tabela-painel .link-acao { background: none; border: 0; padding: 0; color: var(--bp-link); }
+    .tabela-painel .link-acao:hover { text-decoration: underline; }
+    .tabela-painel .link-acao:disabled { color: var(--bp-texto-suave); }
+    .linha-anuncio { cursor: pointer; }
+    .linha-anuncio:focus-within { outline: 2px solid var(--bp-link); outline-offset: -2px; }
+    .linha-anuncio.selecionada > td { background: #eef4fb; }
+    .linha-anuncio.selecionada > td:first-child { box-shadow: inset 3px 0 0 var(--bp-link); }
+    .texto-alerta { color: #9a6700; }
+
+    .aviso { border-radius: .5rem; padding: .875rem 1rem; font-size: .875rem; }
+    .aviso--sucesso { background: #e6f4ea; color: #17633a; }
+    .aviso--erro { background: #fdecea; color: #b42318; }
+    .citacao-conversa { color: var(--bp-texto-suave); }
+
+    .paginacao .page-link { color: var(--bp-azul); }
+    .paginacao .active > .page-link { background: var(--bp-azul); border-color: var(--bp-azul); color: #fff; }
+
+    /* Cabeçalho e rodapé provisórios (substituídos pelos componentes) */
+    .faixa-topo { background: var(--bp-azul); color: #fff; font-size: .75rem; }
+    .faixa-topo a { color: #fff; text-decoration: none; }
+    .marca { color: var(--bp-azul); font-weight: 800; font-style: italic; font-size: 1.25rem; text-decoration: none; }
+    .marca .bi { color: var(--bp-verde); }
+    .menu-principal .nav-link { color: #3a4553; font-size: .875rem; padding: .75rem .75rem; }
+    .menu-principal .nav-link.active { color: var(--bp-verde); font-weight: 700; }
+    .link-anunciar { color: var(--bp-verde); font-weight: 700; font-size: .875rem; text-decoration: none; }
+    .contador-carrinho { background: #e6f4ea; color: #17633a; font-size: .75rem; font-weight: 600; border-radius: .375rem; padding: .125rem .4rem; }
+    .rodape { background: var(--bp-azul); color: #dbe4ee; font-size: .8125rem; }
+    .rodape a { color: #fff; text-decoration: none; }
+
+    @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+  </style>
+</head>
+<body class="d-flex flex-column min-vh-100">
+
+  <!--
+    Cabeçalho: o componente js/components/cabecalho.js preenche este espaço.
+    O conteúdo abaixo é provisório, só para a tela ficar igual ao protótipo.
+  -->
+  <header id="cabecalho">
+    <div class="faixa-topo py-1">
+      <div class="container-fluid px-3 px-lg-4 d-flex justify-content-between">
+        <span>Peças certas. Oficinas em movimento.</span>
+        <span class="d-none d-sm-inline">Campinas, SP • <a href="#">Alterar localização</a></span>
+      </div>
+    </div>
+    <div class="bg-white border-bottom">
+      <div class="container-fluid px-3 px-lg-4 d-flex align-items-center gap-3 py-2">
+        <a href="../../index.html" class="marca text-nowrap"><i class="bi bi-gear-wide-connected"></i> BUSCA PEÇAS</a>
+        <form class="flex-grow-1 d-none d-md-block" role="search" action="../busca/resultados.html">
+          <div class="input-group">
+            <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+            <input class="form-control border-start-0" type="search" name="q" placeholder="Busque por peça, OEM, EAN ou SKU" aria-label="Buscar peças">
+          </div>
+        </form>
+        <div class="ms-auto d-flex align-items-center gap-3">
+          <div class="text-end lh-sm d-none d-lg-block small">
+            <span class="text-secondary">Olá, Ana Martins</span><br><strong>Oficina Horizonte</strong>
+          </div>
+          <a href="../conta/favoritos.html" class="text-body fs-5" aria-label="Favoritos"><i class="bi bi-heart"></i></a>
+          <a href="../compra/carrinho.html" class="text-body fs-5 d-flex align-items-center gap-1" aria-label="Carrinho, 3 itens">
+            <i class="bi bi-cart3"></i><span class="contador-carrinho">3</span>
+          </a>
+        </div>
+      </div>
+      <nav class="container-fluid px-3 px-lg-4 d-flex align-items-center menu-principal overflow-auto" aria-label="Menu principal">
+        <ul class="nav flex-nowrap">
+          <li class="nav-item"><a class="nav-link ps-0" href="../../index.html">Início</a></li>
+          <li class="nav-item"><a class="nav-link" href="../busca/resultados.html">Buscar peças</a></li>
+          <li class="nav-item"><a class="nav-link" href="#">Categorias</a></li>
+          <li class="nav-item"><a class="nav-link" href="../conta/favoritos.html">Favoritos</a></li>
+          <li class="nav-item"><a class="nav-link" href="../compra/minhas-compras.html">Meus pedidos</a></li>
+          <li class="nav-item"><a class="nav-link active" aria-current="page" href="painel.html">Minha Loja</a></li>
+          <li class="nav-item"><a class="nav-link" href="../conta/perfil.html">Meu perfil</a></li>
+        </ul>
+        <a href="form-peca.html" class="link-anunciar ms-auto text-nowrap ps-3">+ Anuncie suas peças</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="painel flex-grow-1 py-4" x-data="painelLoja">
+    <div class="container-fluid px-3 px-lg-4">
+
+      <nav aria-label="Você está em">
+        <ol class="breadcrumb small mb-3">
+          <li class="breadcrumb-item"><a href="../../index.html" class="link-secondary">Início</a></li>
+          <li class="breadcrumb-item active" aria-current="page">Minha Loja</li>
+        </ol>
+      </nav>
+
+      <h1 class="painel__titulo h2 mb-1">Minha Loja</h1>
+      <p class="text-secondary mb-4">Seu estoque e seus pedidos em um só lugar.</p>
+
+      <!-- Erro ao carregar o painel -->
+      <div class="aviso aviso--erro d-flex flex-wrap align-items-center gap-2 mb-4" role="alert" x-show="erroPainel" x-cloak>
+        <span x-text="erroPainel"></span>
+        <button type="button" class="btn btn-sm btn-link text-danger p-0 fw-semibold" @click="carregarPainel()">Tentar de novo</button>
+      </div>
+
+      <!-- Destaque da loja -->
+      <section class="loja-destaque mb-4" aria-labelledby="nome-loja" :aria-busy="carregandoPainel">
+        <div class="loja-destaque__banner" :class="{ 'loja-destaque__banner--vazio': !loja?.bannerUrl }">
+          <template x-if="loja?.bannerUrl">
+            <img :src="loja.bannerUrl" :alt="'Banner da loja ' + loja.nomeLoja">
+          </template>
+          <template x-if="loja && !loja.bannerUrl">
+            <a href="configuracoes.html" class="btn btn-sm btn-outline-light"><i class="bi bi-image me-1" aria-hidden="true"></i>Adicionar banner</a>
+          </template>
+        </div>
+        <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3 p-3 p-md-4">
+          <div>
+            <template x-if="carregandoPainel">
+              <div class="placeholder-glow" aria-hidden="true">
+                <span class="placeholder col-12 rounded mb-2" style="width: 14rem; height: 2rem;"></span><br>
+                <span class="placeholder rounded" style="width: 18rem;"></span>
+              </div>
+            </template>
+            <template x-if="!carregandoPainel && loja">
+              <div>
+                <h2 id="nome-loja" class="loja-destaque__nome mb-1" x-text="loja.nomeLoja"></h2>
+                <p class="loja-destaque__meta mb-2" x-text="localLoja"></p>
+                <span class="etiqueta-ativa" x-text="loja.ativa ? 'Loja ativa' : 'Loja inativa'"></span>
+              </div>
+            </template>
+          </div>
+          <div class="d-flex gap-2 flex-shrink-0">
+            <a href="configuracoes.html" class="btn btn-light px-3">Editar loja</a>
+            <a href="form-peca.html" class="btn btn-primary px-3"><i class="bi bi-plus-lg me-1" aria-hidden="true"></i>Cadastrar peça</a>
+          </div>
+        </div>
+      </section>
+
+      <!-- Indicadores -->
+      <div class="row g-3 mb-4">
+        <template x-for="item in [
+          { valor: indicadores.anunciosAtivos, rotulo: 'Anúncios ativos' },
+          { valor: indicadores.baixoEstoque, rotulo: 'Com baixo estoque' },
+          { valor: indicadores.pedidosRecebidos, rotulo: 'Pedidos recebidos' },
+          { valor: indicadores.aguardandoAceite, rotulo: 'Aguardando aceite' },
+        ]" :key="item.rotulo">
+          <div class="col-6 col-lg-3">
+            <div class="card h-100">
+              <div class="card-body p-3 p-md-4">
+                <div class="indicador__numero mb-2">
+                  <span x-show="!carregandoPainel" x-text="item.valor"></span>
+                  <span x-show="carregandoPainel" class="placeholder-glow"><span class="placeholder rounded" style="width: 2.5rem;"></span></span>
+                </div>
+                <div class="indicador__rotulo" x-text="item.rotulo"></div>
+              </div>
+            </div>
+          </div>
+        </template>
+      </div>
+
+      <!-- Alerta de estoque baixo (BP1-52) -->
+      <div class="alerta-estoque d-flex gap-2 p-3 mb-4" role="status" x-show="!carregandoPainel && alertasEstoque.length" x-cloak>
+        <i class="bi bi-info-circle mt-1" aria-hidden="true"></i>
+        <div class="small">
+          <strong class="d-block" x-text="tituloAlerta"></strong>
+          <span x-text="textoAlerta"></span>
+          <button type="button" class="btn btn-link btn-sm p-0 align-baseline ms-1" @click="filtrarBaixoEstoque()">Ver anúncios</button>
+        </div>
+      </div>
+
+      <!-- Meus anúncios -->
+      <section id="meus-anuncios" class="card mb-4" aria-labelledby="titulo-anuncios">
+        <div class="card-body p-3 p-md-4">
+          <h2 id="titulo-anuncios" class="card-title mb-3">Meus anúncios</h2>
+
+          <form class="row g-3 mb-3" role="search" @submit.prevent="aplicarFiltros()">
+            <div class="col-md-4">
+              <label for="filtro-busca" class="form-label">Buscar no estoque</label>
+              <input id="filtro-busca" type="search" class="form-control" placeholder="Nome, OEM ou SKU"
+                     x-model="filtros.q" @input="aoDigitarBusca()">
+            </div>
+            <div class="col-md-4">
+              <label for="filtro-status" class="form-label">Status do anúncio</label>
+              <select id="filtro-status" class="form-select" x-model="filtros.status" @change="aplicarFiltros()">
+                <option value="">Todos</option>
+                <option value="ATIVO">Ativos</option>
+                <option value="PAUSADO">Pausados</option>
+                <option value="RASCUNHO">Rascunhos</option>
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label for="filtro-estoque" class="form-label">Estoque</label>
+              <select id="filtro-estoque" class="form-select" x-model="filtros.estoque" @change="aplicarFiltros()">
+                <option value="">Todos os níveis</option>
+                <option value="BAIXO">Baixo estoque</option>
+                <option value="ZERADO">Sem estoque</option>
+                <option value="NORMAL">Estoque normal</option>
+              </select>
+            </div>
+          </form>
+
+          <div class="table-responsive" :aria-busy="carregandoAnuncios">
+            <table class="table tabela-painel align-top">
+              <caption class="visually-hidden">Anúncios da loja. Selecione uma linha para pausar, reativar ou excluir.</caption>
+              <thead>
+                <tr>
+                  <th scope="col">Peça / código</th>
+                  <th scope="col">Preço</th>
+                  <th scope="col">Quantidade</th>
+                  <th scope="col">Condição</th>
+                  <th scope="col">Disponibilidade</th>
+                  <th scope="col">Ações</th>
+                </tr>
+              </thead>
+              <tbody>
+                <!-- Carregando -->
+                <template x-if="carregandoAnuncios">
+                  <tr><td colspan="6" class="text-center text-secondary py-4">
+                    <span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>Carregando anúncios…
+                  </td></tr>
+                </template>
+
+                <!-- Erro -->
+                <template x-if="!carregandoAnuncios && erroAnuncios">
+                  <tr><td colspan="6" class="text-center py-4">
+                    <span class="text-danger" x-text="erroAnuncios"></span>
+                    <button type="button" class="btn btn-link btn-sm" @click="carregarAnuncios()">Tentar de novo</button>
+                  </td></tr>
+                </template>
+
+                <!-- Vazio -->
+                <template x-if="!carregandoAnuncios && !erroAnuncios && !anuncios.length">
+                  <tr><td colspan="6" class="text-center py-5">
+                    <template x-if="temFiltro">
+                      <div>
+                        <p class="mb-2">Nenhum anúncio com esses filtros.</p>
+                        <button type="button" class="btn btn-contorno-azul btn-sm" @click="limparFiltros()">Limpar filtros</button>
+                      </div>
+                    </template>
+                    <template x-if="!temFiltro">
+                      <div>
+                        <p class="mb-2">Sua loja ainda não tem anúncios. Cadastre a primeira peça para começar a vender.</p>
+                        <a href="form-peca.html" class="btn btn-primary btn-sm">Cadastrar peça</a>
+                      </div>
+                    </template>
+                  </td></tr>
+                </template>
+
+                <!-- Linhas -->
+                <template x-for="a in (carregandoAnuncios || erroAnuncios ? [] : anuncios)" :key="a.idPeca">
+                  <tr class="linha-anuncio" :class="{ selecionada: selecionado?.idPeca === a.idPeca }"
+                      @click="if (!$event.target.closest('a,button,input')) selecionar(a)">
+                    <td>
+                      <input type="radio" name="anuncio-selecionado" class="visually-hidden"
+                             :id="'sel-' + a.idPeca" :checked="selecionado?.idPeca === a.idPeca"
+                             @click.stop="selecionar(a)"
+                             :aria-label="'Selecionar ' + a.titulo">
+                      <span class="peca-nome" x-text="a.titulo + ' • ' + a.codigoSku"></span>
+                    </td>
+                    <td class="text-nowrap" x-text="formatarMoeda(a.preco)"></td>
+                    <td class="text-nowrap" :class="{ 'texto-alerta': estoqueEmAlerta(a) }" x-text="textoQuantidade(a)"></td>
+                    <td class="text-nowrap" x-text="textoCondicao(a)"></td>
+                    <td class="text-nowrap" x-text="textoDisponibilidade(a)"></td>
+                    <td class="text-nowrap">
+                      <a :href="linkEditar(a)">Editar</a> /
+                      <template x-if="a.status === 'ATIVO'">
+                        <button type="button" class="link-acao" @click="pausar(a)" :disabled="emAcao === a.idPeca">pausar</button>
+                      </template>
+                      <template x-if="a.status === 'PAUSADO'">
+                        <button type="button" class="link-acao" @click="reativar(a)" :disabled="emAcao === a.idPeca">reativar</button>
+                      </template>
+                      <template x-if="a.status === 'RASCUNHO'">
+                        <button type="button" class="link-acao" @click="excluir(a)" :disabled="emAcao === a.idPeca">excluir</button>
+                      </template>
+                    </td>
+                  </tr>
+                </template>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-3" x-show="!carregandoAnuncios && anuncios.length" x-cloak>
+            <p class="small text-secondary mb-0" x-text="resumoLista"></p>
+            <nav aria-label="Páginas de anúncios" x-show="totalPaginas > 1">
+              <ul class="pagination pagination-sm paginacao mb-0">
+                <li class="page-item" :class="{ disabled: pagina === 1 }">
+                  <button type="button" class="page-link" @click="irParaPagina(pagina - 1)" aria-label="Página anterior">&lsaquo;</button>
+                </li>
+                <template x-for="n in totalPaginas" :key="n">
+                  <li class="page-item" :class="{ active: n === pagina }">
+                    <button type="button" class="page-link" @click="irParaPagina(n)" x-text="n" :aria-current="n === pagina ? 'page' : null"></button>
+                  </li>
+                </template>
+                <li class="page-item" :class="{ disabled: pagina === totalPaginas }">
+                  <button type="button" class="page-link" @click="irParaPagina(pagina + 1)" aria-label="Próxima página">&rsaquo;</button>
+                </li>
+              </ul>
+            </nav>
+          </div>
+        </div>
+      </section>
+
+      <!-- Pedidos recebidos -->
+      <section class="card mb-4" aria-labelledby="titulo-pedidos">
+        <div class="card-body p-3 p-md-4">
+          <div class="d-flex justify-content-between align-items-baseline mb-3">
+            <h2 id="titulo-pedidos" class="card-title mb-0">Pedidos recebidos</h2>
+            <a href="pedidos.html" class="small fw-semibold text-decoration-none" style="color: var(--bp-link);">Ver todos</a>
+          </div>
+          <div class="table-responsive" :aria-busy="carregandoPedidos">
+            <table class="table tabela-painel">
+              <thead>
+                <tr>
+                  <th scope="col">Pedido / comprador</th>
+                  <th scope="col">Itens</th>
+                  <th scope="col">Data</th>
+                  <th scope="col">Valor dos itens</th>
+                  <th scope="col">Status</th>
+                  <th scope="col">Atendimento</th>
+                </tr>
+              </thead>
+              <tbody>
+                <template x-if="carregandoPedidos">
+                  <tr><td colspan="6" class="text-center text-secondary py-4">
+                    <span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>Carregando pedidos…
+                  </td></tr>
+                </template>
+                <template x-if="!carregandoPedidos && erroPedidos">
+                  <tr><td colspan="6" class="text-center py-4">
+                    <span class="text-danger" x-text="erroPedidos"></span>
+                    <button type="button" class="btn btn-link btn-sm" @click="carregarPedidos()">Tentar de novo</button>
+                  </td></tr>
+                </template>
+                <template x-if="!carregandoPedidos && !erroPedidos && !pedidos.length">
+                  <tr><td colspan="6" class="text-center text-secondary py-4">Nenhum pedido recebido ainda. Eles aparecem aqui para você aceitar ou recusar.</td></tr>
+                </template>
+                <template x-for="p in (carregandoPedidos || erroPedidos ? [] : pedidos)" :key="p.idPedido">
+                  <tr>
+                    <td class="text-nowrap"><span class="peca-nome" x-text="p.codigo + ' • ' + p.comprador"></span></td>
+                    <td x-text="p.resumoItens"></td>
+                    <td class="text-nowrap" x-text="formatarData(p.data)"></td>
+                    <td class="text-nowrap" x-text="formatarMoeda(p.valorItens)"></td>
+                    <td class="text-nowrap" x-text="textoStatusPedido(p)"></td>
+                    <td class="text-nowrap">
+                      <a :href="linkDetalhePedido(p)">Ver detalhe</a><template x-if="acaoPedido(p)"><span> / <a :href="acaoPedido(p).link" x-text="acaoPedido(p).texto"></a></span></template>
+                    </td>
+                  </tr>
+                </template>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <div class="row g-4">
+        <!-- Gerenciar anúncios -->
+        <div class="col-lg-6">
+          <section class="card h-100" aria-labelledby="titulo-gerenciar">
+            <div class="card-body p-3 p-md-4">
+              <h2 id="titulo-gerenciar" class="card-title mb-2">Gerenciar anúncios</h2>
+              <p class="small text-secondary mb-3" x-text="dicaGerenciar"></p>
+              <div class="d-grid gap-3">
+                <button type="button" class="btn btn-contorno-azul py-2" @click="pausar()" :disabled="!podePausar || emAcao">Pausar anúncio selecionado</button>
+                <button type="button" class="btn btn-contorno-azul py-2" @click="reativar()" :disabled="!podeReativar || emAcao">Reativar anúncio pausado</button>
+                <button type="button" class="btn btn-perigo-suave py-2" @click="excluir()" :disabled="!podeExcluir || emAcao">Excluir rascunho</button>
+              </div>
+              <p class="small text-secondary mt-3 mb-0">Excluir exige confirmação. Pedidos existentes permanecem no histórico.</p>
+
+              <div aria-live="polite" class="mt-3">
+                <div class="aviso d-flex gap-2 align-items-start" x-show="aviso" x-cloak
+                     :class="aviso?.tipo === 'erro' ? 'aviso--erro' : 'aviso--sucesso'">
+                  <i class="bi" :class="aviso?.tipo === 'erro' ? 'bi-exclamation-circle' : 'bi-check-circle'" aria-hidden="true"></i>
+                  <span x-text="aviso?.texto"></span>
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <!-- Conversa com compradores -->
+        <div class="col-lg-6">
+          <section class="card h-100" aria-labelledby="titulo-conversa">
+            <div class="card-body p-3 p-md-4">
+              <h2 id="titulo-conversa" class="card-title mb-3">Conversa com compradores</h2>
+              <template x-if="carregandoPainel">
+                <div class="placeholder-glow" aria-hidden="true">
+                  <span class="placeholder col-6 rounded mb-2"></span>
+                  <span class="placeholder col-9 rounded"></span>
+                </div>
+              </template>
+              <template x-if="!carregandoPainel && ultimaConversa">
+                <div>
+                  <p class="fw-semibold mb-2" x-text="ultimaConversa.comprador + ' • ' + ultimaConversa.codigoPedido"></p>
+                  <p class="citacao-conversa mb-3" x-text="'“' + ultimaConversa.ultimaMensagem + '”'"></p>
+                  <a class="btn btn-primary w-100 py-2" :href="'../conta/conversas.html?id=' + ultimaConversa.idConversa">
+                    <i class="bi bi-chat me-1" aria-hidden="true"></i>Abrir conversa
+                  </a>
+                </div>
+              </template>
+              <template x-if="!carregandoPainel && !ultimaConversa">
+                <p class="text-secondary mb-0">Nenhuma conversa ainda. Quando um comprador perguntar sobre uma peça, a mensagem aparece aqui.</p>
+              </template>
+            </div>
+          </section>
+        </div>
+      </div>
+    </div>
+
+    <!-- Janela de confirmação -->
+    <div x-show="confirmacao.aberta" x-cloak @keydown.escape.window="confirmacao.aberta && fecharConfirmacao()">
+      <div class="modal d-block" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="titulo-confirmacao"
+           @click.self="fecharConfirmacao()">
+        <div class="modal-dialog modal-dialog-centered">
+          <div class="modal-content">
+            <div class="modal-header border-0 pb-0">
+              <h2 id="titulo-confirmacao" class="modal-title h5" x-text="confirmacao.titulo"></h2>
+              <button type="button" class="btn-close" aria-label="Fechar" @click="fecharConfirmacao()"></button>
+            </div>
+            <div class="modal-body" x-text="confirmacao.texto"></div>
+            <div class="modal-footer border-0 pt-0">
+              <button type="button" class="btn btn-contorno-azul" @click="fecharConfirmacao()">Manter</button>
+              <button type="button" id="botao-confirmar" class="btn btn-danger" @click="confirmar()" x-text="confirmacao.botao"></button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-backdrop show"></div>
+    </div>
+  </main>
+
+  <!-- Rodapé: preenchido por js/components/rodape.js (conteúdo provisório) -->
+  <footer id="rodape" class="rodape py-4 mt-4">
+    <div class="container-fluid px-3 px-lg-4">
+      <p class="mb-2">Busca Peça • Peças certas. Oficinas em movimento.</p>
+      <p class="mb-0">
+        <a href="../institucional/sobre.html">Busca Peça</a> •
+        <a href="../institucional/sobre.html">Contato</a> •
+        <a href="../institucional/termos-de-uso.html">Termos de uso</a> •
+        <a href="../institucional/politica-de-privacidade.html">Privacidade</a>
+      </p>
+    </div>
+  </footer>
+
+  <!-- O módulo da página vem ANTES do Alpine, para registrar o componente no alpine:init. -->
+  <script type="module" src="../../js/pages/minha-loja/painel.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

@@ -104,4 +104,139 @@
     const alerta = document.getElementById('alerta');
  
     const REGRA_SENHA = 'Use pelo menos 8 caracteres, incluindo letras e números.';
+    // Token de uso único que veio no link (fica só em memória)
+    const token = new URLSearchParams(window.location.search).get('token');
+ 
+    // ---------- Mostrar / Ocultar senha ----------
+    document.querySelectorAll('.campo__mostrar').forEach(function (botao) {
+        botao.addEventListener('click', function () {
+            const input = document.getElementById(botao.dataset.alvo);
+            const mostrar = input.type === 'password';
+            input.type = mostrar ? 'text' : 'password';
+            botao.textContent = mostrar ? 'Ocultar' : 'Mostrar';
+            botao.setAttribute('aria-pressed', String(mostrar));
+        });
+    });
+ 
+    // ---------- Resultado: senha atualizada ou link expirado ----------
+    function mostrarResultado(tipo) {
+        blocoForm.hidden = true;
+        campoNova.value = '';
+        campoConfirma.value = '';
+ 
+        if (tipo === 'sucesso') {
+            mostrarAlerta(alertaResultado, 'sucesso', 'Senha atualizada',
+                'Sua senha foi alterada. Entre novamente com a nova senha.');
+            botaoResultado.textContent = 'Ir para o login';
+            botaoResultado.href = 'login.html';
+            botaoResultado.className = 'btn btn--verde btn--bloco';
+        } else {
+            mostrarAlerta(alertaResultado, 'atencao', 'Link expirado',
+                'Este link já foi usado ou passou de 30 minutos. Solicite um novo e-mail de recuperação.');
+            botaoResultado.textContent = 'Solicitar novo link';
+            botaoResultado.href = 'recuperar-senha.html';
+            botaoResultado.className = 'btn btn--contorno btn--bloco';
+        }
+ 
+        blocoResultado.hidden = false;
+        alertaResultado.querySelector('strong').focus();
+    }
+ 
+    // Link sem token: não tem o que validar
+    if (!token) {
+        mostrarResultado('expirado');
+        return;
+    }
+ 
+    // ---------- Validação (a API confere tudo de novo) ----------
+    function senhaValida(valor) {
+        return valor.length >= 8 && /[A-Za-zÀ-ÿ]/.test(valor) && /\d/.test(valor);
+    }
+ 
+    function validar() {
+        const nova = campoNova.value;
+        const confirma = campoConfirma.value;
+        let primeiroErro = null;
+ 
+        if (!nova) {
+            marcarErro('nova_senha', 'Informe a nova senha.');
+            primeiroErro = campoNova;
+        } else if (!senhaValida(nova)) {
+            marcarErro('nova_senha', REGRA_SENHA);
+            ajudaSenha.hidden = true; // a regra vira o erro, sem repetir o texto
+            primeiroErro = campoNova;
+        }
+ 
+        if (!confirma) {
+            marcarErro('confirmar_senha', 'Confirme a nova senha.');
+            primeiroErro = primeiroErro || campoConfirma;
+        } else if (nova && confirma !== nova) {
+            marcarErro('confirmar_senha', 'Digite a mesma senha nos dois campos.');
+            mostrarAlerta(alerta, 'erro', 'As senhas não conferem',
+                'As senhas informadas são diferentes. Digite novamente.');
+            primeiroErro = primeiroErro || campoConfirma;
+        }
+ 
+        if (primeiroErro) primeiroErro.focus();
+        return !primeiroErro;
+    }
+ 
+    // A API recusou o token (inválido, já usado ou vencido)?
+    function tokenRecusado(resposta) {
+        const d = resposta.dados;
+        return resposta.status === 404 || resposta.status === 410
+            || /TOKEN|LINK/i.test(d.erro || '')
+            || (d.campos || []).some(c => c.campo === 'token');
+    }
+ 
+    form.addEventListener('submit', async function (evento) {
+        evento.preventDefault();
+        limparErro('nova_senha');
+        limparErro('confirmar_senha');
+        esconderAlerta(alerta);
+ 
+        if (!validar()) return;
+ 
+        carregando(botaoSalvar, true, 'Salvando…');
+        const resposta = await postar('/auth/redefinir-senha', {
+            token: token,
+            novaSenha: campoNova.value,
+            confirmacaoSenha: campoConfirma.value
+        });
+        carregando(botaoSalvar, false);
+ 
+        // Passos 12 a 14: a API salva o novo hash e invalida o token
+        if (resposta.ok) {
+            mostrarResultado('sucesso');
+            return;
+        }
+ 
+        if (tokenRecusado(resposta)) {
+            mostrarResultado('expirado');
+            return;
+        }
+ 
+        // 400: erros nos campos vindos da API
+        if (resposta.status === 400 && resposta.dados.campos && resposta.dados.campos.length) {
+            const mapa = { novaSenha: 'nova_senha', confirmacaoSenha: 'confirmar_senha' };
+            resposta.dados.campos.forEach(function (c) {
+                if (mapa[c.campo]) marcarErro(mapa[c.campo], c.mensagem);
+            });
+            return;
+        }
+ 
+        const mensagem = resposta.status >= 400 && resposta.status < 500 && resposta.dados.mensagem
+            ? resposta.dados.mensagem
+            : 'Não foi possível concluir. Tente novamente.';
+        mostrarAlerta(alerta, 'erro', 'Não foi possível salvar', mensagem);
+    });
+ 
+    [campoNova, campoConfirma].forEach(function (campo) {
+        campo.addEventListener('input', function () {
+            limparErro(campo.id);
+            esconderAlerta(alerta);
+            if (campo === campoNova) ajudaSenha.hidden = false;
+        });
+    });
+})();
  

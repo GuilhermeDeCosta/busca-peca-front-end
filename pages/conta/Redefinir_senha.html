@@ -68,6 +68,39 @@
                             <span class="campo__erro" id="confirmar_senha-erro"></span>
                         </div>
  
+                        <!-- Aviso de erro (senhas não conferem / falha ao salvar) -->
+                        <div class="alerta" id="alerta" role="status" aria-live="polite" hidden>
+                            <span class="alerta__icone" aria-hidden="true"></span>
+                            <div>
+                                <strong></strong>
+                                <p></p>
+                            </div>
+                        </div>
+ 
+                        <div class="acesso__botoes">
+                            <button type="submit" id="botao-salvar" class="btn btn--verde btn--bloco">
+                                <span class="btn__girando" aria-hidden="true" hidden></span>
+                                <span class="btn__texto">Salvar nova senha</span>
+                            </button>
+                            <a href="login.html" class="btn btn--contorno btn--bloco">Voltar para o login</a>
+                        </div>
+                    </form>
+                </div>
+ 
+                <!-- Resultado: senha atualizada ou link expirado -->
+                <div id="bloco-resultado" hidden>
+                    <div class="alerta" id="alerta-resultado" role="status" aria-live="polite" hidden>
+                        <span class="alerta__icone" aria-hidden="true"></span>
+                        <div>
+                            <strong tabindex="-1"></strong>
+                            <p></p>
+                        </div>
+                    </div>
+                    <a href="login.html" id="botao-resultado" class="btn btn--verde btn--bloco">Ir para o login</a>
+                </div>
+            </section>
+        </div>
+    </main>
  
 </body>
 </html>

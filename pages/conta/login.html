@@ -5,9 +5,192 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login</title>
 
-     <link rel="stylesheet" href="../../css/style.css">
+     <link rel="stylesheet" href="../../css/base.css">
+     <link rel="stylesheet" href="../../css/componentes.css">
+     <link rel="stylesheet" href="../../css/variaveis.css">
 
     <script src="../../js/pages/conta/login.js" defer></script>
+    
+    <style>
+.btn--bloco {
+    display: block;
+    width: 100%;
+    min-height: 44px;
+    padding: 12px 18px;
+    font-size: 15px;
+}
+.btn:disabled { opacity: .7; cursor: wait; }
+
+.acesso { padding: 48px 0 56px; }
+ 
+.acesso__inner {
+    display: grid;
+    grid-template-columns: 1.15fr 1fr;
+    gap: 32px;
+    align-items: start;
+}
+ 
+/* ----- Painel azul ----- */
+.acesso__painel {
+    background: var(--azul-escuro);
+    color: var(--branco);
+    border-radius: 12px;
+    padding: 40px;
+}
+.acesso__painel h2 {
+    font-size: 36px;
+    line-height: 1.15;
+    margin-bottom: 16px;
+}
+.acesso__painel p { color: #cfe0f1; max-width: 460px; }
+ 
+.acesso__divisor {
+    border: none;
+    border-top: 1px solid rgba(255, 255, 255, .25);
+    margin: 24px 0;
+}
+ 
+.acesso__lista {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    font-size: 14px;
+    margin-bottom: 20px;
+}
+.acesso__lista li::before {
+    content: "✓";
+    color: #8fd19e;
+    font-weight: 700;
+    margin-right: 8px;
+}
+ 
+.acesso__aviso { display: block; color: #a9c3dc; font-size: 12px; }
+
+/* ----- Cartão do formulário ----- */
+.acesso__card {
+    background: var(--branco);
+    border: 1px solid var(--cinza-borda);
+    border-radius: 12px;
+    padding: 28px;
+}
+.acesso__card h1 {
+    font-size: 28px;
+    color: var(--azul-escuro);
+    line-height: 1.2;
+    margin-bottom: 6px;
+}
+.acesso__sub { color: var(--texto-suave); font-size: 14px; margin-bottom: 20px; }
+ 
+/* Campo = label + input + mensagem de erro */
+.campo {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 16px;
+}
+.campo label { font-size: 13px; font-weight: 600; }
+.campo input {
+    width: 100%;
+    min-height: 44px;
+    padding: 10px 12px;
+    border: 1px solid var(--cinza-borda);
+    border-radius: var(--raio);
+    font-size: 15px;
+    font-family: inherit;
+    color: var(--texto);
+}
+.campo input:focus { border-color: var(--azul-medio); }
+ 
+.campo__erro { font-size: 12px; color: #b42318; min-height: 0; }
+.campo__erro:empty { display: none; }
+.campo--erro input { border-color: #b42318; background: #fffafa; }
+ 
+
+/* Senha com botão Mostrar/Ocultar dentro do campo */
+.campo__senha { position: relative; }
+.campo__senha input { padding-right: 84px; }
+.campo__mostrar {
+    position: absolute;
+    top: 50%;
+    right: 6px;
+    transform: translateY(-50%);
+    min-height: 32px;
+    padding: 0 10px;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--azul-escuro);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+}
+.campo__mostrar:hover { background: var(--cinza-fundo); }
+.campo__mostrar:focus-visible { outline: 3px solid #f2b705; outline-offset: 1px; }
+ 
+/* Linha "Manter conectado" + "Esqueci minha senha" */
+.acesso__opcoes {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin: 4px 0 20px;
+    font-size: 14px;
+}
+.checkbox { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+.checkbox input { width: 18px; height: 18px; accent-color: var(--verde); }
+ 
+.acesso__link { color: var(--azul-escuro); font-weight: 600; }
+.acesso__link:hover { text-decoration: underline; }
+ 
+.acesso__cadastro { text-align: center; font-size: 14px; margin-top: 20px; color: var(--texto-suave); }
+
+
+/* ----- Avisos de erro e sucesso ----- */
+.alerta {
+    display: flex;
+    gap: 10px;
+    padding: 12px 14px;
+    border-radius: var(--raio);
+    border: 1px solid transparent;
+    font-size: 14px;
+    margin-bottom: 18px;
+}
+.alerta[hidden] { display: none; }   /* sem isto o display:flex ignora o hidden */
+.alerta p { font-size: 13px; }
+.alerta__icone {
+    flex-shrink: 0;
+    width: 20px;
+    height: 20px;
+    border: 1.5px solid currentColor;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    font-size: 12px;
+    font-weight: 700;
+}
+.alerta--erro { background: #fdecee; border-color: #f5c2c7; color: #b42318; }
+.alerta--sucesso { background: #e5f2e9; border-color: #b9dfc4; color: var(--verde); }
+ 
+/* ----- Responsivo ----- */
+@media (max-width: 900px) {
+    .acesso__inner { grid-template-columns: 1fr; }
+    .acesso__card { order: -1; }          /* formulário aparece primeiro */
+    .acesso__painel { padding: 28px; }
+    .acesso__painel h2 { font-size: 28px; }
+}
+ 
+@media (max-width: 560px) {
+    .acesso { padding: 24px 0 40px; }
+    .acesso__card { padding: 20px; }
+    .acesso__card h1 { font-size: 24px; }
+    .header__voltar { padding: 8px 12px; font-size: 13px; }
+    .header__inner { flex-wrap: nowrap; }
+    .logo img { width: 150px; height: auto; }
+}
+ 
+    </style>
 </head>
 <body>
  <header class="header">
@@ -84,7 +267,7 @@
                             <input type="checkbox" name="manterConectado" id="manter-conectado" checked>
                             Manter conectado
                         </label>
-                        <a href="recuperar-senha.html" class="acesso__link">Esqueci minha senha</a>
+                        <a href="recuperar_senha.html" class="acesso__link">Esqueci minha senha</a>
                     </div>
  
                     <button type="submit" class="btn btn--verde btn--bloco" id="btn-entrar">Entrar</button>

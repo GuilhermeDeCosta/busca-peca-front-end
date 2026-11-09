@@ -20,6 +20,53 @@
             <a href="../busca/main.html" class="btn btn--contorno header__voltar">Voltar ao marketplace</a>
         </div>
     </header>
+    
+    <main class="acesso">
+        <div class="container acesso__inner">
+ 
+            <!-- Painel azul -->
+            <section class="acesso__painel">
+                <span class="etiqueta">Um acesso. Todas as possibilidades.</span>
+                <h2>Seu próximo negócio começa aqui.</h2>
+                <p>Compre peças para a oficina. Crie uma loja e venda seu estoque. Tudo na mesma conta.</p>
+                <hr class="acesso__divisor">
+                <ul class="acesso__lista">
+                    <li>Pedidos organizados por loja</li>
+                    <li>Códigos e aplicações na mesma busca</li>
+                    <li>Conversa direta com compradores e vendedores</li>
+                </ul>
+                <small class="acesso__aviso">Ambiente demonstrativo • lojas, preços e estoques fictícios</small>
+            </section>
+ 
+            <!-- Formulário (BP1-40 • passos 8 a 15) • aberto pelo link do e-mail: redefinir-senha.html?token=... -->
+            <section class="acesso__card">
+                <h1>Crie uma nova senha</h1>
+ 
+                <div id="bloco-form">
+                    <p class="acesso__sub">Link aberto a partir do e-mail de recuperação. Ele vale por 30 minutos.</p>
+ 
+                    <form id="form-redefinir" novalidate>
+ 
+                        <div class="campo">
+                            <label for="nova_senha">Nova senha</label>
+                            <div class="campo__senha">
+                                <input type="password" id="nova_senha" name="nova_senha" autocomplete="new-password"
+                                       minlength="8" maxlength="72" required aria-describedby="nova_senha-ajuda nova_senha-erro">
+                                <button type="button" class="campo__mostrar" data-alvo="nova_senha" aria-pressed="false">Mostrar</button>
+                            </div>
+                            <span class="campo__ajuda" id="nova_senha-ajuda">Use pelo menos 8 caracteres, incluindo letras e números.</span>
+                            <span class="campo__erro" id="nova_senha-erro"></span>
+                        </div>
+ 
+                        <div class="campo">
+                            <label for="confirmar_senha">Confirmar nova senha</label>
+                            <div class="campo__senha">
+                                <input type="password" id="confirmar_senha" name="confirmar_senha"
+                                       autocomplete="new-password" maxlength="72" required aria-describedby="confirmar_senha-erro">
+                                <button type="button" class="campo__mostrar" data-alvo="confirmar_senha" aria-pressed="false">Mostrar</button>
+                            </div>
+                            <span class="campo__erro" id="confirmar_senha-erro"></span>
+                        </div>
  
  
 </body>

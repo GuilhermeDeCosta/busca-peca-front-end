@@ -58,6 +58,56 @@
     .btn-texto-azul { color: var(--bp-azul); font-weight: 600; text-decoration: none; }
     .btn-texto-azul:hover { color: var(--bp-azul); text-decoration: underline; }
 
+    /* Etapas */
+    .etapa {
+      border: 0; background: #e9eef5; color: var(--bp-texto-suave);
+      font-size: .8125rem; font-weight: 600; padding: .3rem .6rem; border-radius: .375rem;
+    }
+    .etapa:hover { background: #dde5ef; }
+    .etapa.atual { background: #e6f4ea; color: #17633a; }
+    .etapa .bi { font-size: .75rem; }
+
+    /* Avisos */
+    .aviso { border-radius: .5rem; padding: .875rem 1rem; font-size: .875rem; }
+    .aviso--sucesso { background: #e6f4ea; color: #17633a; }
+    .aviso--erro { background: #fdecea; color: #b42318; }
+    .aviso--atencao { background: #fdf3d8; color: #7a5300; }
+
+    /* Compatibilidade */
+    .tabela-form { font-size: .875rem; margin-bottom: 0; }
+    .tabela-form thead th {
+      background: var(--bp-cabecalho-tabela); color: var(--bp-texto-suave);
+      font-weight: 600; font-size: .8125rem; padding: .875rem 1rem; border-bottom: 0;
+    }
+    .tabela-form td { padding: .875rem 1rem; }
+    .tabela-form .texto-versao { color: var(--bp-link); }
+
+    /* Fotos */
+    .fotos-grade { display: grid; grid-template-columns: repeat(auto-fill, minmax(8.5rem, 1fr)); gap: .75rem; }
+    @media (min-width: 992px) { .fotos-grade { grid-template-columns: repeat(auto-fill, 8.75rem); } }
+    .foto-item { border: 1px solid var(--bp-borda); background: #f6f8fa; border-radius: .5rem; padding: .5rem; }
+    .foto-item.capa { border-color: var(--bp-verde); background: #fff; }
+    .foto-item img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: .375rem; display: block; background: #e9eef5; }
+    .foto-item__rotulo { font-size: .75rem; font-weight: 600; margin: .5rem 0; }
+    .foto-item .btn { font-size: .875rem; }
+    .area-envio {
+      border: 1.5px dashed #cfd7e1; border-radius: .5rem; background: #f6f8fa;
+      padding: 1.75rem 1rem; text-align: center; transition: background .15s, border-color .15s;
+    }
+    .area-envio.arrastando { background: #e6f4ea; border-color: var(--bp-verde); }
+    .area-envio.cheia { opacity: .75; }
+
+    /* Prévia */
+    .previa-titulo-secao { color: var(--bp-azul); font-weight: 700; font-size: 1.25rem; }
+    .previa__etiqueta { background: #e9eef5; color: #3a4553; font-size: .75rem; font-weight: 600; padding: .25rem .5rem; border-radius: .375rem; }
+    .previa__imagem { aspect-ratio: 16 / 9.4; border-radius: .5rem; background: #e9eef5; overflow: hidden; display: grid; place-items: center; color: #9aa6b4; }
+    .previa__imagem img { width: 100%; height: 100%; object-fit: cover; }
+    .previa__nome { color: var(--bp-azul); font-weight: 700; min-height: 3rem; }
+    .previa__preco { color: var(--bp-azul); font-size: 1.75rem; }
+    .previa__estoque { color: #17633a; font-size: .8125rem; }
+    .lista-checagem li { display: flex; gap: .5rem; font-size: .875rem; margin-bottom: .75rem; }
+    .lista-checagem .ok { color: var(--bp-verde); }
+    .lista-checagem .pendente { color: #9aa6b4; }
 
     /* Cabeçalho e rodapé provisórios (substituídos pelos componentes) */
     .faixa-topo { background: var(--bp-azul); color: #fff; font-size: .75rem; }
@@ -609,6 +659,26 @@
       </div>
     </div>
 
+    <!-- Janela de confirmação -->
+    <div x-show="confirmacao.aberta" x-cloak @keydown.escape.window="confirmacao.aberta && fecharConfirmacao()">
+      <div class="modal d-block" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="titulo-confirmacao"
+           @click.self="fecharConfirmacao()">
+        <div class="modal-dialog modal-dialog-centered">
+          <div class="modal-content">
+            <div class="modal-header border-0 pb-0">
+              <h2 id="titulo-confirmacao" class="modal-title h5" x-text="confirmacao.titulo"></h2>
+              <button type="button" class="btn-close" aria-label="Fechar" @click="fecharConfirmacao()"></button>
+            </div>
+            <div class="modal-body" x-text="confirmacao.texto"></div>
+            <div class="modal-footer border-0 pt-0">
+              <button type="button" class="btn btn-contorno-azul" @click="fecharConfirmacao()">Continuar editando</button>
+              <button type="button" id="botao-confirmar" class="btn btn-danger" @click="confirmar()" x-text="confirmacao.botao"></button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-backdrop show"></div>
+    </div>
   </main>
 
   <!-- Rodapé: preenchido por js/components/rodape.js (conteúdo provisório) -->

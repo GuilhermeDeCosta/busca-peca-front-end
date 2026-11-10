@@ -1,0 +1,60 @@
+/* =======================================
+Variaveis onde estará tudo o que precisa mudar no site
+por exemplo: 
+cores, fontes e espaçamentos da marca
+========================================== */
+
+
+/* =========================================================
+   VARIÁVEIS (cores e medidas usadas no site todo)
+   Mude aqui e o site inteiro muda junto.
+   ========================================================= */
+:root {
+    --azul-escuro: #0f3d68;
+    --azul-medio: #1a5a91;
+    --verde: #1f7a3a;
+    --verde-hover: #186130;
+    --cinza-fundo: #f3f5f8;
+    --cinza-borda: #dfe4ea;
+    --texto: #1d2733;
+    --texto-suave: #5b6878;
+    --branco: #ffffff;
+    --raio: 8px;
+    --largura: 1180px;
+}
+
+
+/* =========================================================
+   RESET BÁSICO
+   ATENÇÃO: regras CSS NÃO levam ";" depois da "}"
+   ========================================================= */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: "Segoe UI", Arial, sans-serif;
+    font-size: 16px;
+    color: var(--texto);
+    background: var(--cinza-fundo);
+    line-height: 1.5;
+}
+
+a {
+    color: inherit;
+    text-decoration: none;
+}
+
+img {
+    max-width: 100%;
+    display: block;
+}
+
+/* Centraliza o conteúdo e limita a largura */
+.container {
+    max-width: var(--largura);
+    margin: 0 auto;
+    padding: 0 20px;
+}

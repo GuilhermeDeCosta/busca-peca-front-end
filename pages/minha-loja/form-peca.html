@@ -510,11 +510,102 @@
               </div>
             </section>
 
+            <!-- Aviso geral (validação ou erro da API) -->
+            <div id="aviso-geral" class="aviso aviso--erro d-flex gap-2 mb-3" role="alert" tabindex="-1"
+                 x-show="avisoGeral?.tipo === 'erro'" x-cloak>
+              <i class="bi bi-exclamation-circle" aria-hidden="true"></i>
+              <span x-text="avisoGeral?.texto"></span>
+            </div>
 
+            <!-- Ações -->
+            <div class="d-flex flex-wrap gap-3" x-show="!publicado">
+              <button type="button" class="btn btn-contorno-azul px-3" @click="salvar(false)" :disabled="Boolean(salvando)">
+                <span x-show="salvando === 'rascunho'" x-cloak class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>
+                <span x-text="salvando === 'rascunho' ? 'Salvando…' : 'Salvar rascunho'">Salvar rascunho</span>
+              </button>
+              <button type="submit" class="btn btn-primary px-3" :disabled="Boolean(salvando)">
+                <span x-show="salvando === 'publicar'" x-cloak class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>
+                <span x-text="salvando === 'publicar' ? 'Publicando…' : (statusSalvo && statusSalvo !== 'RASCUNHO' ? 'Salvar alterações' : 'Publicar anúncio')">Publicar anúncio</span>
+              </button>
+              <button type="button" class="btn btn-light bg-white border-0 btn-texto-azul px-3" @click="cancelar()" :disabled="Boolean(salvando)">Cancelar</button>
+            </div>
+
+            <!-- Resultado da publicação -->
+            <div id="resultado-publicacao" class="card" tabindex="-1" x-show="publicado" x-cloak aria-live="polite">
+              <div class="card-body p-3 p-md-4">
+                <div class="aviso aviso--sucesso d-flex gap-2 mb-3">
+                  <i class="bi bi-check-circle" aria-hidden="true"></i>
+                  <div>
+                    <strong class="d-block" x-text="statusSalvo === 'ATIVO' ? 'Anúncio publicado' : 'Anúncio salvo como pausado'"></strong>
+                    <span x-text="statusSalvo === 'ATIVO'
+                      ? form.titulo + ' já aparece nas buscas.'
+                      : form.titulo + ' foi salvo, mas só aparece nas buscas depois que você reativar.'"></span>
+                  </div>
+                </div>
+                <div class="d-flex flex-wrap gap-2">
+                  <a href="painel.html" class="btn btn-primary px-3">Ir para Minha Loja</a>
+                  <a href="form-peca.html" class="btn btn-contorno-azul px-3">Cadastrar outra peça</a>
+                </div>
+              </div>
+            </div>
           </form>
         </div>
 
+        <!-- Coluna lateral -->
+        <aside class="col-lg-4 col-xl-3">
+          <div class="sticky-lg-top d-flex flex-column gap-3" style="top: 1rem; z-index: 1;">
+            <h2 class="previa-titulo-secao mb-0">Prévia do anúncio</h2>
 
+            <div class="card" aria-label="Prévia de como o anúncio aparece para os compradores">
+              <div class="card-body p-3">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                  <span class="previa__etiqueta" x-text="etiquetaPrevia"></span>
+                  <i class="bi bi-heart fs-5 text-secondary" aria-hidden="true"></i>
+                </div>
+                <div class="previa__imagem mb-3">
+                  <template x-if="capaUrl"><img :src="capaUrl" alt="Capa do anúncio"></template>
+                  <template x-if="!capaUrl">
+                    <div class="text-center small"><i class="bi bi-image fs-2 d-block" aria-hidden="true"></i>A capa aparece aqui</div>
+                  </template>
+                </div>
+                <h3 class="previa__nome h6" x-text="form.titulo || 'Título do anúncio'"></h3>
+                <p class="small text-secondary mb-1" x-text="codigosPrevia" x-show="codigosPrevia"></p>
+                <p class="previa__preco mb-1" x-text="precoPrevia"></p>
+                <p class="small mb-1"><span x-text="loja?.nomeLoja"></span> <span x-text="notaLoja"></span></p>
+                <p class="small text-secondary mb-1" x-text="loja ? loja.cidade + '/' + loja.estado : ''"></p>
+                <p class="previa__estoque mb-2" x-text="estoquePrevia" x-show="estoquePrevia"></p>
+                <hr class="my-2">
+                <button type="button" class="btn btn-primary w-100" disabled aria-disabled="true" title="Só na página publicada">
+                  <i class="bi bi-cart3 me-1" aria-hidden="true"></i>Adicionar ao carrinho
+                </button>
+                <a :href="idPeca && statusSalvo === 'ATIVO' ? '../busca/peca.html?id=' + idPeca : null"
+                   class="btn btn-link btn-texto-azul w-100 mt-1" :class="{ disabled: !(idPeca && statusSalvo === 'ATIVO') }"
+                   :aria-disabled="!(idPeca && statusSalvo === 'ATIVO')">Ver detalhes</a>
+              </div>
+            </div>
+
+            <section class="card" aria-labelledby="titulo-checagem">
+              <div class="card-body p-3 p-md-4">
+                <h2 id="titulo-checagem" class="card-title mb-3">Antes de publicar</h2>
+                <ul class="list-unstyled lista-checagem mb-0">
+                  <template x-for="item in checklist" :key="item.texto">
+                    <li>
+                      <i class="bi" :class="item.ok ? 'bi-check2 ok' : 'bi-circle pendente'" aria-hidden="true"></i>
+                      <span x-text="item.texto"></span>
+                      <span class="visually-hidden" x-text="item.ok ? '(concluído)' : '(pendente)'"></span>
+                    </li>
+                  </template>
+                </ul>
+              </div>
+            </section>
+
+            <div class="aviso aviso--sucesso d-flex gap-2 align-items-center" role="status" x-show="salvoEm && !sujo" x-cloak>
+              <i class="bi bi-check-circle" aria-hidden="true"></i>
+              <span x-text="textoSalvoEm"></span>
+            </div>
+            <div class="small text-secondary" x-show="salvoEm && sujo" x-cloak>Há alterações não salvas.</div>
+          </div>
+        </aside>
       </div>
     </div>
 

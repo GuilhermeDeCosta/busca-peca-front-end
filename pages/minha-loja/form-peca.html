@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cadastrar peça • Busca Peças</title>
+  <meta name="description" content="Cadastre uma peça na sua loja do Busca Peças.">
+
+  <!-- Bibliotecas por CDN com versão fixa (ADR-014) -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+  <!-- CSS do projeto -->
+  <link rel="stylesheet" href="../../css/variaveis.css">
+  <link rel="stylesheet" href="../../css/base.css">
+  <link rel="stylesheet" href="../../css/componentes.css">
+
+  <!-- Estilos só desta tela. Os valores depois da vírgula em var() são o fallback enquanto variaveis.css não define as cores. -->
+  <style>
+    :root {
+      --bp-azul: var(--cor-primaria-escura, #0f3a64);
+      --bp-verde: var(--cor-primaria, #1e7a45);
+      --bp-verde-escuro: var(--cor-primaria-hover, #17633a);
+      --bp-fundo: var(--cor-fundo, #f3f5f8);
+      --bp-borda: var(--cor-borda, #dfe4ea);
+      --bp-texto-suave: var(--cor-texto-suave, #5b6675);
+      --bp-cabecalho-tabela: #e9eef5;
+      --bp-link: #1f5f99;
+    }
+
+    [x-cloak] { display: none !important; }
+    html { scroll-padding-top: 1rem; }
+    body { background: var(--bp-fundo); }
+
+    .form-peca__titulo { color: var(--bp-azul); font-weight: 700; }
+    .form-peca .card { border: 1px solid var(--bp-borda); border-radius: .75rem; }
+    .form-peca .card-title { color: var(--bp-azul); font-weight: 700; font-size: 1.25rem; }
+    .form-peca .form-label { font-weight: 600; font-size: .875rem; margin-bottom: .375rem; }
+    .form-peca .form-control, .form-peca .form-select { min-height: 2.75rem; }
+    .form-peca .form-control:focus, .form-peca .form-select:focus {
+      border-color: var(--bp-verde); box-shadow: 0 0 0 .2rem rgba(30, 122, 69, .18);
+    }
+    .form-peca .form-check-input:checked { background-color: var(--bp-azul); border-color: var(--bp-azul); }
+
+    .form-peca .btn-primary {
+      --bs-btn-bg: var(--bp-verde); --bs-btn-border-color: var(--bp-verde);
+      --bs-btn-hover-bg: var(--bp-verde-escuro); --bs-btn-hover-border-color: var(--bp-verde-escuro);
+      --bs-btn-active-bg: var(--bp-verde-escuro); --bs-btn-disabled-bg: var(--bp-verde);
+      --bs-btn-disabled-border-color: var(--bp-verde);
+      font-weight: 600;
+    }
+    .btn-contorno-azul {
+      --bs-btn-color: var(--bp-azul); --bs-btn-border-color: var(--bp-borda); --bs-btn-bg: #fff;
+      --bs-btn-hover-color: var(--bp-azul); --bs-btn-hover-bg: #f4f7fb; --bs-btn-hover-border-color: #c9d3df;
+      --bs-btn-disabled-color: var(--bp-azul); --bs-btn-disabled-bg: #fff; --bs-btn-disabled-border-color: var(--bp-borda);
+      font-weight: 600;
+    }
+    .btn-texto-azul { color: var(--bp-azul); font-weight: 600; text-decoration: none; }
+    .btn-texto-azul:hover { color: var(--bp-azul); text-decoration: underline; }
+
+    /* Etapas */
+    .etapa {
+      border: 0; background: #e9eef5; color: var(--bp-texto-suave);
+      font-size: .8125rem; font-weight: 600; padding: .3rem .6rem; border-radius: .375rem;
+    }
+    .etapa:hover { background: #dde5ef; }
+    .etapa.atual { background: #e6f4ea; color: #17633a; }
+    .etapa .bi { font-size: .75rem; }
+
+    /* Avisos */
+    .aviso { border-radius: .5rem; padding: .875rem 1rem; font-size: .875rem; }
+    .aviso--sucesso { background: #e6f4ea; color: #17633a; }
+    .aviso--erro { background: #fdecea; color: #b42318; }
+    .aviso--atencao { background: #fdf3d8; color: #7a5300; }
+
+    /* Compatibilidade */
+    .tabela-form { font-size: .875rem; margin-bottom: 0; }
+    .tabela-form thead th {
+      background: var(--bp-cabecalho-tabela); color: var(--bp-texto-suave);
+      font-weight: 600; font-size: .8125rem; padding: .875rem 1rem; border-bottom: 0;
+    }
+    .tabela-form td { padding: .875rem 1rem; }
+    .tabela-form .texto-versao { color: var(--bp-link); }
+
+    /* Fotos */
+    .fotos-grade { display: grid; grid-template-columns: repeat(auto-fill, minmax(8.5rem, 1fr)); gap: .75rem; }
+    @media (min-width: 992px) { .fotos-grade { grid-template-columns: repeat(auto-fill, 8.75rem); } }
+    .foto-item { border: 1px solid var(--bp-borda); background: #f6f8fa; border-radius: .5rem; padding: .5rem; }
+    .foto-item.capa { border-color: var(--bp-verde); background: #fff; }
+    .foto-item img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: .375rem; display: block; background: #e9eef5; }
+    .foto-item__rotulo { font-size: .75rem; font-weight: 600; margin: .5rem 0; }
+    .foto-item .btn { font-size: .875rem; }
+    .area-envio {
+      border: 1.5px dashed #cfd7e1; border-radius: .5rem; background: #f6f8fa;
+      padding: 1.75rem 1rem; text-align: center; transition: background .15s, border-color .15s;
+    }
+    .area-envio.arrastando { background: #e6f4ea; border-color: var(--bp-verde); }
+    .area-envio.cheia { opacity: .75; }
+
+    /* Prévia */
+    .previa-titulo-secao { color: var(--bp-azul); font-weight: 700; font-size: 1.25rem; }
+    .previa__etiqueta { background: #e9eef5; color: #3a4553; font-size: .75rem; font-weight: 600; padding: .25rem .5rem; border-radius: .375rem; }
+    .previa__imagem { aspect-ratio: 16 / 9.4; border-radius: .5rem; background: #e9eef5; overflow: hidden; display: grid; place-items: center; color: #9aa6b4; }
+    .previa__imagem img { width: 100%; height: 100%; object-fit: cover; }
+    .previa__nome { color: var(--bp-azul); font-weight: 700; min-height: 3rem; }
+    .previa__preco { color: var(--bp-azul); font-size: 1.75rem; }
+    .previa__estoque { color: #17633a; font-size: .8125rem; }
+    .lista-checagem li { display: flex; gap: .5rem; font-size: .875rem; margin-bottom: .75rem; }
+    .lista-checagem .ok { color: var(--bp-verde); }
+    .lista-checagem .pendente { color: #9aa6b4; }
+
+    /* Cabeçalho e rodapé provisórios (substituídos pelos componentes) */
+    .faixa-topo { background: var(--bp-azul); color: #fff; font-size: .75rem; }
+    .faixa-topo a { color: #fff; text-decoration: none; }
+    .marca { color: var(--bp-azul); font-weight: 800; font-style: italic; font-size: 1.25rem; text-decoration: none; }
+    .marca .bi { color: var(--bp-verde); }
+    .menu-principal .nav-link { color: #3a4553; font-size: .875rem; padding: .75rem .75rem; }
+    .menu-principal .nav-link.active { color: var(--bp-verde); font-weight: 700; }
+    .link-anunciar { color: var(--bp-verde); font-weight: 700; font-size: .875rem; text-decoration: none; }
+    .contador-carrinho { background: #e6f4ea; color: #17633a; font-size: .75rem; font-weight: 600; border-radius: .375rem; padding: .125rem .4rem; }
+    .rodape { background: var(--bp-azul); color: #dbe4ee; font-size: .8125rem; }
+    .rodape a { color: #fff; text-decoration: none; }
+
+    @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto !important; } }
+  </style>
+</head>
+<body class="d-flex flex-column min-vh-100">
+
+  <!--
+    Cabeçalho: o componente js/components/cabecalho.js preenche este espaço.
+    O conteúdo abaixo é provisório, só para a tela ficar igual ao protótipo.
+  -->
+  <header id="cabecalho">
+    <div class="faixa-topo py-1">
+      <div class="container-fluid px-3 px-lg-4 d-flex justify-content-between">
+        <span>Peças certas. Oficinas em movimento.</span>
+        <span class="d-none d-sm-inline">Campinas, SP • <a href="#">Alterar localização</a></span>
+      </div>
+    </div>
+    <div class="bg-white border-bottom">
+      <div class="container-fluid px-3 px-lg-4 d-flex align-items-center gap-3 py-2">
+        <a href="../../index.html" class="marca text-nowrap"><i class="bi bi-gear-wide-connected"></i> BUSCA PEÇAS</a>
+        <form class="flex-grow-1 d-none d-md-block" role="search" action="../busca/resultados.html">
+          <div class="input-group">
+            <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+            <input class="form-control border-start-0" type="search" name="q" placeholder="Busque por peça, OEM, EAN ou SKU" aria-label="Buscar peças">
+          </div>
+        </form>
+        <div class="ms-auto d-flex align-items-center gap-3">
+          <div class="text-end lh-sm d-none d-lg-block small">
+            <span class="text-secondary">Olá, Ana Martins</span><br><strong>Oficina Horizonte</strong>
+          </div>
+          <a href="../conta/favoritos.html" class="text-body fs-5" aria-label="Favoritos"><i class="bi bi-heart"></i></a>
+          <a href="../compra/carrinho.html" class="text-body fs-5 d-flex align-items-center gap-1" aria-label="Carrinho, 3 itens">
+            <i class="bi bi-cart3"></i><span class="contador-carrinho">3</span>
+          </a>
+        </div>
+      </div>
+      <nav class="container-fluid px-3 px-lg-4 d-flex align-items-center menu-principal overflow-auto" aria-label="Menu principal">
+        <ul class="nav flex-nowrap">
+          <li class="nav-item"><a class="nav-link ps-0" href="../../index.html">Início</a></li>
+          <li class="nav-item"><a class="nav-link" href="../busca/resultados.html">Buscar peças</a></li>
+          <li class="nav-item"><a class="nav-link" href="#">Categorias</a></li>
+          <li class="nav-item"><a class="nav-link" href="../conta/favoritos.html">Favoritos</a></li>
+          <li class="nav-item"><a class="nav-link" href="../compra/minhas-compras.html">Meus pedidos</a></li>
+          <li class="nav-item"><a class="nav-link active" aria-current="page" href="painel.html">Minha Loja</a></li>
+          <li class="nav-item"><a class="nav-link" href="../conta/perfil.html">Meu perfil</a></li>
+        </ul>
+        <a href="form-peca.html" class="link-anunciar ms-auto text-nowrap ps-3">+ Anuncie suas peças</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="form-peca flex-grow-1 py-4" x-data="formPeca">
+    <div class="container-fluid px-3 px-lg-4">
+
+      <nav aria-label="Você está em">
+        <ol class="breadcrumb small mb-3">
+          <li class="breadcrumb-item"><a href="../../index.html" class="link-secondary">Início</a></li>
+          <li class="breadcrumb-item"><a href="painel.html" class="link-secondary">Minha Loja</a></li>
+          <li class="breadcrumb-item active" aria-current="page" x-text="idPeca ? 'Editar peça' : 'Cadastrar peça'">Cadastrar peça</li>
+        </ol>
+      </nav>
+
+      <h1 class="form-peca__titulo h2 mb-1" x-text="idPeca ? 'Editar peça' : 'Cadastrar peça'">Cadastrar peça</h1>
+      <p class="text-secondary mb-3">
+        <span x-text="loja?.nomeLoja" x-show="loja"></span><span x-show="loja"> • </span>preencha as informações que ajudam outra oficina a comprar certo.
+      </p>
+
+      <!-- Etapas: clicar leva à seção; a etapa da seção visível fica verde -->
+      <nav class="d-flex flex-wrap gap-2 mb-4" aria-label="Etapas do cadastro">
+        <template x-for="etapa in etapas" :key="etapa.numero">
+          <button type="button" class="etapa" :class="{ atual: etapaAtual === etapa.numero }"
+                  :aria-current="etapaAtual === etapa.numero ? 'step' : null" @click="irParaEtapa(etapa)">
+            <span x-text="etapa.numero + ' ' + etapa.nome"></span>
+            <i class="bi bi-check-lg ms-1" x-show="etapa.completa" x-cloak aria-label="concluída"></i>
+          </button>
+        </template>
+      </nav>
+
+      <!-- Erro ao carregar -->
+      <div class="aviso aviso--erro mb-4" role="alert" x-show="erroCarregar" x-cloak>
+        <strong x-text="erroCarregar"></strong>
+        <a href="painel.html" class="ms-2 fw-semibold text-danger">Voltar para Minha Loja</a>
+      </div>
+
+      <div class="text-secondary py-5 text-center" x-show="carregando" role="status">
+        <span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>Carregando formulário…
+      </div>
+
+      <div class="row g-4" x-show="!carregando && !erroCarregar" x-cloak>
+        <!-- Formulário -->
+        <div class="col-lg-8 col-xl-9">
+          <form id="form-peca" novalidate @submit.prevent="salvar(true)" :aria-busy="Boolean(salvando)">
+
+            <!-- 1. Identificação -->
+            <section id="secao-identificacao" data-etapa="1" class="card mb-4" aria-labelledby="titulo-identificacao">
+              <div class="card-body p-3 p-md-4">
+                <h2 id="titulo-identificacao" class="card-title mb-2">Identifique pelo código</h2>
+                <p class="text-secondary mb-3">Consulte os dados de referência ou preencha tudo manualmente. Revise as informações antes de publicar.</p>
+
+                <div class="row g-3 mb-3">
+                  <div class="col-md-6">
+                    <label for="tipoCodigo" class="form-label">Tipo de código</label>
+                    <select id="tipoCodigo" class="form-select" x-model="consulta.tipo" @change="consulta.codigo = ''; consulta.estado = ''">
+                      <option value="OEM">OEM</option>
+                      <option value="EAN">EAN</option>
+                      <option value="SKU">SKU</option>
+                    </select>
+                  </div>
+                  <div class="col-md-6">
+                    <label for="codigoConsulta" class="form-label">Código</label>
+                    <input id="codigoConsulta" type="text" class="form-control" autocomplete="off"
+                           :inputmode="consulta.tipo === 'EAN' ? 'numeric' : 'text'"
+                           :placeholder="{ OEM: 'Ex.: 0124325163', EAN: 'Ex.: 7891234567895', SKU: 'Ex.: ALT-90GM' }[consulta.tipo]"
+                           :value="consulta.codigo" @input="aoDigitarCodigoConsulta($event)"
+                           @keydown.enter.prevent="buscarPorCodigo()"
+                           :class="{ 'is-invalid': erros.consulta }" aria-describedby="erro-consulta">
+                    <div id="erro-consulta" class="invalid-feedback" x-text="erros.consulta"></div>
+                  </div>
+                </div>
+
+                <button type="button" class="btn btn-primary px-3 mb-3" @click="buscarPorCodigo()" :disabled="consulta.estado === 'buscando'">
+                  <span x-show="consulta.estado === 'buscando'" x-cloak class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>
+                  <i x-show="consulta.estado !== 'buscando'" class="bi bi-search me-1" aria-hidden="true"></i>
+                  <span x-text="consulta.estado === 'buscando' ? 'Buscando…' : 'Buscar dados pelo código'">Buscar dados pelo código</span>
+                </button>
+
+                <div aria-live="polite">
+                  <div class="aviso aviso--sucesso d-flex gap-2 mb-3" x-show="consulta.estado === 'encontrado'" x-cloak>
+                    <i class="bi bi-check-circle mt-1" aria-hidden="true"></i>
+                    <div>
+                      <strong class="d-block">Dados de referência encontrados</strong>
+                      <span x-text="consulta.resumo + '. Campos preenchidos para sua revisão.'"></span>
+                    </div>
+                  </div>
+                  <div class="aviso aviso--atencao d-flex gap-2 mb-3" x-show="consulta.estado === 'nao-encontrado'" x-cloak>
+                    <i class="bi bi-info-circle mt-1" aria-hidden="true"></i>
+                    <div>
+                      <strong class="d-block">Código não encontrado no catálogo automático</strong>
+                      Por favor, preencha os dados técnicos manualmente. O código informado já está no formulário.
+                    </div>
+                  </div>
+                  <div class="aviso aviso--atencao d-flex gap-2 mb-3" x-show="consulta.estado === 'indisponivel'" x-cloak>
+                    <i class="bi bi-exclamation-triangle mt-1" aria-hidden="true"></i>
+                    <div>
+                      <strong class="d-block">Consulta indisponível</strong>
+                      Não foi possível consultar o código agora. Continue com o preenchimento manual.
+                    </div>
+                  </div>
+                </div>
+
+                <button type="button" class="btn btn-link btn-texto-azul px-3" @click="continuarManual()">Continuar com preenchimento manual</button>
+              </div>
+            </section>
+
+            <!-- 2a. Informações da peça -->
+            <section id="secao-informacoes" data-etapa="2" class="card mb-4" aria-labelledby="titulo-informacoes">
+              <div class="card-body p-3 p-md-4">
+                <h2 id="titulo-informacoes" class="card-title mb-3">Informações da peça</h2>
+
+                <div class="mb-3">
+                  <label for="titulo" class="form-label">Título do anúncio</label>
+                  <input id="titulo" type="text" class="form-control" maxlength="150" required
+                         placeholder="Ex.: Alternador Bosch 90A • linha GM"
+                         x-model="form.titulo" @input="limparErro('titulo')"
+                         :class="{ 'is-invalid': erros.titulo }" aria-describedby="erro-titulo">
+                  <div id="erro-titulo" class="invalid-feedback" x-text="erros.titulo"></div>
+                </div>
+
+                <div class="mb-3">
+                  <label for="descricao" class="form-label">Descrição técnica</label>
+                  <textarea id="descricao" class="form-control" rows="3" maxlength="3000"
+                            placeholder="Estado, especificações, o que vem na embalagem e o que conferir antes de comprar."
+                            x-model="form.descricao" :class="{ 'is-invalid': erros.descricao }" aria-describedby="erro-descricao"></textarea>
+                  <div id="erro-descricao" class="invalid-feedback" x-text="erros.descricao"></div>
+                </div>
+
+                <div class="row g-3 mb-3">
+                  <div class="col-md-6">
+                    <label for="idCategoria" class="form-label">Categoria</label>
+                    <select id="idCategoria" class="form-select" required x-model="form.idCategoria" @change="limparErro('idCategoria')"
+                            :class="{ 'is-invalid': erros.idCategoria }" aria-describedby="erro-idCategoria">
+                      <option value="">Escolha a categoria</option>
+                      <template x-for="grupo in categoriasAgrupadas" :key="grupo.idCategoria">
+                        <optgroup :label="grupo.nome">
+                          <template x-for="sub in grupo.subcategorias" :key="sub.idCategoria">
+                            <option :value="String(sub.idCategoria)" x-text="grupo.nome + ' / ' + sub.nome"
+                                    :selected="String(form.idCategoria) === String(sub.idCategoria)"></option>
+                          </template>
+                        </optgroup>
+                      </template>
+                    </select>
+                    <div id="erro-idCategoria" class="invalid-feedback" x-text="erros.idCategoria"></div>
+                  </div>
+                  <div class="col-md-6">
+                    <label for="marcaPeca" class="form-label">Marca da peça</label>
+                    <select id="marcaPeca" class="form-select" x-model="form.marcaPeca">
+                      <option value="">Escolha a marca</option>
+                      <template x-for="marca in marcasPeca" :key="marca">
+                        <option :value="marca" x-text="marca" :selected="form.marcaPeca === marca"></option>
+                      </template>
+                    </select>
+                  </div>
+                </div>
+
+                <div class="row g-3 mb-3">
+                  <div class="col-md-4">
+                    <label for="codigoOem" class="form-label">OEM</label>
+                    <input id="codigoOem" type="text" class="form-control" maxlength="50" required autocomplete="off"
+                           placeholder="Código do fabricante"
+                           :value="form.codigoOem" @input="aoDigitarCodigo('codigoOem', 'OEM', $event)"
+                           :class="{ 'is-invalid': erros.codigoOem }" aria-describedby="erro-codigoOem">
+                    <div id="erro-codigoOem" class="invalid-feedback" x-text="erros.codigoOem"></div>
+                  </div>
+                  <div class="col-md-4">
+                    <label for="codigoEan" class="form-label">EAN</label>
+                    <input id="codigoEan" type="text" class="form-control" inputmode="numeric" maxlength="14" autocomplete="off"
+                           placeholder="Não informado"
+                           :value="form.codigoEan" @input="aoDigitarCodigo('codigoEan', 'EAN', $event)"
+                           :class="{ 'is-invalid': erros.codigoEan }" aria-describedby="erro-codigoEan">
+                    <div id="erro-codigoEan" class="invalid-feedback" x-text="erros.codigoEan"></div>
+                  </div>
+                  <div class="col-md-4">
+                    <label for="codigoSku" class="form-label">SKU da loja</label>
+                    <input id="codigoSku" type="text" class="form-control" maxlength="50" autocomplete="off"
+                           placeholder="Seu código interno"
+                           :value="form.codigoSku" @input="aoDigitarCodigo('codigoSku', 'SKU', $event)"
+                           :class="{ 'is-invalid': erros.codigoSku }" aria-describedby="erro-codigoSku">
+                    <div id="erro-codigoSku" class="invalid-feedback" x-text="erros.codigoSku"></div>
+                  </div>
+                </div>
+
+                <div class="mb-3">
+                  <label for="caracteristicas" class="form-label">Características técnicas</label>
+                  <input id="caracteristicas" type="text" class="form-control" maxlength="255"
+                         placeholder="Ex.: 12 V • 90 A • polia 6 canais • conector padrão GM"
+                         x-model="form.caracteristicas">
+                </div>
+
+                <div class="row g-3">
+                  <div class="col-md-6">
+                    <label for="condicao" class="form-label">Condição</label>
+                    <select id="condicao" class="form-select" required x-model="form.condicao"
+                            :class="{ 'is-invalid': erros.condicao }" aria-describedby="erro-condicao">
+                      <template x-for="c in condicoes" :key="c.valor">
+                        <option :value="c.valor" x-text="c.texto" :selected="form.condicao === c.valor"></option>
+                      </template>
+                    </select>
+                    <div id="erro-condicao" class="invalid-feedback" x-text="erros.condicao"></div>
+                  </div>
+                  <div class="col-md-6">
+                    <label for="origem" class="form-label">Origem</label>
+                    <select id="origem" class="form-select" required x-model="form.origem"
+                            :class="{ 'is-invalid': erros.origem }" aria-describedby="erro-origem">
+                      <template x-for="o in origens" :key="o.valor">
+                        <option :value="o.valor" x-text="o.texto" :selected="form.origem === o.valor"></option>
+                      </template>
+                    </select>
+                    <div id="erro-origem" class="invalid-feedback" x-text="erros.origem"></div>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <!-- 2b. Compatibilidade -->
+            <section id="secao-compatibilidade" data-etapa="2" class="card mb-4" aria-labelledby="titulo-compatibilidade">
+              <div class="card-body p-3 p-md-4">
+                <h2 id="titulo-compatibilidade" class="card-title mb-2">Compatibilidade</h2>
+                <p class="text-secondary mb-3">Informe somente aplicações verificadas pela sua loja.</p>
+
+                <div class="row g-3 mb-3">
+                  <div class="col-md-6">
+                    <label for="marcaVeiculo" class="form-label">Marca do veículo</label>
+                    <select id="marcaVeiculo" class="form-select" x-model="novaAplicacao.marca" @change="aoTrocarMarcaVeiculo()"
+                            :class="{ 'is-invalid': errosAplicacao.marca }" aria-describedby="erro-marcaVeiculo">
+                      <option value="">Escolha a marca</option>
+                      <template x-for="marca in marcasVeiculo" :key="marca">
+                        <option :value="marca" x-text="marca"></option>
+                      </template>
+                    </select>
+                    <div id="erro-marcaVeiculo" class="invalid-feedback" x-text="errosAplicacao.marca"></div>
+                  </div>
+                  <div class="col-md-6">
+                    <label for="modeloVeiculo" class="form-label">Modelo</label>
+                    <select id="modeloVeiculo" class="form-select" x-model="novaAplicacao.modelo"
+                            :disabled="!novaAplicacao.marca || carregandoModelos"
+                            :class="{ 'is-invalid': errosAplicacao.modelo }" aria-describedby="erro-modeloVeiculo">
+                      <option value="" x-text="carregandoModelos ? 'Carregando modelos…' : (novaAplicacao.marca ? 'Escolha o modelo' : 'Escolha a marca primeiro')"></option>
+                      <template x-for="modelo in modelos" :key="modelo">
+                        <option :value="modelo" x-text="modelo"></option>
+                      </template>
+                    </select>
+                    <div id="erro-modeloVeiculo" class="invalid-feedback" x-text="errosAplicacao.modelo"></div>
+                  </div>
+                  <div class="col-md-6">
+                    <label for="anoInicial" class="form-label">Ano inicial / final</label>
+                    <div class="input-group has-validation">
+                      <input id="anoInicial" type="text" inputmode="numeric" maxlength="4" class="form-control" placeholder="Ex.: 2002"
+                             x-model="novaAplicacao.anoInicial" @input="novaAplicacao.anoInicial = $event.target.value.replace(/\D/g, '')"
+                             :class="{ 'is-invalid': errosAplicacao.ano }" aria-describedby="erro-ano">
+                      <span class="input-group-text bg-white">/</span>
+                      <input type="text" inputmode="numeric" maxlength="4" class="form-control" placeholder="Ex.: 2012"
+                             aria-label="Ano final" x-model="novaAplicacao.anoFinal"
+                             @input="novaAplicacao.anoFinal = $event.target.value.replace(/\D/g, '')"
+                             :class="{ 'is-invalid': errosAplicacao.ano }">
+                      <div id="erro-ano" class="invalid-feedback" x-text="errosAplicacao.ano"></div>
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <label for="versaoVeiculo" class="form-label">Versão / motorização</label>
+                    <input id="versaoVeiculo" type="text" class="form-control" maxlength="80" placeholder="Ex.: 1.0 / 1.4"
+                           x-model="novaAplicacao.versao" @keydown.enter.prevent="adicionarAplicacao()">
+                  </div>
+                </div>
+
+                <button type="button" class="btn btn-contorno-azul px-3 mb-2" @click="adicionarAplicacao()">Adicionar aplicação</button>
+                <div class="small text-danger mb-2" x-show="errosAplicacao.geral || erros.aplicacoes" x-cloak
+                     x-text="errosAplicacao.geral || erros.aplicacoes" role="alert"></div>
+
+                <div class="table-responsive mt-2" x-show="aplicacoes.length" x-cloak>
+                  <table class="table tabela-form">
+                    <caption class="visually-hidden">Aplicações verificadas</caption>
+                    <thead>
+                      <tr>
+                        <th scope="col">Marca</th>
+                        <th scope="col">Modelo</th>
+                        <th scope="col">Ano</th>
+                        <th scope="col">Versão</th>
+                        <th scope="col"><span class="visually-hidden">Remover</span></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <template x-for="a in aplicacoes" :key="a.id">
+                        <tr>
+                          <td class="fw-semibold" x-text="a.marca"></td>
+                          <td x-text="a.modelo"></td>
+                          <td class="text-nowrap" x-text="textoAnos(a)"></td>
+                          <td class="texto-versao" x-text="a.versao || 'Todas'"></td>
+                          <td class="text-end">
+                            <button type="button" class="btn btn-sm btn-link text-danger p-0" @click="removerAplicacao(a)"
+                                    :aria-label="'Remover ' + a.marca + ' ' + a.modelo + ' ' + textoAnos(a)">
+                              <i class="bi bi-trash" aria-hidden="true"></i>
+                            </button>
+                          </td>
+                        </tr>
+                      </template>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </section>
+
+            <!-- 3. Preço, estoque e expedição -->
+            <section id="secao-estoque" data-etapa="3" class="card mb-4" aria-labelledby="titulo-estoque">
+              <div class="card-body p-3 p-md-4">
+                <h2 id="titulo-estoque" class="card-title mb-3">Preço, estoque e expedição</h2>
+
+                <div class="row g-3 mb-3">
+                  <div class="col-md-6">
+                    <label for="preco" class="form-label">Preço por unidade</label>
+                    <input id="preco" type="text" inputmode="numeric" class="form-control" required placeholder="R$ 0,00"
+                           :value="form.preco" @input="aoDigitarPreco($event)"
+                           :class="{ 'is-invalid': erros.preco }" aria-describedby="erro-preco">
+                    <div id="erro-preco" class="invalid-feedback" x-text="erros.preco"></div>
+                  </div>
+                  <div class="col-md-6">
+                    <label for="quantidade" class="form-label">Quantidade em estoque</label>
+                    <input id="quantidade" type="text" inputmode="numeric" class="form-control" required placeholder="0"
+                           :value="form.quantidade" @input="aoDigitarQuantidade($event)"
+                           :class="{ 'is-invalid': erros.quantidade }" aria-describedby="erro-quantidade">
+                    <div id="erro-quantidade" class="invalid-feedback" x-text="erros.quantidade"></div>
+                  </div>
+                  <div class="col-md-6">
+                    <label for="disponibilidade" class="form-label">Disponibilidade</label>
+                    <select id="disponibilidade" class="form-select" x-model="form.disponibilidade">
+                      <option value="PRONTA">Pronta entrega</option>
+                      <option value="ENCOMENDA">Sob encomenda</option>
+                    </select>
+                  </div>
+                  <div class="col-md-6">
+                    <label for="prazoExpedicaoDias" class="form-label">Prazo de expedição</label>
+                    <select id="prazoExpedicaoDias" class="form-select" x-model.number="form.prazoExpedicaoDias"
+                            :class="{ 'is-invalid': erros.prazoExpedicaoDias }" aria-describedby="erro-prazo">
+                      <template x-for="p in prazos" :key="p.valor">
+                        <option :value="p.valor" x-text="p.texto" :selected="Number(form.prazoExpedicaoDias) === p.valor"></option>
+                      </template>
+                    </select>
+                    <div id="erro-prazo" class="invalid-feedback" x-text="erros.prazoExpedicaoDias"></div>
+                  </div>
+                </div>
+
+                <div class="form-check mb-3">
+                  <input class="form-check-input" type="checkbox" id="ativarAposPublicar" x-model="form.ativarAposPublicar">
+                  <label class="form-check-label" for="ativarAposPublicar">Ativar anúncio após publicar</label>
+                </div>
+
+                <div class="aviso aviso--atencao d-flex gap-2 align-items-start">
+                  <i class="bi bi-info-circle" aria-hidden="true"></i>
+                  <span>O preço é somente da peça. Frete e pagamento são combinados diretamente com o comprador.</span>
+                </div>
+              </div>
+            </section>
+
+            <!-- 4. Fotos -->
+            <section id="secao-fotos" data-etapa="4" class="card mb-4" aria-labelledby="titulo-fotos">
+              <div class="card-body p-3 p-md-4">
+                <h2 id="titulo-fotos" class="card-title mb-2">Fotos da peça</h2>
+                <p class="text-secondary mb-3" x-text="resumoFotos"></p>
+
+                <ul class="fotos-grade list-unstyled mb-3" x-show="fotos.length" x-cloak aria-label="Fotos adicionadas">
+                  <template x-for="(foto, indice) in fotos" :key="foto.id">
+                    <li class="foto-item" :class="{ capa: indice === 0 }">
+                      <img :src="foto.url" :alt="rotuloFoto(indice) + ' da peça'">
+                      <div class="foto-item__rotulo">
+                        <span x-text="rotuloFoto(indice)"></span> • <i class="bi bi-check-lg" aria-label="adicionada"></i>
+                      </div>
+                      <div class="d-flex flex-wrap gap-1">
+                        <button type="button" class="btn btn-contorno-azul btn-sm px-3" @click="removerFoto(foto)"
+                                :aria-label="'Remover ' + rotuloFoto(indice)">Remover</button>
+                        <button type="button" class="btn btn-link btn-sm btn-texto-azul px-1" x-show="indice > 0"
+                                @click="tornarCapa(foto)" :aria-label="'Usar ' + rotuloFoto(indice) + ' como capa'">Usar como capa</button>
+                      </div>
+                    </li>
+                  </template>
+                </ul>
+
+                <div class="area-envio mb-2" :class="{ arrastando, cheia: !vagasFotos }"
+                     @dragover.prevent="arrastando = Boolean(vagasFotos)" @dragleave.prevent="arrastando = false"
+                     @drop.prevent="aoSoltarArquivos($event)">
+                  <i class="bi bi-upload fs-4 text-secondary" aria-hidden="true"></i>
+                  <p class="fw-semibold mt-2 mb-1" x-text="vagasFotos ? 'Arraste ou selecione até ' + vagasFotos + (vagasFotos === 1 ? ' foto' : ' fotos') : 'Limite de fotos atingido'"></p>
+                  <p class="small text-secondary mb-3" x-text="vagasFotos ? 'JPG ou PNG • até 5 MB por arquivo' : 'Remova uma foto para trocar por outra.'"></p>
+                  <input id="entradaFotos" type="file" class="d-none" accept="image/jpeg,image/png" multiple @change="aoSelecionarArquivos($event)">
+                  <button id="botaoEscolherFotos" type="button" class="btn btn-contorno-azul px-3" @click="escolherArquivos()"
+                          :disabled="!vagasFotos" aria-describedby="erro-fotos">Escolher arquivos</button>
+                </div>
+                <div id="erro-fotos" class="small text-danger mb-2" role="alert" x-show="erroFotos || erros.fotos" x-cloak x-text="erroFotos || erros.fotos"></div>
+                <p class="small text-secondary mb-0">Use imagens próprias e nítidas da peça que você vai entregar.</p>
+              </div>
+            </section>
+
+            <!-- Aviso geral (validação ou erro da API) -->
+            <div id="aviso-geral" class="aviso aviso--erro d-flex gap-2 mb-3" role="alert" tabindex="-1"
+                 x-show="avisoGeral?.tipo === 'erro'" x-cloak>
+              <i class="bi bi-exclamation-circle" aria-hidden="true"></i>
+              <span x-text="avisoGeral?.texto"></span>
+            </div>
+
+            <!-- Ações -->
+            <div class="d-flex flex-wrap gap-3" x-show="!publicado">
+              <button type="button" class="btn btn-contorno-azul px-3" @click="salvar(false)" :disabled="Boolean(salvando)">
+                <span x-show="salvando === 'rascunho'" x-cloak class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>
+                <span x-text="salvando === 'rascunho' ? 'Salvando…' : 'Salvar rascunho'">Salvar rascunho</span>
+              </button>
+              <button type="submit" class="btn btn-primary px-3" :disabled="Boolean(salvando)">
+                <span x-show="salvando === 'publicar'" x-cloak class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>
+                <span x-text="salvando === 'publicar' ? 'Publicando…' : (statusSalvo && statusSalvo !== 'RASCUNHO' ? 'Salvar alterações' : 'Publicar anúncio')">Publicar anúncio</span>
+              </button>
+              <button type="button" class="btn btn-light bg-white border-0 btn-texto-azul px-3" @click="cancelar()" :disabled="Boolean(salvando)">Cancelar</button>
+            </div>
+
+            <!-- Resultado da publicação -->
+            <div id="resultado-publicacao" class="card" tabindex="-1" x-show="publicado" x-cloak aria-live="polite">
+              <div class="card-body p-3 p-md-4">
+                <div class="aviso aviso--sucesso d-flex gap-2 mb-3">
+                  <i class="bi bi-check-circle" aria-hidden="true"></i>
+                  <div>
+                    <strong class="d-block" x-text="statusSalvo === 'ATIVO' ? 'Anúncio publicado' : 'Anúncio salvo como pausado'"></strong>
+                    <span x-text="statusSalvo === 'ATIVO'
+                      ? form.titulo + ' já aparece nas buscas.'
+                      : form.titulo + ' foi salvo, mas só aparece nas buscas depois que você reativar.'"></span>
+                  </div>
+                </div>
+                <div class="d-flex flex-wrap gap-2">
+                  <a href="painel.html" class="btn btn-primary px-3">Ir para Minha Loja</a>
+                  <a href="form-peca.html" class="btn btn-contorno-azul px-3">Cadastrar outra peça</a>
+                </div>
+              </div>
+            </div>
+          </form>
+        </div>
+
+        <!-- Coluna lateral -->
+        <aside class="col-lg-4 col-xl-3">
+          <div class="sticky-lg-top d-flex flex-column gap-3" style="top: 1rem; z-index: 1;">
+            <h2 class="previa-titulo-secao mb-0">Prévia do anúncio</h2>
+
+            <div class="card" aria-label="Prévia de como o anúncio aparece para os compradores">
+              <div class="card-body p-3">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                  <span class="previa__etiqueta" x-text="etiquetaPrevia"></span>
+                  <i class="bi bi-heart fs-5 text-secondary" aria-hidden="true"></i>
+                </div>
+                <div class="previa__imagem mb-3">
+                  <template x-if="capaUrl"><img :src="capaUrl" alt="Capa do anúncio"></template>
+                  <template x-if="!capaUrl">
+                    <div class="text-center small"><i class="bi bi-image fs-2 d-block" aria-hidden="true"></i>A capa aparece aqui</div>
+                  </template>
+                </div>
+                <h3 class="previa__nome h6" x-text="form.titulo || 'Título do anúncio'"></h3>
+                <p class="small text-secondary mb-1" x-text="codigosPrevia" x-show="codigosPrevia"></p>
+                <p class="previa__preco mb-1" x-text="precoPrevia"></p>
+                <p class="small mb-1"><span x-text="loja?.nomeLoja"></span> <span x-text="notaLoja"></span></p>
+                <p class="small text-secondary mb-1" x-text="loja ? loja.cidade + '/' + loja.estado : ''"></p>
+                <p class="previa__estoque mb-2" x-text="estoquePrevia" x-show="estoquePrevia"></p>
+                <hr class="my-2">
+                <button type="button" class="btn btn-primary w-100" disabled aria-disabled="true" title="Só na página publicada">
+                  <i class="bi bi-cart3 me-1" aria-hidden="true"></i>Adicionar ao carrinho
+                </button>
+                <a :href="idPeca && statusSalvo === 'ATIVO' ? '../busca/peca.html?id=' + idPeca : null"
+                   class="btn btn-link btn-texto-azul w-100 mt-1" :class="{ disabled: !(idPeca && statusSalvo === 'ATIVO') }"
+                   :aria-disabled="!(idPeca && statusSalvo === 'ATIVO')">Ver detalhes</a>
+              </div>
+            </div>
+
+            <section class="card" aria-labelledby="titulo-checagem">
+              <div class="card-body p-3 p-md-4">
+                <h2 id="titulo-checagem" class="card-title mb-3">Antes de publicar</h2>
+                <ul class="list-unstyled lista-checagem mb-0">
+                  <template x-for="item in checklist" :key="item.texto">
+                    <li>
+                      <i class="bi" :class="item.ok ? 'bi-check2 ok' : 'bi-circle pendente'" aria-hidden="true"></i>
+                      <span x-text="item.texto"></span>
+                      <span class="visually-hidden" x-text="item.ok ? '(concluído)' : '(pendente)'"></span>
+                    </li>
+                  </template>
+                </ul>
+              </div>
+            </section>
+
+            <div class="aviso aviso--sucesso d-flex gap-2 align-items-center" role="status" x-show="salvoEm && !sujo" x-cloak>
+              <i class="bi bi-check-circle" aria-hidden="true"></i>
+              <span x-text="textoSalvoEm"></span>
+            </div>
+            <div class="small text-secondary" x-show="salvoEm && sujo" x-cloak>Há alterações não salvas.</div>
+          </div>
+        </aside>
+      </div>
+    </div>
+
+    <!-- Janela de confirmação -->
+    <div x-show="confirmacao.aberta" x-cloak @keydown.escape.window="confirmacao.aberta && fecharConfirmacao()">
+      <div class="modal d-block" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="titulo-confirmacao"
+           @click.self="fecharConfirmacao()">
+        <div class="modal-dialog modal-dialog-centered">
+          <div class="modal-content">
+            <div class="modal-header border-0 pb-0">
+              <h2 id="titulo-confirmacao" class="modal-title h5" x-text="confirmacao.titulo"></h2>
+              <button type="button" class="btn-close" aria-label="Fechar" @click="fecharConfirmacao()"></button>
+            </div>
+            <div class="modal-body" x-text="confirmacao.texto"></div>
+            <div class="modal-footer border-0 pt-0">
+              <button type="button" class="btn btn-contorno-azul" @click="fecharConfirmacao()">Continuar editando</button>
+              <button type="button" id="botao-confirmar" class="btn btn-danger" @click="confirmar()" x-text="confirmacao.botao"></button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-backdrop show"></div>
+    </div>
+  </main>
+
+  <!-- Rodapé: preenchido por js/components/rodape.js (conteúdo provisório) -->
+  <footer id="rodape" class="rodape py-4 mt-4">
+    <div class="container-fluid px-3 px-lg-4">
+      <p class="mb-2">Busca Peça • Peças certas. Oficinas em movimento.</p>
+      <p class="mb-0">
+        <a href="../institucional/sobre.html">Busca Peça</a> •
+        <a href="../institucional/sobre.html">Contato</a> •
+        <a href="../institucional/termos-de-uso.html">Termos de uso</a> •
+        <a href="../institucional/politica-de-privacidade.html">Privacidade</a>
+      </p>
+    </div>
+  </footer>
+
+  <!-- O módulo da página vem ANTES do Alpine, para registrar o componente no alpine:init. -->
+  <script type="module" src="../../js/pages/minha-loja/form-peca.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

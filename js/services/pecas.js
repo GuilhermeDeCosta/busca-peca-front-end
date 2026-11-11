@@ -1,12 +1,12 @@
 // Serviço de peças: uma função por rota de /api/pecas (Documentação do Back-end, seção 5.5).
 //
 // QUANDO A API E O api.js ESTIVEREM PRONTOS:
-//   1. Descomente o import do api.js.
+//   1. Descomente o import do api.js (as funções novas já chamam api.* direto).
 //   2. Troque USAR_SIMULACAO para false e apague o import de ./simulacao.js.
 //   3. Apague as funções simular*() do fim do arquivo.
 
 // import { api } from '../api.js';
-import { esperar, anunciosSimulados } from './simulacao.js';
+import { esperar, anunciosSimulados, referenciasSimuladas } from './simulacao.js';
 
 const USAR_SIMULACAO = true;
 
@@ -38,6 +38,73 @@ export async function reativarAnuncio(idPeca) {
 export async function excluirAnuncio(idPeca) {
   if (USAR_SIMULACAO) return simularExcluir(idPeca);
   // return api.delete(`/pecas/${idPeca}`);
+}
+
+/**
+ * GET /api/pecas/autopreenchimento?codigo=&tipo= — consulta a base externa de códigos (BP1-9, BP1-63).
+ * @param {'OEM'|'EAN'|'SKU'} tipo
+ * @returns {Promise<object|null>} dados de referência, ou null quando o código não é encontrado.
+ * Rejeita com { status: 503 | 504 } quando a base externa está fora do ar ou demora (ADR-012).
+ */
+export async function consultarReferencia(tipo, codigo) {
+  if (USAR_SIMULACAO) return simularReferencia(tipo, codigo);
+  try {
+    return await api.get(`/pecas/autopreenchimento?${new URLSearchParams({ tipo, codigo })}`);
+  } catch (erro) {
+    if (erro?.status === 404) return null;
+    throw erro;
+  }
+}
+
+/**
+ * GET /api/pecas/{id} — carrega um anúncio da própria loja para editar no formulário.
+ * @returns {Promise<{ dados: object, aplicacoes: object[], fotos: { idFoto: number, url: string }[] }>}
+ */
+export async function obterPecaParaEdicao(idPeca) {
+  if (USAR_SIMULACAO) return simularObterPeca(idPeca);
+  const peca = await api.get(`/pecas/${idPeca}`);
+  return { dados: peca, aplicacoes: peca.aplicacoes || [], fotos: peca.fotos || [] };
+}
+
+/**
+ * Salva o anúncio inteiro, como rascunho ou publicado (BP1-3, 45, 47). Faz em sequência:
+ *   1. POST /api/pecas (novo) ou PUT /api/pecas/{id} (edição) com os dados e o status;
+ *   2. PUT /api/pecas/{id}/compatibilidades com as aplicações;
+ *   3. DELETE /api/pecas/{id}/fotos/{idFoto} das fotos removidas;
+ *   4. POST /api/pecas/{id}/fotos (multipart) com as fotos novas;
+ *   5. PATCH /api/pecas/{id}/fotos/ordem com a ordem final (a primeira é a capa).
+ *
+ * @param {{ idPeca?: number, dados: object, aplicacoes: object[],
+ *           fotos: { idFoto?: number, arquivo?: File }[], fotosRemovidas: number[],
+ *           status: 'RASCUNHO'|'ATIVO'|'PAUSADO' }} anuncio
+ * @returns {Promise<{ idPeca: number, salvoEm: string }>}
+ */
+export async function salvarAnuncio(anuncio) {
+  if (USAR_SIMULACAO) return simularSalvar(anuncio);
+
+  const { idPeca, dados, aplicacoes, fotos, fotosRemovidas, status } = anuncio;
+  const corpo = { ...dados, status };
+  const peca = idPeca ? await api.put(`/pecas/${idPeca}`, corpo) : await api.post('/pecas', corpo);
+  const id = peca.idPeca;
+
+  await api.put(`/pecas/${id}/compatibilidades`, { aplicacoes });
+
+  for (const idFoto of fotosRemovidas) await api.delete(`/pecas/${id}/fotos/${idFoto}`);
+
+  const novas = fotos.filter((f) => f.arquivo);
+  let idsNovos = [];
+  if (novas.length) {
+    const formulario = new FormData();
+    novas.forEach((f) => formulario.append('fotos', f.arquivo));
+    const enviadas = await api.post(`/pecas/${id}/fotos`, formulario); // api.js não deve pôr Content-Type em FormData
+    idsNovos = enviadas.map((f) => f.idFoto);
+  }
+
+  let proximaNova = 0;
+  const ordem = fotos.map((f) => (f.arquivo ? idsNovos[proximaNova++] : f.idFoto));
+  if (ordem.length) await api.patch(`/pecas/${id}/fotos/ordem`, { ordem });
+
+  return { idPeca: id, salvoEm: peca.atualizadoEm || new Date().toISOString() };
 }
 
 // ---------------------------------------------------------------------------
@@ -84,4 +151,45 @@ async function simularExcluir(idPeca) {
   const indice = anunciosSimulados.findIndex((p) => p.idPeca === idPeca);
   if (indice === -1) throw { status: 404, mensagem: 'Anúncio não encontrado.' };
   anunciosSimulados.splice(indice, 1);
+}
+
+async function simularReferencia(tipo, codigo) {
+  await esperar(900);
+  console.info('[simulação] GET /api/pecas/autopreenchimento', { tipo, codigo });
+  // Para testar a base externa fora do ar, use o código 999.
+  if (codigo === '999') throw { status: 504, mensagem: 'Base externa sem resposta.' };
+  const referencia = referenciasSimuladas[codigo];
+  return referencia ? structuredClone(referencia) : null;
+}
+
+async function simularObterPeca(idPeca) {
+  await esperar(500);
+  const p = anunciosSimulados.find((a) => a.idPeca === Number(idPeca));
+  if (!p) throw { status: 404, mensagem: 'Anúncio não encontrado.' };
+  return {
+    dados: {
+      titulo: p.titulo, descricao: p.descricao || '', idCategoria: p.idCategoria || null, marcaPeca: p.marcaPeca || '',
+      codigoOem: p.codigoOem || '', codigoEan: p.codigoEan || '', codigoSku: p.codigoSku || '',
+      caracteristicas: p.caracteristicas || '', condicao: p.condicao, origem: p.origem, preco: p.preco,
+      quantidadeEstoque: p.quantidadeEstoque, prontaEntrega: p.prontaEntrega, prazoExpedicaoDias: p.prazoExpedicaoDias,
+      status: p.status, atualizadoEm: p.atualizadoEm || null,
+    },
+    aplicacoes: structuredClone(p.aplicacoes || []),
+    fotos: [],
+  };
+}
+
+async function simularSalvar({ idPeca, dados, aplicacoes, fotos, status }) {
+  await esperar(1000);
+  console.info('[simulação] salvar anúncio', { idPeca, status, dados, aplicacoes, fotos: fotos.length });
+  const salvoEm = new Date().toISOString();
+  const registro = { ...dados, aplicacoes, status, limiteAlertaEstoque: 1, atualizadoEm: salvoEm };
+  if (idPeca) {
+    const existente = anunciosSimulados.find((a) => a.idPeca === Number(idPeca));
+    Object.assign(existente, registro);
+    return { idPeca: existente.idPeca, salvoEm };
+  }
+  const novoId = Math.max(0, ...anunciosSimulados.map((a) => a.idPeca)) + 1;
+  anunciosSimulados.unshift({ idPeca: novoId, ...registro });
+  return { idPeca: novoId, salvoEm };
 }

@@ -96,3 +96,16 @@
             });
         });
  
+        // Rolagem: a primeira seção na metade de cima da tela fica ativa
+        const visiveis = {};
+        const observador = new IntersectionObserver(function (entradas) {
+            entradas.forEach(function (e) { visiveis[e.target.id] = e.isIntersecting; });
+            if (travado) return;
+            const atual = secoes.find(function (s) { return visiveis[s.id]; });
+            if (atual) marcar(atual.id);
+        }, { rootMargin: '0px 0px -55% 0px' });
+ 
+        secoes.forEach(function (s) { observador.observe(s); });
+        marcar(secoes[0].id);
+    }
+ 

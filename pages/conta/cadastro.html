@@ -262,95 +262,7 @@
     .btn__girando { animation-duration: 2s; }
 }
 
-/* =========================================================
-   POP-UP DE TERMOS E PRIVACIDADE (Fluxo D • etapa 02)
-   ========================================================= */
-.modal {
-    width: min(720px, calc(100% - 32px));
-    max-height: calc(100vh - 48px);
-    margin: auto;
-    padding: 0;
-    border: 1px solid var(--cinza-borda);
-    border-radius: 12px;
-    color: var(--texto);
-    background: var(--branco);
-    box-shadow: 0 20px 50px rgba(15, 61, 104, .25);
-}
-.modal[open] { display: flex; flex-direction: column; }
-.modal::backdrop { background: rgba(15, 61, 104, .55); }
 
-.modal__topo {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    gap: 16px;
-    padding: 22px 24px 16px;
-    border-bottom: 1px solid var(--cinza-borda);
-}
-.modal__topo h2 { font-size: 22px; color: var(--azul-escuro); line-height: 1.2; }
-.modal__versao { font-size: 13px; color: var(--texto-suave); margin-top: 4px; }
-
-.modal__fechar {
-    flex-shrink: 0;
-    width: 44px;
-    height: 44px;
-    border: none;
-    border-radius: var(--raio);
-    background: transparent;
-    color: var(--azul-escuro);
-    font-size: 18px;
-    cursor: pointer;
-}
-.modal__fechar:hover { background: var(--cinza-fundo); }
-.modal__fechar:focus-visible,
-.modal__corpo:focus-visible { outline: 3px solid #f2b705; outline-offset: 2px; }
-
-.modal__corpo {
-    overflow-y: auto;
-    padding: 20px 24px;
-    font-size: 14px;
-    line-height: 1.6;
-}
-.modal__corpo p { margin-bottom: 12px; }
-.modal__corpo ul { padding-left: 20px; margin-bottom: 12px; }
-.modal__corpo li { margin-bottom: 4px; }
-.modal__corpo a { color: var(--azul-escuro); font-weight: 600; text-decoration: underline; }
-.modal__corpo h4 { font-size: 15px; color: var(--azul-escuro); margin: 16px 0 4px; }
-
-.modal__secao {
-    font-size: 18px;
-    color: var(--azul-escuro);
-    margin: 20px 0 4px;
-    padding-top: 16px;
-    border-top: 1px solid var(--cinza-borda);
-    scroll-margin-top: 8px;
-}
-.modal__nota + .modal__secao { border-top: none; padding-top: 0; }
-
-.modal__nota {
-    background: #fff4d6;
-    color: #7a5200;
-    border-radius: var(--raio);
-    padding: 10px 14px;
-    font-size: 13px;
-}
-
-.modal__rodape {
-    display: flex;
-    justify-content: flex-end;
-    gap: 12px;
-    padding: 16px 24px;
-    border-top: 1px solid var(--cinza-borda);
-}
-.modal__rodape .btn { min-height: 44px; }
-
-body.modal-aberto { overflow: hidden; }
-
-@media (max-width: 560px) {
-    .modal { width: 100%; max-height: 100%; height: 100%; border-radius: 0; }
-    .modal__topo, .modal__corpo, .modal__rodape { padding-left: 16px; padding-right: 16px; }
-    .modal__rodape .btn { flex: 1; }
-}
     </Style>
 </head>
 
@@ -442,8 +354,8 @@ body.modal-aberto { overflow: hidden; }
                             <input type="checkbox" id="aceite_termos" name="aceite_termos" required
                                    aria-describedby="aceite_termos-erro">
                             <span>
-                             Li e aceito os <a href="termos-de-uso.html" data-abrir-termos="termos-de-uso">Termos de uso</a>
-                            e a <a href="politica-de-privacidade.html" data-abrir-termos="politica-de-privacidade">Política de Privacidade</a>.
+                            Li e aceito os <a href="../institucional/termos-de-uso.html" target="_blank" rel="noopener">Termos de uso</a>
+                            e a <a href="../institucional/termos-de-uso.html#politica-de-privacidade" target="_blank" rel="noopener">Política de Privacidade</a>.
                             </span>
                         </label>
                         <span class="campo__erro" id="aceite_termos-erro"></span>
@@ -485,8 +397,8 @@ body.modal-aberto { overflow: hidden; }
                 <h4>Institucional</h4>
                 <a href="sobre.html">Sobre o Busca Peça</a>
                 <a href="sobre.html#como-funciona">Como funciona</a>
-                <a href="termos-de-uso.html">Termos de uso</a>
-                <a href="politica-de-privacidade.html">Privacidade</a>
+                <a href="../institucional/termos-de-uso.html">Termos de uso</a>
+                <a href="../institucional/termos-de-uso.html#politica-de-privacidade">Privacidade</a>
             </div>
             <div>
                 <h4>Conte com a gente</h4>
@@ -497,60 +409,6 @@ body.modal-aberto { overflow: hidden; }
         <p class="footer__copy">Ambiente demonstrativo • lojas, preços e estoques fictícios</p>
     </footer>
  
-<!-- ===== POP-UP: TERMOS DE USO E POLÍTICA DE PRIVACIDADE (Fluxo D • etapa 02) ===== -->
-<dialog class="modal" id="modal-termos" aria-labelledby="modal-termos-titulo">
-    <div class="modal__topo">
-        <div>
-            <h2 id="modal-termos-titulo">Termos de uso e Privacidade</h2>
-            <p class="modal__versao">Versão 1.2 • vigente desde 01/10/2026 • última atualização em 28/09/2026</p>
-        </div>
-        <button type="button" class="modal__fechar" data-fechar-modal aria-label="Fechar">✕</button>
-    </div>
-
-    <div class="modal__corpo" id="modal-termos-corpo" tabindex="0">
-        <p class="modal__nota">Texto demonstrativo para o protótipo, sem validade jurídica. A versão final deve ser revisada antes da publicação.</p>
-
-        <h3 class="modal__secao" id="termos-de-uso">Termos de uso</h3>
-
-        <h4>1. Sobre o Busca Peça</h4>
-        <p>O Busca Peça conecta oficinas e lojas de autopeças. A plataforma organiza anúncios, pedidos e conversas, mas não é parte da venda entre comprador e vendedor.</p>
-
-        <h4>2. Sua conta</h4>
-        <p>Uma única conta permite comprar e, depois de criar uma loja, vender. Você é responsável por manter seus dados corretos e sua senha em sigilo.</p>
-
-        <h4>3. Comprar e vender</h4>
-        <p>Cada pedido é enviado a uma loja, que pode aceitar ou recusar. O vendedor deve anunciar apenas peças que tem em estoque, com condição e origem corretas.</p>
-
-        <h4>4. Pagamento e entrega</h4>
-        <p>Nesta fase, pagamento, frete e retirada são combinados diretamente entre as partes, fora da plataforma. O Busca Peça não cobra comissão.</p>
-
-        <h4>5. Conduta e anúncios</h4>
-        <p>Anúncios enganosos, peças de origem irregular e contas falsas podem ser pausados ou removidos pela administração.</p>
-
-        <h3 class="modal__secao" id="politica-de-privacidade">Política de Privacidade</h3>
-
-        <h4>6. Dados pessoais</h4>
-        <p>Coletamos nome, e-mail, telefone, endereço e, para lojas, CPF ou CNPJ. Esses dados são usados para identificar você, mostrar a distância até as lojas e organizar os pedidos.</p>
-        <ul>
-            <li>Pedimos só os dados necessários em cada etapa. O CPF ou CNPJ é pedido apenas ao criar a loja.</li>
-            <li>A localização do aparelho só é usada com a sua permissão. Se preferir, você pode informar o CEP.</li>
-            <li>Não vendemos nem repassamos seus dados pessoais a terceiros.</li>
-            <li>Sua senha é guardada de forma criptografada e os dados trafegam por conexão segura (HTTPS).</li>
-            <li>Dados de navegação usados para melhorar a plataforma são anonimizados.</li>
-        </ul>
-
-        <h4>7. Seus direitos (LGPD)</h4>
-        <p>Você pode consultar, corrigir, exportar ou pedir a exclusão dos seus dados em Meu perfil. Pedidos em andamento precisam ser concluídos antes da exclusão.</p>
-
-        <h4>8. Contato</h4>
-        <p>Dúvidas sobre privacidade: <a href="mailto:contato@buscapeca.example.com">contato@buscapeca.example.com</a> • segunda a sexta, das 8h às 18h.</p>
-    </div>
-
-    <div class="modal__rodape">
-        <button type="button" class="btn btn--contorno" data-fechar-modal>Voltar</button>
-        <button type="button" class="btn btn--verde" id="modal-termos-aceitar">Li e aceito</button>
-    </div>
-</dialog>
 
     <script src="js/cadastro.js"></script>
 </body>

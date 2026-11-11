@@ -299,3 +299,11 @@ input:focus-visible {
 }
 .faixa-topo a:focus-visible,
 .faixa-topo button:focus-visible { outline-color: #fff; }
+
+/* =========================================================
+   RODAPÉ PROVISÓRIO (#rodape) • até existir js/components/rodape.js
+   ========================================================= */
+.rodape { background: var(--azul-escuro); color: #dbe4ee; font-size: 13px; }
+.rodape a { color: var(--branco); }
+.rodape a:hover { text-decoration: underline; }
+.rodape a:focus-visible { outline: 3px solid #f2b705; outline-offset: 2px; }

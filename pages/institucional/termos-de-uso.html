@@ -65,4 +65,100 @@
             <button type="button" class="btn btn--contorno w-100" id="botao-voltar">Voltar</button>
           </div>
         </aside>
+         <!-- Conteúdo -->
+        <div class="col-lg-9">
+ 
+          <section class="termos-card" id="termos-de-uso" aria-labelledby="titulo-termos">
+            <h2 id="titulo-termos">Termos de uso</h2>
+ 
+            <section id="sobre">
+              <h3>1. Sobre o Busca Peça</h3>
+              <p>O Busca Peça conecta oficinas e lojas de autopeças. A plataforma organiza anúncios, pedidos e conversas, mas não é parte da venda entre comprador e vendedor.</p>
+            </section>
+ 
+            <section id="sua-conta">
+              <h3>2. Sua conta</h3>
+              <p>Uma única conta permite comprar e, depois de criar uma loja, vender. Você é responsável por manter seus dados corretos e sua senha em sigilo.</p>
+            </section>
+ 
+            <section id="comprar-e-vender">
+              <h3>3. Comprar e vender</h3>
+              <p>Cada pedido é enviado a uma loja, que pode aceitar ou recusar. O vendedor deve anunciar apenas peças que tem em estoque, com condição e origem corretas.</p>
+            </section>
+ 
+            <section id="pagamento-e-entrega">
+              <h3>4. Pagamento e entrega</h3>
+              <p>Nesta fase, pagamento, frete e retirada são combinados diretamente entre as partes, fora da plataforma. O Busca Peça não cobra comissão.</p>
+            </section>
+ 
+            <section id="conduta-e-anuncios">
+              <h3>5. Conduta e anúncios</h3>
+              <p>Anúncios enganosos, peças de origem irregular e contas falsas podem ser pausados ou removidos pela administração.</p>
+            </section>
+          </section>
+ 
+          <section class="termos-card" id="politica-de-privacidade" aria-labelledby="titulo-privacidade">
+            <h2 id="titulo-privacidade">Política de Privacidade</h2>
+ 
+            <section id="dados-pessoais">
+              <h3>6. Dados pessoais</h3>
+              <p>Coletamos nome, e-mail, telefone, endereço e, para lojas, CPF ou CNPJ. Esses dados são usados para identificar você, mostrar a distância até as lojas e organizar os pedidos.</p>
+              <!-- Complemento do ADR-013 (LGPD). Para ficar idêntico ao protótipo, apague esta lista. -->
+              <ul>
+                <li>Pedimos só os dados necessários em cada etapa. O CPF ou CNPJ é pedido apenas ao criar a loja.</li>
+                <li>A localização do aparelho só é usada com a sua permissão. Se preferir, você pode informar o CEP.</li>
+                <li>Não vendemos nem repassamos seus dados pessoais a terceiros.</li>
+                <li>Sua senha é guardada de forma criptografada e os dados trafegam por conexão segura (HTTPS).</li>
+                <li>Dados de navegação usados para melhorar a plataforma são anonimizados.</li>
+              </ul>
+            </section>
+ 
+            <section id="seus-direitos">
+              <h3>7. Seus direitos (LGPD)</h3>
+              <p>Você pode consultar, corrigir, exportar ou pedir a exclusão dos seus dados em Meu perfil. Pedidos em andamento precisam ser concluídos antes da exclusão.</p>
+            </section>
+ 
+            <section id="contato">
+              <h3>8. Contato</h3>
+              <p>Dúvidas sobre privacidade: <a href="mailto:contato@buscapeca.example.com">contato@buscapeca.example.com</a> • segunda a sexta, das 8h às 18h.</p>
+            </section>
+          </section>
+ 
+          <!-- Aceite e ações -->
+          <section class="termos-card termos__acoes" aria-label="Aceite e versões">
+            <!-- Aparece só para quem está logado, quando a API informa o aceite -->
+            <p class="termos__aceite" id="termos-aceite" hidden></p>
+ 
+            <div class="termos__botoes">
+              <button type="button" class="btn btn--contorno" id="botao-pdf">Baixar versão em PDF</button>
+              <button type="button" class="btn btn--contorno" id="botao-versoes"
+                      aria-expanded="false" aria-controls="versoes-anteriores">Ver versões anteriores</button>
+            </div>
+ 
+            <div class="termos__versoes" id="versoes-anteriores" hidden>
+              <h3>Versões anteriores</h3>
+              <ul id="lista-versoes" aria-live="polite"></ul>
+            </div>
+          </section>
+ 
+        </div>
+      </div>
+    </div>
+  </main>
+ 
+  <!-- Rodapé: preenchido por js/components/rodape.js (conteúdo provisório) -->
+  <footer id="rodape" class="rodape py-4 mt-4">
+    <div class="container-fluid px-3 px-lg-4">
+      <p class="mb-2">Ambiente demonstrativo • lojas, preços e estoques fictícios</p>
+      <p class="mb-0">
+        <a href="sobre.html">Busca Peça</a> •
+        <a href="sobre.html#contato">Contato</a> •
+        <a href="termos-de-uso.html" aria-current="page">Termos de uso</a> •
+        <a href="termos-de-uso.html#politica-de-privacidade">Privacidade</a>
+      </p>
+    </div>
+  </footer>
+ 
+</body>
+</html>
  

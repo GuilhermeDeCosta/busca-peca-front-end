@@ -222,6 +222,110 @@
             </form>
           </section>
         </div>
+         <!-- ===================== COLUNA LATERAL ===================== -->
+        <aside class="col-lg-4">
+          <div class="d-flex flex-column gap-4">
+ 
+            <!-- Notificações -->
+            <section class="perfil-card" aria-labelledby="titulo-notificacoes">
+              <h2 id="titulo-notificacoes" class="perfil-card__titulo">Notificações</h2>
+              <form id="form-notificacoes" novalidate>
+                <div class="perfil-opcao">
+                  <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="notif-pedidos" name="statusPedido">
+                    <label class="form-check-label fw-semibold" for="notif-pedidos">Atualizações dos meus pedidos</label>
+                  </div>
+                  <p class="perfil-ajuda">Avisos de aceite, preparação e retirada.</p>
+                </div>
+                <div class="perfil-opcao" id="opcao-loja" hidden>
+                  <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="notif-loja" name="novoPedido">
+                    <label class="form-check-label fw-semibold" for="notif-loja">Novos pedidos na minha loja</label>
+                  </div>
+                  <p class="perfil-ajuda">Acompanhe as solicitações de compradores.</p>
+                </div>
+                <div class="perfil-opcao">
+                  <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="notif-novidades" name="novidades">
+                    <label class="form-check-label fw-semibold" for="notif-novidades">Novidades do Busca Peça</label>
+                  </div>
+                  <p class="perfil-ajuda">Comunicações opcionais por e-mail.</p>
+                </div>
+ 
+                <button type="submit" class="btn btn--contorno w-100 mt-2">
+                  <span class="spinner-border spinner-border-sm me-1" aria-hidden="true" hidden></span>
+                  <span class="btn__texto">Salvar preferências</span>
+                </button>
+                <div class="perfil-aviso mt-3" id="aviso-notificacoes" aria-live="polite" hidden></div>
+              </form>
+            </section>
+ 
+            <!-- Termos e privacidade -->
+            <section class="perfil-card" aria-labelledby="titulo-termos">
+              <h2 id="titulo-termos" class="perfil-card__titulo">Termos e privacidade</h2>
+              <a href="../institucional/termos-de-uso.html" class="btn btn--contorno w-100 mb-2">Ler Termos de uso</a>
+              <a href="../institucional/termos-de-uso.html#politica-de-privacidade" class="btn btn--contorno w-100">Ler Política de Privacidade</a>
+              <p class="perfil-ajuda mt-3 mb-0" id="texto-aceite" hidden></p>
+            </section>
+ 
+            <!-- Gerenciar minha conta (LGPD: acesso, exportação, inativação e exclusão • ADR-013) -->
+            <section class="perfil-card" aria-labelledby="titulo-conta">
+              <h2 id="titulo-conta" class="perfil-card__titulo">Gerenciar minha conta</h2>
+              <p class="perfil-texto">Você pode baixar seus dados ou solicitar a inativação ou exclusão. Pedidos em andamento precisam ser resolvidos com as lojas.</p>
+ 
+              <button type="button" class="btn btn--contorno w-100 mb-2" id="botao-baixar-dados">
+                <span class="spinner-border spinner-border-sm me-1" aria-hidden="true" hidden></span>
+                <span class="btn__texto">Baixar meus dados</span>
+              </button>
+              <button type="button" class="btn btn--contorno w-100 mb-2" data-solicitar="INATIVAR"
+                      aria-controls="painel-confirmar" aria-expanded="false">Solicitar inativação</button>
+              <button type="button" class="btn btn--perigo w-100" data-solicitar="EXCLUIR"
+                      aria-controls="painel-confirmar" aria-expanded="false">Solicitar exclusão</button>
+              <div class="perfil-aviso mt-3" id="aviso-dados" aria-live="polite" hidden></div>
+            </section>
+ 
+            <!-- Confirmar solicitação: abre ao clicar em inativar ou excluir -->
+            <section class="perfil-card" id="painel-confirmar" aria-labelledby="titulo-confirmar" hidden>
+              <h2 id="titulo-confirmar" class="perfil-card__titulo" tabindex="-1">Confirmar solicitação</h2>
+              <form id="form-confirmar" novalidate>
+                <div class="mb-3">
+                  <label for="tipoSolicitacao" class="form-label">O que deseja fazer?</label>
+                  <select id="tipoSolicitacao" class="form-select">
+                    <option value="INATIVAR">Inativar minha conta</option>
+                    <option value="EXCLUIR">Excluir minha conta</option>
+                  </select>
+                </div>
+ 
+                <p class="perfil-texto" id="texto-impacto"></p>
+ 
+                <div class="mb-3">
+                  <label for="confirmarEmail" class="form-label">Confirme seu e-mail</label>
+                  <input id="confirmarEmail" type="email" class="form-control" inputmode="email" autocomplete="off"
+                         aria-describedby="erro-confirmarEmail">
+                  <div id="erro-confirmarEmail" class="invalid-feedback"></div>
+                </div>
+ 
+                <div class="form-check mb-3">
+                  <input class="form-check-input" type="checkbox" id="entendiImpacto" aria-describedby="erro-entendiImpacto">
+                  <label class="form-check-label" for="entendiImpacto" id="rotulo-impacto">Entendi o impacto na minha conta.</label>
+                  <div id="erro-entendiImpacto" class="invalid-feedback"></div>
+                </div>
+ 
+                <button type="submit" class="btn btn--perigo w-100 mb-2">
+                  <span class="spinner-border spinner-border-sm me-1" aria-hidden="true" hidden></span>
+                  <span class="btn__texto">Confirmar solicitação</span>
+                </button>
+                <button type="button" class="btn btn--contorno w-100" id="botao-manter-conta">Manter minha conta</button>
+ 
+                <div class="perfil-aviso mt-3" id="aviso-confirmar" aria-live="polite" hidden></div>
+              </form>
+            </section>
+ 
+          </div>
+        </aside>
+      </div>
+    </div>
+  </main>
  
 </body>
 </html>

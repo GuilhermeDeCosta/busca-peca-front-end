@@ -53,5 +53,47 @@
  
       <div class="row g-4" id="perfil-conteudo" hidden>
  
+        
+        <!-- ===================== COLUNA PRINCIPAL ===================== -->
+        <div class="col-lg-8">
+ 
+          <!-- Dados pessoais -->
+          <section class="perfil-card mb-4" aria-labelledby="titulo-pessoais">
+            <h2 id="titulo-pessoais" class="perfil-card__titulo">Dados pessoais</h2>
+            <span class="etiqueta" id="etiqueta-conta">Conta ativa</span>
+ 
+            <form id="form-pessoais" novalidate>
+              <div class="row g-3 mb-3">
+                <div class="col-md-6">
+                  <label for="nome" class="form-label">Nome completo</label>
+                  <input id="nome" name="nome" type="text" class="form-control" maxlength="150" required
+                         autocomplete="name" aria-describedby="erro-nome">
+                  <div id="erro-nome" class="invalid-feedback"></div>
+                </div>
+                <div class="col-md-6">
+                  <label for="telefone" class="form-label">Telefone</label>
+                  <input id="telefone" name="telefone" type="tel" class="form-control" inputmode="numeric"
+                         maxlength="15" placeholder="(00) 00000-0000" autocomplete="tel" aria-describedby="erro-telefone">
+                  <div id="erro-telefone" class="invalid-feedback"></div>
+                </div>
+                <div class="col-12">
+                  <label for="email" class="form-label">E-mail</label>
+                  <input id="email" name="email" type="email" class="form-control" inputmode="email" maxlength="150"
+                         required autocomplete="email" aria-describedby="erro-email">
+                  <div id="erro-email" class="invalid-feedback"></div>
+                </div>
+              </div>
+ 
+              <button type="submit" class="btn btn--verde">
+                <span class="spinner-border spinner-border-sm me-1" aria-hidden="true" hidden></span>
+                <span class="btn__texto">Salvar dados</span>
+              </button>
+ 
+              <div class="perfil-aviso mt-3" id="aviso-pessoais" aria-live="polite" hidden></div>
+            </form>
+ 
+            <a href="recuperar-senha.html" class="btn btn--contorno mt-3">Alterar senha</a>
+          </section>
+ 
 </body>
 </html>

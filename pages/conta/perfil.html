@@ -94,6 +94,134 @@
  
             <a href="recuperar-senha.html" class="btn btn--contorno mt-3">Alterar senha</a>
           </section>
+           <!-- Dados empresariais -->
+          <section class="perfil-card mb-4" aria-labelledby="titulo-empresa">
+            <h2 id="titulo-empresa" class="perfil-card__titulo">Dados empresariais</h2>
+            <span class="etiqueta etiqueta--neutra" id="etiqueta-verificacao">Sem verificação cadastral</span>
+ 
+            <form id="form-empresa" novalidate>
+              <div class="mb-3">
+                <label for="nomeExibicao" class="form-label">Nome da oficina / empresa</label>
+                <input id="nomeExibicao" name="nomeExibicao" type="text" class="form-control" maxlength="80" required
+                       autocomplete="organization" aria-describedby="erro-nomeExibicao">
+                <div id="erro-nomeExibicao" class="invalid-feedback"></div>
+              </div>
+              <div class="mb-3">
+                <label for="razaoSocial" class="form-label">Razão social</label>
+                <input id="razaoSocial" name="razaoSocial" type="text" class="form-control" maxlength="150"
+                       aria-describedby="erro-razaoSocial">
+                <div id="erro-razaoSocial" class="invalid-feedback"></div>
+              </div>
+              <div class="row g-3 mb-2">
+                <div class="col-md-6">
+                  <label for="documento" class="form-label" id="rotulo-documento">CNPJ</label>
+                  <!-- CPF/CNPJ é pedido ao criar a loja (ADR-013) e não é alterado aqui -->
+                  <input id="documento" type="text" class="form-control" readonly aria-describedby="ajuda-documento">
+                </div>
+                <div class="col-md-6">
+                  <label for="inscricaoEstadual" class="form-label">Inscrição estadual</label>
+                  <input id="inscricaoEstadual" name="inscricaoEstadual" type="text" class="form-control" maxlength="20"
+                         placeholder="Não informada" aria-describedby="erro-inscricaoEstadual">
+                  <div id="erro-inscricaoEstadual" class="invalid-feedback"></div>
+                </div>
+              </div>
+              <p class="perfil-ajuda mb-3" id="ajuda-documento">O documento é informado ao criar a loja.</p>
+ 
+              <button type="submit" class="btn btn--contorno">
+                <span class="spinner-border spinner-border-sm me-1" aria-hidden="true" hidden></span>
+                <span class="btn__texto">Salvar dados empresariais</span>
+              </button>
+ 
+              <div class="perfil-aviso mt-3" id="aviso-empresa" aria-live="polite" hidden></div>
+            </form>
+          </section>
+ 
+          <!-- Meus endereços -->
+          <section class="perfil-card" aria-labelledby="titulo-enderecos">
+            <h2 id="titulo-enderecos" class="perfil-card__titulo">Meus endereços</h2>
+ 
+            <ul class="perfil-enderecos" id="lista-enderecos"></ul>
+            <p class="perfil-ajuda mb-3" id="enderecos-vazio" hidden>Você ainda não tem endereço cadastrado.</p>
+ 
+            <button type="button" class="btn btn--contorno" id="botao-adicionar-endereco">Adicionar endereço</button>
+            <div class="perfil-aviso mt-3" id="aviso-enderecos" aria-live="polite" hidden></div>
+             <!-- Formulário de endereço: abre ao editar ou adicionar -->
+            <form id="form-endereco" class="perfil-endereco-form" novalidate hidden>
+              <h3 class="perfil-card__subtitulo" id="titulo-form-endereco" tabindex="-1">Editar endereço</h3>
+ 
+              <div class="row g-3 mb-3">
+                <div class="col-md-6">
+                  <label for="identificacao" class="form-label">Identificação</label>
+                  <input id="identificacao" name="identificacao" type="text" class="form-control" maxlength="40"
+                         placeholder="Ex.: Oficina, Depósito">
+                </div>
+                <div class="col-md-6">
+                  <label for="cep" class="form-label">CEP</label>
+                  <div class="position-relative">
+                    <input id="cep" name="cep" type="text" class="form-control" inputmode="numeric" maxlength="9"
+                           required placeholder="00000-000" autocomplete="postal-code" aria-describedby="erro-cep">
+                    <span class="spinner-border spinner-border-sm text-secondary perfil-cep-girando" id="cep-buscando"
+                          role="status" hidden><span class="visually-hidden">Buscando endereço</span></span>
+                    <div id="erro-cep" class="invalid-feedback"></div>
+                  </div>
+                </div>
+                <div class="col-md-8">
+                  <label for="logradouro" class="form-label">Rua</label>
+                  <input id="logradouro" name="logradouro" type="text" class="form-control" maxlength="150" required
+                         placeholder="Ex.: Rua das Oficinas" autocomplete="address-line1" aria-describedby="erro-logradouro">
+                  <div id="erro-logradouro" class="invalid-feedback"></div>
+                </div>
+                <div class="col-md-4">
+                  <label for="numero" class="form-label">Número</label>
+                  <input id="numero" name="numero" type="text" class="form-control" maxlength="10" required
+                         placeholder="S/N" aria-describedby="erro-numero">
+                  <div id="erro-numero" class="invalid-feedback"></div>
+                </div>
+                <div class="col-md-6">
+                  <label for="bairro" class="form-label">Bairro</label>
+                  <input id="bairro" name="bairro" type="text" class="form-control" maxlength="80" required
+                         aria-describedby="erro-bairro">
+                  <div id="erro-bairro" class="invalid-feedback"></div>
+                </div>
+                <div class="col-md-6">
+                  <label for="cidade" class="form-label">Cidade / UF</label>
+                  <div class="input-group has-validation">
+                    <input id="cidade" name="cidade" type="text" class="form-control" maxlength="80" required
+                           autocomplete="address-level2" aria-describedby="erro-cidade">
+                    <select id="estado" name="estado" class="form-select flex-grow-0 w-auto" aria-label="UF" required>
+                      <option value="">UF</option>
+                    </select>
+                    <div id="erro-cidade" class="invalid-feedback"></div>
+                  </div>
+                </div>
+                <div class="col-12">
+                  <label for="complemento" class="form-label">Complemento</label>
+                  <input id="complemento" name="complemento" type="text" class="form-control" maxlength="80"
+                         placeholder="Ex.: Galpão A, sala 2">
+                </div>
+                <div class="col-12">
+                  <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="principal" name="principal">
+                    <label class="form-check-label" for="principal">Usar como endereço principal</label>
+                  </div>
+                </div>
+              </div>
+ 
+              <div class="perfil-aviso perfil-aviso--info mb-3">
+                <i class="bi bi-info-circle" aria-hidden="true"></i>
+                <span>Não conseguiu consultar o CEP? Todos os campos podem ser preenchidos manualmente.</span>
+              </div>
+ 
+              <div class="d-flex flex-wrap gap-2">
+                <button type="submit" class="btn btn--verde">
+                  <span class="spinner-border spinner-border-sm me-1" aria-hidden="true" hidden></span>
+                  <span class="btn__texto">Salvar endereço</span>
+                </button>
+                <button type="button" class="btn btn--contorno" id="botao-cancelar-endereco">Cancelar</button>
+              </div>
+            </form>
+          </section>
+        </div>
  
 </body>
 </html>

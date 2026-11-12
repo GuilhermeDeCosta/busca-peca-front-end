@@ -109,3 +109,100 @@
         marcar(secoes[0].id);
     }
  
+    // ---------- 2. Voltar ----------
+ 
+    function ligarVoltar() {
+        document.getElementById('botao-voltar').addEventListener('click', function () {
+            let veioDoSite = false;
+            try { veioDoSite = new URL(document.referrer).origin === window.location.origin; } catch (e) { /* sem referrer */ }
+ 
+            if (veioDoSite && window.history.length > 1) {
+                window.history.back();
+                return;
+            }
+            // Aberta em outra aba (ex.: pelo link do cadastro): fecha a aba.
+            // Se o navegador não deixar, leva para a página inicial.
+            window.close();
+            setTimeout(function () { window.location.href = PAGINA_INICIAL; }, 300);
+        });
+    }
+ 
+    // ---------- 3. Baixar versão em PDF ----------
+ 
+    function ligarPdf() {
+        document.getElementById('botao-pdf').addEventListener('click', function () {
+            window.print();   // o CSS de impressão deixa só o texto dos termos
+        });
+    }
+ 
+    // ---------- 4. Versões anteriores ----------
+ 
+    function mostrarVersoes() {
+        const lista = document.getElementById('lista-versoes');
+        const info = lerResposta(vigentes);
+ 
+        if (vigentes === undefined) {
+            lista.innerHTML = '<li>Carregando…</li>';
+            return;
+        }
+        if (!info) {
+            lista.innerHTML = '<li>Não foi possível carregar o histórico agora. Tente novamente mais tarde.</li>';
+            return;
+        }
+        if (!info.anteriores.length) {
+            lista.innerHTML = '<li>Nenhuma versão anterior publicada.</li>';
+            return;
+        }
+        lista.innerHTML = '';
+        info.anteriores.forEach(function (v) {
+            const item = document.createElement('li');
+            item.textContent = 'Versão ' + v.versao + ' • publicada em ' + dataBR(v.dataPublicacao || v.data_publicacao);
+            lista.appendChild(item);
+        });
+    }
+ 
+    function ligarVersoes() {
+        const botao = document.getElementById('botao-versoes');
+        const painel = document.getElementById('versoes-anteriores');
+        botao.addEventListener('click', function () {
+            const abrir = painel.hidden;
+            painel.hidden = !abrir;
+            botao.setAttribute('aria-expanded', String(abrir));
+            botao.textContent = abrir ? 'Ocultar versões anteriores' : 'Ver versões anteriores';
+            if (abrir) mostrarVersoes();
+        });
+    }
+ 
+    // ---------- 5. Versão vigente (API) ----------
+ 
+    async function carregarVersaoVigente() {
+        vigentes = await buscarVigentes();
+        const info = lerResposta(vigentes);
+ 
+        if (info && info.versao) {
+            const partes = ['Versão ' + info.versao];
+            if (info.vigencia) partes.push('vigente desde ' + dataBR(info.vigencia));
+            if (info.atualizacao) partes.push('última atualização em ' + dataBR(info.atualizacao));
+            document.getElementById('termos-versao').textContent = partes.join(' • ');
+        }
+ 
+        if (info && info.aceite && info.aceite.data) {
+            const aceite = document.getElementById('termos-aceite');
+            aceite.textContent = 'Aceite registrado em ' + dataBR(info.aceite.data) +
+                ' para a versão ' + (info.aceite.versao || info.versao) + '.';
+            aceite.hidden = false;
+        }
+ 
+        // Se o painel de versões já estava aberto, atualiza
+        if (!document.getElementById('versoes-anteriores').hidden) mostrarVersoes();
+    }
+ 
+    // ---------- Início ----------
+ 
+    ligarIndice();
+    ligarVoltar();
+    ligarPdf();
+    ligarVersoes();
+    carregarVersaoVigente();
+})();
+ 

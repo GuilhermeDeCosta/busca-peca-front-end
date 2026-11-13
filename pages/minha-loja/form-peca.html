@@ -628,7 +628,7 @@
                 <button type="button" class="btn btn-primary w-100" disabled aria-disabled="true" title="Só na página publicada">
                   <i class="bi bi-cart3 me-1" aria-hidden="true"></i>Adicionar ao carrinho
                 </button>
-                <a :href="idPeca && statusSalvo === 'ATIVO' ? '../busca/peca.html?id=' + idPeca : null"
+                <a :href="idPeca && statusSalvo === 'ATIVO' ? '../busca/detalhe-peca.html?id=' + idPeca : null"
                    class="btn btn-link btn-texto-azul w-100 mt-1" :class="{ disabled: !(idPeca && statusSalvo === 'ATIVO') }"
                    :aria-disabled="!(idPeca && statusSalvo === 'ATIVO')">Ver detalhes</a>
               </div>

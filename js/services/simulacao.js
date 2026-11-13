@@ -15,6 +15,19 @@ export const lojaSimulada = {
   logoUrl: null,
   ativa: true,
   avaliacaoMedia: 4.8,
+  // Usados na tela Configurações da loja
+  descricao: 'Excedentes de estoque da Oficina Horizonte. Peças novas e revisadas da linha GM, Fiat e VW.',
+  telefone: '19900000101',
+  tipoPessoa: 'PJ',
+  cnpjCpf: '11222333000181',
+  endereco: { cep: '13010110', logradouro: 'Rua das Oficinas', numero: '120', bairro: 'Centro', cidade: 'Campinas', estado: 'SP' },
+  retiradaBalcao: true,
+  horarioRetirada: 'Seg. a sex., 8h–18h • sáb., 8h–12h',
+  entregaCombinar: true,
+  entregaRapida: false,
+  freteGratisRaioKm: 10,
+  pedidoMinimoFreteGratis: 200,
+  metodosPagamento: ['PIX', 'FATURADO'],
 };
 
 // status: ATIVO | PAUSADO | RASCUNHO

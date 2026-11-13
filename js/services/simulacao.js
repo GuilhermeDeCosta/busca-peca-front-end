@@ -14,7 +14,7 @@ export const lojaSimulada = {
   bannerUrl: null, // ex.: '../../assets/img/banner-exemplo.jpg' para testar com imagem
   logoUrl: null,
   ativa: true,
-  avaliacaoMedia: 0,
+  avaliacaoMedia: 4.8,
 };
 
 // status: ATIVO | PAUSADO | RASCUNHO
@@ -47,4 +47,43 @@ export const ultimaConversaSimulada = {
   comprador: 'Oficina Rumo Certo',
   codigoPedido: 'BP-2081',
   ultimaMensagem: 'Bom dia! Consigo retirar o alternador amanhã?',
+};
+
+export const categoriasSimuladas = [
+  { idCategoria: 1, nome: 'Elétrica', subcategorias: [
+    { idCategoria: 11, nome: 'Alternadores' }, { idCategoria: 12, nome: 'Motores de partida' },
+    { idCategoria: 13, nome: 'Sensores' }, { idCategoria: 14, nome: 'Velas e cabos' } ] },
+  { idCategoria: 2, nome: 'Freios', subcategorias: [
+    { idCategoria: 21, nome: 'Pastilhas' }, { idCategoria: 22, nome: 'Discos' }, { idCategoria: 23, nome: 'Fluidos' } ] },
+  { idCategoria: 3, nome: 'Suspensão', subcategorias: [
+    { idCategoria: 31, nome: 'Amortecedores' }, { idCategoria: 32, nome: 'Bandejas' } ] },
+  { idCategoria: 4, nome: 'Motor', subcategorias: [
+    { idCategoria: 41, nome: 'Correias' }, { idCategoria: 42, nome: 'Bombas d’água' }, { idCategoria: 43, nome: 'Filtros' },
+    { idCategoria: 44, nome: 'Embreagem' }, { idCategoria: 45, nome: 'Arrefecimento' } ] },
+  { idCategoria: 5, nome: 'Carroceria', subcategorias: [
+    { idCategoria: 51, nome: 'Retrovisores' }, { idCategoria: 52, nome: 'Faróis e lanternas' } ] },
+];
+
+export const veiculosSimulados = {
+  Chevrolet: ['Celta', 'Corsa', 'Onix', 'Prisma', 'S10'],
+  Fiat: ['Palio', 'Siena', 'Strada', 'Uno'],
+  Ford: ['Fiesta', 'Ka', 'Ranger'],
+  Volkswagen: ['Fox', 'Gol', 'Polo', 'Saveiro', 'Voyage'],
+  Renault: ['Clio', 'Logan', 'Sandero'],
+};
+
+// Base externa de códigos (GET /api/pecas/autopreenchimento)
+export const referenciasSimuladas = {
+  '0124325163': {
+    titulo: 'Alternador Bosch 90A • linha GM',
+    descricao: 'Alternador novo Bosch 90A, 12 V, com polia de 6 canais. Peça nacional para reposição na linha GM. Confira código, conectores e aplicação antes de solicitar. Embalagem com 1 unidade.',
+    idCategoria: 11,
+    marcaPeca: 'Bosch',
+    codigoOem: '0124325163',
+    codigoEan: '',
+    caracteristicas: '12 V • 90 A • polia 6 canais • conector padrão GM',
+    condicao: 'NOVA',
+    origem: 'NACIONAL',
+    aplicacoes: [{ marca: 'Chevrolet', modelo: 'Corsa', anoInicial: 2002, anoFinal: 2012, versao: '1.0 / 1.4 • confirmar OEM' }],
+  },
 };

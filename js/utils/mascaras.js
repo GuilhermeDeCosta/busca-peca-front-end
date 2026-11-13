@@ -30,3 +30,21 @@ export function mascararTelefone(valor) {
   if (d.length <= 10) return `(${d.slice(0, 2)}) ${d.slice(2, 6)}-${d.slice(6)}`;
   return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`;
 }
+
+// Dinheiro: "74900" -> "R$ 749,00" enquanto digita (os dígitos são os centavos)
+export function mascararMoeda(valor) {
+  const centavos = Number(somenteDigitos(valor).slice(0, 11) || 0);
+  if (!centavos) return '';
+  return (centavos / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+}
+
+// "R$ 1.234,50" -> 1234.5 (para enviar à API)
+export function moedaParaNumero(valor) {
+  return Number(somenteDigitos(valor) || 0) / 100;
+}
+
+// 1234.5 -> "R$ 1.234,50" (para preencher o campo ao editar)
+export function numeroParaMoeda(numero) {
+  if (numero == null || Number.isNaN(Number(numero))) return '';
+  return Number(numero).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+}

@@ -38,6 +38,17 @@ export async function buscarEnderecoPorCep(cep) {
 }
 
 /**
+ * GET /api/lojas/minha — dados da própria loja (nome, cidade, nota) (BP1-55).
+ */
+export async function obterMinhaLoja() {
+  if (USAR_SIMULACAO) {
+    await esperarSimulacao(300);
+    return { ...lojaSimulada };
+  }
+  // return api.get('/lojas/minha');
+}
+
+/**
  * GET /api/lojas/minha/painel — dados do painel da Minha Loja (BP1-32, 52, 65).
  * @returns {Promise<{
  *   loja: object,

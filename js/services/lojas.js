@@ -43,9 +43,50 @@ export async function buscarEnderecoPorCep(cep) {
 export async function obterMinhaLoja() {
   if (USAR_SIMULACAO) {
     await esperarSimulacao(300);
-    return { ...lojaSimulada };
+    return structuredClone(lojaSimulada);
   }
   // return api.get('/lojas/minha');
+}
+
+/**
+ * Salva a tela Configurações da loja (BP1-14, 18, 55). Faz em sequência:
+ *   1. PUT /api/lojas/minha com os dados, endereço, retirada, entrega e frete;
+ *   2. PUT /api/lojas/minha/metodos-pagamento com as formas aceitas;
+ *   3. POST /api/lojas/minha/logo e /banner (multipart) quando há imagem nova;
+ *   4. DELETE /api/lojas/minha/logo e /banner quando a imagem foi removida (rota a criar no back-end).
+ * @param {{ dados: object, metodosPagamento: string[],
+ *           logo: { arquivo?: File, remover?: boolean }, banner: { arquivo?: File, remover?: boolean } }} alteracoes
+ * @returns {Promise<object>} a loja atualizada, no formato de GET /api/lojas/minha
+ */
+export async function salvarConfiguracoes(alteracoes) {
+  if (USAR_SIMULACAO) return simularSalvarConfiguracoes(alteracoes);
+
+  const { dados, metodosPagamento, logo, banner } = alteracoes;
+  await api.put('/lojas/minha', dados);
+  await api.put('/lojas/minha/metodos-pagamento', { metodosPagamento });
+
+  for (const [tipo, imagem] of [['logo', logo], ['banner', banner]]) {
+    if (imagem?.arquivo) {
+      const formulario = new FormData();
+      formulario.append('arquivo', imagem.arquivo);
+      await api.post(`/lojas/minha/${tipo}`, formulario); // api.js não deve pôr Content-Type em FormData
+    } else if (imagem?.remover) {
+      await api.delete(`/lojas/minha/${tipo}`);
+    }
+  }
+  return api.get('/lojas/minha');
+}
+
+/** Pausa a loja: anúncios saem da busca e novos pedidos ficam bloqueados. Rota a criar: PATCH /api/lojas/minha/pausar */
+export async function pausarLoja() {
+  if (USAR_SIMULACAO) return simularStatusLoja(false);
+  return api.patch('/lojas/minha/pausar');
+}
+
+/** Reativa a loja. Rota a criar: PATCH /api/lojas/minha/reativar */
+export async function reativarLoja() {
+  if (USAR_SIMULACAO) return simularStatusLoja(true);
+  return api.patch('/lojas/minha/reativar');
 }
 
 /**
@@ -115,4 +156,29 @@ async function simularPainel() {
     alertasEstoque: baixos.map(({ idPeca, titulo, quantidadeEstoque }) => ({ idPeca, titulo, quantidadeEstoque })),
     ultimaConversa: { ...ultimaConversaSimulada },
   };
+}
+
+async function simularSalvarConfiguracoes({ dados, metodosPagamento, logo, banner }) {
+  await esperarSimulacao(900);
+  console.info('[simulação] salvar configurações', { dados, metodosPagamento, logo, banner });
+  // Para testar o erro da API, salve com o nome da loja começando por "erro".
+  if (dados.nomeLoja.toLowerCase().startsWith('erro')) {
+    throw { status: 400, mensagem: 'Revise os campos destacados.', campos: [{ campo: 'nomeLoja', mensagem: 'Já existe uma loja com esse nome.' }] };
+  }
+  Object.assign(lojaSimulada, dados, { metodosPagamento: [...metodosPagamento] });
+  lojaSimulada.cidade = dados.endereco.cidade;
+  lojaSimulada.estado = dados.endereco.estado;
+  // Na simulação a imagem nova vira um endereço temporário do navegador (some ao recarregar)
+  if (logo?.arquivo) lojaSimulada.logoUrl = URL.createObjectURL(logo.arquivo);
+  else if (logo?.remover) lojaSimulada.logoUrl = null;
+  if (banner?.arquivo) lojaSimulada.bannerUrl = URL.createObjectURL(banner.arquivo);
+  else if (banner?.remover) lojaSimulada.bannerUrl = null;
+  lojaSimulada.atualizadoEm = new Date().toISOString();
+  return structuredClone(lojaSimulada);
+}
+
+async function simularStatusLoja(ativa) {
+  await esperarSimulacao(600);
+  lojaSimulada.ativa = ativa;
+  return structuredClone(lojaSimulada);
 }

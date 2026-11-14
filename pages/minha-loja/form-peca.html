@@ -55,6 +55,15 @@
       --bs-btn-disabled-color: var(--bp-azul); --bs-btn-disabled-bg: #fff; --bs-btn-disabled-border-color: var(--bp-borda);
       font-weight: 600;
     }
+    .btn-contorno-vermelho {
+      --bs-btn-color: #b42318; --bs-btn-border-color: #b42318; --bs-btn-bg: #fff;
+      --bs-btn-hover-color: #b42318; --bs-btn-hover-bg: #fdecea; --bs-btn-hover-border-color: #b42318;
+      --bs-btn-disabled-color: #b42318; --bs-btn-disabled-bg: #fff; --bs-btn-disabled-border-color: #b42318;
+      font-weight: 600;
+    }
+    .etiqueta-status { font-size: .75rem; font-weight: 600; padding: .25rem .5rem; border-radius: .375rem; }
+    .etiqueta-status--ativo { background: #e6f4ea; color: #17633a; }
+    .etiqueta-status--pausado { background: #fdf3d8; color: #7a5300; }
     .btn-texto-azul { color: var(--bp-azul); font-weight: 600; text-decoration: none; }
     .btn-texto-azul:hover { color: var(--bp-azul); text-decoration: underline; }
 
@@ -510,7 +519,8 @@
                   </div>
                 </div>
 
-                <div class="form-check mb-3">
+                <!-- Só na primeira publicação. Depois, o status muda pelo card "Status do anúncio" (BP1-46). -->
+                <div class="form-check mb-3" x-show="!jaPublicado">
                   <input class="form-check-input" type="checkbox" id="ativarAposPublicar" x-model="form.ativarAposPublicar">
                   <label class="form-check-label" for="ativarAposPublicar">Ativar anúncio após publicar</label>
                 </div>
@@ -634,9 +644,49 @@
               </div>
             </div>
 
+            <!-- Status do anúncio publicado: pausar e reativar (BP1-46) -->
+            <section class="card" aria-labelledby="titulo-status" x-show="jaPublicado" x-cloak>
+              <div class="card-body p-3 p-md-4">
+                <h2 id="titulo-status" class="card-title mb-2">Status do anúncio</h2>
+                <span class="etiqueta-status d-inline-block mb-3"
+                      :class="statusSalvo === 'ATIVO' ? 'etiqueta-status--ativo' : 'etiqueta-status--pausado'"
+                      x-text="statusSalvo === 'ATIVO' ? 'Ativo' : 'Pausado'"></span>
+                <p class="small text-secondary mb-3" x-show="statusSalvo === 'ATIVO'">
+                  Aparece nas buscas e recebe pedidos. Pause quando a peça ficar indisponível por um tempo, sem perder o anúncio.
+                </p>
+                <p class="small text-secondary mb-3" x-show="statusSalvo === 'PAUSADO'">
+                  Fora das buscas e sem novos pedidos. Pedidos em andamento continuam. Reative quando a peça estiver disponível.
+                </p>
+                <button type="button" class="btn btn-contorno-vermelho w-100" x-show="statusSalvo === 'ATIVO'"
+                        @click="pedirMudancaStatus('pausar')" :disabled="mudandoStatus || Boolean(salvando)">
+                  <span x-show="mudandoStatus" x-cloak class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>
+                  Pausar anúncio
+                </button>
+                <button type="button" class="btn btn-primary w-100" x-show="statusSalvo === 'PAUSADO'"
+                        @click="pedirMudancaStatus('reativar')" :disabled="mudandoStatus || Boolean(salvando)">
+                  <span x-show="mudandoStatus" x-cloak class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>
+                  Reativar anúncio
+                </button>
+                <div aria-live="polite">
+                  <div class="aviso d-flex gap-2 align-items-start mt-3" x-show="avisoStatus" x-cloak
+                       :role="avisoStatus?.tipo === 'erro' ? 'alert' : null"
+                       :class="avisoStatus?.tipo === 'erro' ? 'aviso--erro' : 'aviso--sucesso'">
+                    <i class="bi mt-1" :class="avisoStatus?.tipo === 'erro' ? 'bi-exclamation-circle' : 'bi-check-circle'" aria-hidden="true"></i>
+                    <div>
+                      <span x-text="avisoStatus?.texto"></span>
+                      <template x-if="avisoStatus?.link">
+                        <a href="#secao-estoque" class="d-block fw-semibold mt-1 text-reset" @click.prevent="irParaEstoque()"
+                           x-text="avisoStatus.link.texto"></a>
+                      </template>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </section>
+
             <section class="card" aria-labelledby="titulo-checagem">
               <div class="card-body p-3 p-md-4">
-                <h2 id="titulo-checagem" class="card-title mb-3">Antes de publicar</h2>
+                <h2 id="titulo-checagem" class="card-title mb-3" x-text="jaPublicado ? 'Antes de salvar' : 'Antes de publicar'">Antes de publicar</h2>
                 <ul class="list-unstyled lista-checagem mb-0">
                   <template x-for="item in checklist" :key="item.texto">
                     <li>
@@ -661,7 +711,7 @@
 
     <!-- Janela de confirmação -->
     <div x-show="confirmacao.aberta" x-cloak @keydown.escape.window="confirmacao.aberta && fecharConfirmacao()">
-      <div class="modal d-block" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="titulo-confirmacao"
+      <div class="modal d-block" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="titulo-confirmacao" aria-describedby="texto-confirmacao"
            @click.self="fecharConfirmacao()">
         <div class="modal-dialog modal-dialog-centered">
           <div class="modal-content">
@@ -669,10 +719,11 @@
               <h2 id="titulo-confirmacao" class="modal-title h5" x-text="confirmacao.titulo"></h2>
               <button type="button" class="btn-close" aria-label="Fechar" @click="fecharConfirmacao()"></button>
             </div>
-            <div class="modal-body" x-text="confirmacao.texto"></div>
+            <div id="texto-confirmacao" class="modal-body" x-text="confirmacao.texto"></div>
             <div class="modal-footer border-0 pt-0">
-              <button type="button" class="btn btn-contorno-azul" @click="fecharConfirmacao()">Continuar editando</button>
-              <button type="button" id="botao-confirmar" class="btn btn-danger" @click="confirmar()" x-text="confirmacao.botao"></button>
+              <button type="button" class="btn btn-contorno-azul" @click="fecharConfirmacao()" x-text="confirmacao.botaoCancelar"></button>
+              <button type="button" id="botao-confirmar" class="btn" @click="confirmar()" x-text="confirmacao.botao"
+                      :class="confirmacao.estilo === 'primario' ? 'btn-primary' : 'btn-danger'"></button>
             </div>
           </div>
         </div>

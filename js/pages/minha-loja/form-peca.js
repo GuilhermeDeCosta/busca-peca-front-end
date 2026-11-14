@@ -1,13 +1,14 @@
 // Tela: minha-loja/form-peca.html — Cadastrar peça manualmente (4 etapas)
 // Também edita: form-peca.html?id=123 (link "Editar" do painel).
 // Ao editar um anúncio publicado, permite pausar e reativar (BP1-46).
+// Ao editar um anúncio ou rascunho já salvo, permite excluir (com confirmação).
 // Acesso: vendedor. Casos de uso: BP1-3, 9, 45, 46, 47, 63.
 import { obterMinhaLoja } from '../../services/lojas.js';
-import { consultarReferencia, obterPecaParaEdicao, salvarAnuncio, pausarAnuncio, reativarAnuncio } from '../../services/pecas.js';
+import { consultarReferencia, obterPecaParaEdicao, salvarAnuncio, pausarAnuncio, reativarAnuncio, excluirAnuncio } from '../../services/pecas.js';
 import { listarCategorias, listarMarcasVeiculo, listarModelos, listarMarcasPeca } from '../../services/catalogo.js';
 import { mascararMoeda, moedaParaNumero, numeroParaMoeda, somenteDigitos } from '../../utils/mascaras.js';
 import { formatarMoeda, pluralizarDiasUteis } from '../../utils/formatacao.js';
-import { confirmacaoStatus, mensagemSucessoStatus, avisoErroStatus } from '../../utils/status-anuncio.js';
+import { confirmacaoStatus, mensagemSucessoStatus, avisoErroStatus, confirmacaoExclusao } from '../../utils/status-anuncio.js';
 // import { exigirPapel } from '../../auth.js'; // ativar quando auth.js existir
 
 const FOTOS_MINIMAS = 5; // BP1-47: pelo menos cinco fotos
@@ -118,6 +119,7 @@ function paginaFormPeca() {
     // Pausar e reativar (BP1-46)
     mudandoStatus: false,
     avisoStatus: null, // { tipo: 'sucesso' | 'erro', texto, link? }
+    excluindo: false,
 
     async init() {
       // Quando auth.js existir: só vendedor (sem loja vai para criar-loja.html).
@@ -602,6 +604,43 @@ function paginaFormPeca() {
       setTimeout(() => document.getElementById('quantidade')?.focus({ preventScroll: true }), 400);
     },
 
+    // ----- Excluir anúncio ou rascunho já salvo -----
+    get podeExcluir() {
+      return Boolean(this.idPeca) && ['ATIVO', 'PAUSADO', 'RASCUNHO'].includes(this.statusSalvo) && !this.publicado;
+    },
+    get textoExcluir() {
+      return this.statusSalvo === 'RASCUNHO' ? 'Excluir rascunho' : 'Excluir anúncio';
+    },
+    pedirExclusao() {
+      if (!this.podeExcluir || this.excluindo) return;
+      const anuncio = { ...this.anuncioAtual, status: this.statusSalvo };
+      const confirmacao = confirmacaoExclusao(anuncio);
+      this.abrirConfirmacao({
+        ...confirmacao,
+        focoNoCancelar: true, // ação sem volta: Enter não exclui por engano
+        aoConfirmar: () => this.excluir(anuncio),
+        alternativa: confirmacao.sugerePausar
+          ? { texto: 'Pausar em vez disso', acao: () => this.mudarStatus('pausar') }
+          : null,
+      });
+    },
+    async excluir(anuncio) {
+      this.excluindo = true;
+      this.avisoGeral = null;
+      try {
+        await excluirAnuncio(this.idPeca);
+        this.sujo = false; // não pergunta "sair sem salvar?" ao voltar para o painel
+        const parametros = new URLSearchParams({ excluido: anuncio.titulo, tipo: anuncio.status });
+        location.href = `painel.html?${parametros}`;
+      } catch (erro) {
+        const aviso = avisoErroStatus(erro, anuncio, `form-peca.html?id=${encodeURIComponent(this.idPeca)}`);
+        const link = erro?.status === 404 ? { href: 'painel.html', texto: 'Voltar para Minha Loja' } : aviso.link;
+        this.avisoGeral = { tipo: 'erro', texto: aviso.texto, link };
+        this.$nextTick(() => document.getElementById('aviso-geral')?.focus());
+        this.excluindo = false;
+      }
+    },
+
     // ----- Cancelar -----
     cancelar() {
       if (!this.sujo) {
@@ -622,8 +661,8 @@ function paginaFormPeca() {
     },
     abrirConfirmacao(opcoes) {
       this.elementoAntesDaJanela = document.activeElement;
-      this.confirmacao = { aberta: true, botaoCancelar: 'Cancelar', estilo: 'perigo', ...opcoes };
-      this.$nextTick(() => document.getElementById('botao-confirmar')?.focus());
+      this.confirmacao = { aberta: true, botaoCancelar: 'Cancelar', estilo: 'perigo', alternativa: null, ...opcoes };
+      this.$nextTick(() => document.getElementById(opcoes.focoNoCancelar ? 'botao-cancelar' : 'botao-confirmar')?.focus());
     },
     fecharConfirmacao() {
       this.confirmacao.aberta = false;
@@ -632,6 +671,11 @@ function paginaFormPeca() {
     confirmar() {
       const acao = this.confirmacao.aoConfirmar;
       this.confirmacao.aberta = false;
+      acao?.();
+    },
+    escolherAlternativa() {
+      const acao = this.confirmacao.alternativa?.acao;
+      this.fecharConfirmacao();
       acao?.();
     },
   };

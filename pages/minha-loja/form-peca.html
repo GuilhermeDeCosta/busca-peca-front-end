@@ -65,6 +65,8 @@
     .etiqueta-status--ativo { background: #e6f4ea; color: #17633a; }
     .etiqueta-status--pausado { background: #fdf3d8; color: #7a5300; }
     .btn-texto-azul { color: var(--bp-azul); font-weight: 600; text-decoration: none; }
+    .link-excluir { color: #b42318; font-weight: 600; text-decoration: none; }
+    .link-excluir:hover { color: #b42318; text-decoration: underline; }
     .btn-texto-azul:hover { color: var(--bp-azul); text-decoration: underline; }
 
     /* Etapas */
@@ -574,7 +576,12 @@
             <div id="aviso-geral" class="aviso aviso--erro d-flex gap-2 mb-3" role="alert" tabindex="-1"
                  x-show="avisoGeral?.tipo === 'erro'" x-cloak>
               <i class="bi bi-exclamation-circle" aria-hidden="true"></i>
-              <span x-text="avisoGeral?.texto"></span>
+              <div>
+                <span x-text="avisoGeral?.texto"></span>
+                <template x-if="avisoGeral?.link">
+                  <a :href="avisoGeral.link.href" class="d-block fw-semibold mt-1 text-reset" x-text="avisoGeral.link.texto"></a>
+                </template>
+              </div>
             </div>
 
             <!-- Ações -->
@@ -587,7 +594,14 @@
                 <span x-show="salvando === 'publicar'" x-cloak class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>
                 <span x-text="salvando === 'publicar' ? 'Publicando…' : (statusSalvo && statusSalvo !== 'RASCUNHO' ? 'Salvar alterações' : 'Publicar anúncio')">Publicar anúncio</span>
               </button>
-              <button type="button" class="btn btn-light bg-white border-0 btn-texto-azul px-3" @click="cancelar()" :disabled="Boolean(salvando)">Cancelar</button>
+              <button type="button" class="btn btn-light bg-white border-0 btn-texto-azul px-3" @click="cancelar()" :disabled="Boolean(salvando) || excluindo">Cancelar</button>
+              <!-- Só ao editar algo já salvo; fica afastado dos outros botões para não ser clicado por engano -->
+              <button type="button" class="btn btn-link link-excluir ms-md-auto px-0" x-show="podeExcluir" x-cloak
+                      @click="pedirExclusao()" :disabled="Boolean(salvando) || excluindo || mudandoStatus">
+                <span x-show="excluindo" x-cloak class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>
+                <i x-show="!excluindo" class="bi bi-trash me-1" aria-hidden="true"></i>
+                <span x-text="excluindo ? 'Excluindo…' : textoExcluir">Excluir anúncio</span>
+              </button>
             </div>
 
             <!-- Resultado da publicação -->
@@ -721,7 +735,9 @@
             </div>
             <div id="texto-confirmacao" class="modal-body" x-text="confirmacao.texto"></div>
             <div class="modal-footer border-0 pt-0">
-              <button type="button" class="btn btn-contorno-azul" @click="fecharConfirmacao()" x-text="confirmacao.botaoCancelar"></button>
+              <button type="button" class="btn btn-link btn-texto-azul me-auto px-0" x-show="confirmacao.alternativa"
+                      @click="escolherAlternativa()" x-text="confirmacao.alternativa?.texto"></button>
+              <button type="button" id="botao-cancelar" class="btn btn-contorno-azul" @click="fecharConfirmacao()" x-text="confirmacao.botaoCancelar"></button>
               <button type="button" id="botao-confirmar" class="btn" @click="confirmar()" x-text="confirmacao.botao"
                       :class="confirmacao.estilo === 'primario' ? 'btn-primary' : 'btn-danger'"></button>
             </div>

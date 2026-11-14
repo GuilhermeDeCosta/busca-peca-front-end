@@ -22,13 +22,21 @@ export async function listarMeusAnuncios(filtros = {}) {
   // return api.get(`/pecas?${params}`);
 }
 
-/** PATCH /api/pecas/{id}/pausar (BP1-46) */
+/**
+ * PATCH /api/pecas/{id}/pausar — tira o anúncio das buscas sem excluir (BP1-46).
+ * @returns {Promise<{ idPeca: number, status: 'PAUSADO', atualizadoEm: string }>}
+ * Rejeita com 409 STATUS_INVALIDO se o anúncio não estiver ativo (ex.: já pausado em outra aba).
+ */
 export async function pausarAnuncio(idPeca) {
   if (USAR_SIMULACAO) return simularMudarStatus(idPeca, 'PAUSADO');
   // return api.patch(`/pecas/${idPeca}/pausar`);
 }
 
-/** PATCH /api/pecas/{id}/reativar (BP1-46) */
+/**
+ * PATCH /api/pecas/{id}/reativar — volta o anúncio pausado para as buscas (BP1-46).
+ * @returns {Promise<{ idPeca: number, status: 'ATIVO', atualizadoEm: string }>}
+ * Rejeita com 409 ESTOQUE_ZERADO se a quantidade for 0, ou 409 STATUS_INVALIDO se não estiver pausado.
+ */
 export async function reativarAnuncio(idPeca) {
   if (USAR_SIMULACAO) return simularMudarStatus(idPeca, 'ATIVO');
   // return api.patch(`/pecas/${idPeca}/reativar`);
@@ -150,13 +158,21 @@ async function simularListar({ q = '', status = '', estoque = '', pagina = 1, ta
 
 async function simularMudarStatus(idPeca, novoStatus) {
   await esperar(400);
-  const peca = anunciosSimulados.find((p) => p.idPeca === idPeca);
-  if (!peca) throw { status: 404, mensagem: 'Anúncio não encontrado.' };
+  const peca = anunciosSimulados.find((p) => p.idPeca === Number(idPeca));
+  if (!peca) throw { status: 404, erro: 'NAO_ENCONTRADO', mensagem: 'Anúncio não encontrado.' };
+  // As mesmas regras que a API vai aplicar
+  if (novoStatus === 'PAUSADO' && peca.status !== 'ATIVO') {
+    throw { status: 409, erro: 'STATUS_INVALIDO', mensagem: 'Só anúncios ativos podem ser pausados. A lista foi atualizada.' };
+  }
+  if (novoStatus === 'ATIVO' && peca.status !== 'PAUSADO') {
+    throw { status: 409, erro: 'STATUS_INVALIDO', mensagem: 'Só anúncios pausados podem ser reativados. A lista foi atualizada.' };
+  }
   if (novoStatus === 'ATIVO' && peca.quantidadeEstoque === 0) {
-    throw { status: 409, erro: 'ESTOQUE_ZERADO', mensagem: 'Atualize o estoque antes de reativar este anúncio.' };
+    throw { status: 409, erro: 'ESTOQUE_ZERADO', mensagem: 'Este anúncio está sem estoque. Atualize a quantidade antes de reativar.' };
   }
   peca.status = novoStatus;
-  return { ...peca };
+  peca.atualizadoEm = new Date().toISOString();
+  return { idPeca: peca.idPeca, status: peca.status, atualizadoEm: peca.atualizadoEm };
 }
 
 async function simularExcluir(idPeca) {

@@ -102,6 +102,12 @@
     .aviso { border-radius: .5rem; padding: .875rem 1rem; font-size: .875rem; }
     .aviso--sucesso { background: #e6f4ea; color: #17633a; }
     .aviso--erro { background: #fdecea; color: #b42318; }
+    .aviso-flutuante {
+      position: fixed; right: 1rem; bottom: 1rem; z-index: 1080;
+      width: min(26rem, calc(100vw - 2rem));
+    }
+    .aviso-flutuante .link-aviso { color: inherit; }
+    .aviso-flutuante .btn-close { font-size: .625rem; margin-top: .25rem; }
     .citacao-conversa { color: var(--bp-texto-suave); }
 
     .paginacao .page-link { color: var(--bp-azul); }
@@ -347,16 +353,21 @@
                     <td class="text-nowrap" x-text="textoCondicao(a)"></td>
                     <td class="text-nowrap" x-text="textoDisponibilidade(a)"></td>
                     <td class="text-nowrap">
-                      <a :href="linkEditar(a)">Editar</a> /
+                      <a :href="linkEditar(a)" :aria-label="'Editar ' + a.titulo">Editar</a> /
                       <template x-if="a.status === 'ATIVO'">
-                        <button type="button" class="link-acao" @click="pausar(a)" :disabled="emAcao === a.idPeca">pausar</button>
+                        <button type="button" class="link-acao" @click="pausar(a)" :disabled="emAcao === a.idPeca"
+                                :aria-label="'Pausar ' + a.titulo">pausar</button>
                       </template>
                       <template x-if="a.status === 'PAUSADO'">
-                        <button type="button" class="link-acao" @click="reativar(a)" :disabled="emAcao === a.idPeca">reativar</button>
+                        <button type="button" class="link-acao" @click="reativar(a)" :disabled="emAcao === a.idPeca"
+                                :aria-label="'Reativar ' + a.titulo">reativar</button>
                       </template>
                       <template x-if="a.status === 'RASCUNHO'">
-                        <button type="button" class="link-acao" @click="excluir(a)" :disabled="emAcao === a.idPeca">excluir</button>
+                        <button type="button" class="link-acao" @click="excluir(a)" :disabled="emAcao === a.idPeca"
+                                :aria-label="'Excluir ' + a.titulo">excluir</button>
                       </template>
+                      <span x-show="emAcao === a.idPeca" x-cloak class="spinner-border spinner-border-sm text-secondary ms-1"
+                            role="status"><span class="visually-hidden">Salvando</span></span>
                     </td>
                   </tr>
                 </template>
@@ -449,15 +460,7 @@
                 <button type="button" class="btn btn-contorno-azul py-2" @click="reativar()" :disabled="!podeReativar || emAcao">Reativar anúncio pausado</button>
                 <button type="button" class="btn btn-perigo-suave py-2" @click="excluir()" :disabled="!podeExcluir || emAcao">Excluir rascunho</button>
               </div>
-              <p class="small text-secondary mt-3 mb-0">Excluir exige confirmação. Pedidos existentes permanecem no histórico.</p>
-
-              <div aria-live="polite" class="mt-3">
-                <div class="aviso d-flex gap-2 align-items-start" x-show="aviso" x-cloak
-                     :class="aviso?.tipo === 'erro' ? 'aviso--erro' : 'aviso--sucesso'">
-                  <i class="bi" :class="aviso?.tipo === 'erro' ? 'bi-exclamation-circle' : 'bi-check-circle'" aria-hidden="true"></i>
-                  <span x-text="aviso?.texto"></span>
-                </div>
-              </div>
+              <p class="small text-secondary mt-3 mb-0">Pausar, reativar e excluir pedem confirmação. Pedidos existentes permanecem no histórico.</p>
             </div>
           </section>
         </div>
@@ -493,7 +496,7 @@
 
     <!-- Janela de confirmação -->
     <div x-show="confirmacao.aberta" x-cloak @keydown.escape.window="confirmacao.aberta && fecharConfirmacao()">
-      <div class="modal d-block" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="titulo-confirmacao"
+      <div class="modal d-block" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="titulo-confirmacao" aria-describedby="texto-confirmacao"
            @click.self="fecharConfirmacao()">
         <div class="modal-dialog modal-dialog-centered">
           <div class="modal-content">
@@ -501,15 +504,32 @@
               <h2 id="titulo-confirmacao" class="modal-title h5" x-text="confirmacao.titulo"></h2>
               <button type="button" class="btn-close" aria-label="Fechar" @click="fecharConfirmacao()"></button>
             </div>
-            <div class="modal-body" x-text="confirmacao.texto"></div>
+            <div id="texto-confirmacao" class="modal-body" x-text="confirmacao.texto"></div>
             <div class="modal-footer border-0 pt-0">
-              <button type="button" class="btn btn-contorno-azul" @click="fecharConfirmacao()">Manter</button>
-              <button type="button" id="botao-confirmar" class="btn btn-danger" @click="confirmar()" x-text="confirmacao.botao"></button>
+              <button type="button" class="btn btn-contorno-azul" @click="fecharConfirmacao()" x-text="confirmacao.botaoCancelar"></button>
+              <button type="button" id="botao-confirmar" class="btn" @click="confirmar()" x-text="confirmacao.botao"
+                      :class="confirmacao.estilo === 'primario' ? 'btn-primary' : 'btn-danger'"></button>
             </div>
           </div>
         </div>
       </div>
       <div class="modal-backdrop show"></div>
+    </div>
+
+    <!-- Aviso flutuante das ações (sucesso some sozinho; erro fica até fechar) -->
+    <div class="aviso-flutuante" aria-live="polite" aria-atomic="true">
+      <div class="aviso shadow-sm d-flex gap-2 align-items-start" x-show="aviso" x-cloak x-transition.opacity
+           :role="aviso?.tipo === 'erro' ? 'alert' : 'status'"
+           :class="aviso?.tipo === 'erro' ? 'aviso--erro' : 'aviso--sucesso'">
+        <i class="bi mt-1" :class="aviso?.tipo === 'erro' ? 'bi-exclamation-circle' : 'bi-check-circle'" aria-hidden="true"></i>
+        <div class="flex-grow-1">
+          <span x-text="aviso?.texto"></span>
+          <template x-if="aviso?.link">
+            <a :href="aviso.link.href" class="d-block fw-semibold mt-1 link-aviso" x-text="aviso.link.texto"></a>
+          </template>
+        </div>
+        <button type="button" class="btn-close btn-close-sm" aria-label="Fechar aviso" @click="fecharAviso()"></button>
+      </div>
     </div>
   </main>
 

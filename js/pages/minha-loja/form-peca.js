@@ -1,11 +1,13 @@
 // Tela: minha-loja/form-peca.html — Cadastrar peça manualmente (4 etapas)
 // Também edita: form-peca.html?id=123 (link "Editar" do painel).
-// Acesso: vendedor. Casos de uso: BP1-3, 9, 45, 47, 63.
+// Ao editar um anúncio publicado, permite pausar e reativar (BP1-46).
+// Acesso: vendedor. Casos de uso: BP1-3, 9, 45, 46, 47, 63.
 import { obterMinhaLoja } from '../../services/lojas.js';
-import { consultarReferencia, obterPecaParaEdicao, salvarAnuncio } from '../../services/pecas.js';
+import { consultarReferencia, obterPecaParaEdicao, salvarAnuncio, pausarAnuncio, reativarAnuncio } from '../../services/pecas.js';
 import { listarCategorias, listarMarcasVeiculo, listarModelos, listarMarcasPeca } from '../../services/catalogo.js';
 import { mascararMoeda, moedaParaNumero, numeroParaMoeda, somenteDigitos } from '../../utils/mascaras.js';
 import { formatarMoeda, pluralizarDiasUteis } from '../../utils/formatacao.js';
+import { confirmacaoStatus, mensagemSucessoStatus, avisoErroStatus } from '../../utils/status-anuncio.js';
 // import { exigirPapel } from '../../auth.js'; // ativar quando auth.js existir
 
 const FOTOS_MINIMAS = 5; // BP1-47: pelo menos cinco fotos
@@ -111,7 +113,11 @@ function paginaFormPeca() {
     erroFotos: '',
 
     // Confirmação
-    confirmacao: { aberta: false, titulo: '', texto: '', botao: '', aoConfirmar: null },
+    confirmacao: { aberta: false, titulo: '', texto: '', botao: '', botaoCancelar: 'Cancelar', estilo: 'perigo', aoConfirmar: null },
+
+    // Pausar e reativar (BP1-46)
+    mudandoStatus: false,
+    avisoStatus: null, // { tipo: 'sucesso' | 'erro', texto, link? }
 
     async init() {
       // Quando auth.js existir: só vendedor (sem loja vai para criar-loja.html).
@@ -139,7 +145,11 @@ function paginaFormPeca() {
       window.addEventListener('beforeunload', (evento) => {
         if (this.sujo && !this.publicado) evento.preventDefault();
       });
-      this.$nextTick(() => this.observarEtapas());
+      this.$nextTick(() => {
+        this.observarEtapas();
+        // Vindo do painel por "Atualizar estoque" (form-peca.html?id=X#secao-estoque)
+        if (location.hash === '#secao-estoque' && !this.erroCarregar) this.irParaEstoque();
+      });
     },
 
     async carregarPeca() {
@@ -491,7 +501,9 @@ function paginaFormPeca() {
         return;
       }
 
-      const status = !publicar ? 'RASCUNHO' : (this.form.ativarAposPublicar ? 'ATIVO' : 'PAUSADO');
+      // Anúncio já publicado mantém o status atual: pausar e reativar ficam no card "Status do anúncio"
+      let status = 'RASCUNHO';
+      if (publicar) status = this.jaPublicado ? this.statusSalvo : (this.form.ativarAposPublicar ? 'ATIVO' : 'PAUSADO');
       this.salvando = publicar ? 'publicar' : 'rascunho';
       try {
         const resultado = await salvarAnuncio({
@@ -548,6 +560,48 @@ function paginaFormPeca() {
       });
     },
 
+    // ----- Status do anúncio publicado (BP1-46) -----
+    get jaPublicado() {
+      return Boolean(this.idPeca) && (this.statusSalvo === 'ATIVO' || this.statusSalvo === 'PAUSADO');
+    },
+    get anuncioAtual() {
+      return { idPeca: this.idPeca, titulo: this.form.titulo.trim() || 'Este anúncio', codigoSku: this.form.codigoSku };
+    },
+    pedirMudancaStatus(acao) {
+      if (this.mudandoStatus || !this.jaPublicado) return;
+      const confirmacao = confirmacaoStatus(acao, this.anuncioAtual);
+      if (this.sujo) confirmacao.texto += ' As outras alterações deste formulário continuam sem salvar.';
+      this.abrirConfirmacao({ ...confirmacao, aoConfirmar: () => this.mudarStatus(acao) });
+    },
+    async mudarStatus(acao) {
+      this.mudandoStatus = true;
+      this.avisoStatus = null;
+      try {
+        const resultado = await (acao === 'pausar' ? pausarAnuncio : reativarAnuncio)(this.idPeca);
+        this.statusSalvo = resultado?.status || (acao === 'pausar' ? 'PAUSADO' : 'ATIVO');
+        this.avisoStatus = { tipo: 'sucesso', texto: mensagemSucessoStatus(acao, this.anuncioAtual) };
+      } catch (erro) {
+        const aviso = avisoErroStatus(erro, this.anuncioAtual, `form-peca.html?id=${encodeURIComponent(this.idPeca)}`);
+        this.avisoStatus = { tipo: 'erro', texto: aviso.texto, link: aviso.link };
+        if (aviso.recarregar) await this.recarregarStatus();
+      } finally {
+        this.mudandoStatus = false;
+      }
+    },
+    // Busca de novo só o status, sem mexer no que a pessoa está digitando
+    async recarregarStatus() {
+      try {
+        const { dados } = await obterPecaParaEdicao(this.idPeca);
+        this.statusSalvo = dados.status;
+      } catch {
+        // mantém o status que a tela já tinha
+      }
+    },
+    irParaEstoque() {
+      document.getElementById('secao-estoque')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      setTimeout(() => document.getElementById('quantidade')?.focus({ preventScroll: true }), 400);
+    },
+
     // ----- Cancelar -----
     cancelar() {
       if (!this.sujo) {
@@ -558,6 +612,8 @@ function paginaFormPeca() {
         titulo: 'Sair sem salvar?',
         texto: 'As alterações que você fez desde o último salvamento serão perdidas.',
         botao: 'Sair sem salvar',
+        botaoCancelar: 'Continuar editando',
+        estilo: 'perigo',
         aoConfirmar: () => {
           this.sujo = false;
           location.href = 'painel.html';
@@ -566,7 +622,7 @@ function paginaFormPeca() {
     },
     abrirConfirmacao(opcoes) {
       this.elementoAntesDaJanela = document.activeElement;
-      this.confirmacao = { aberta: true, ...opcoes };
+      this.confirmacao = { aberta: true, botaoCancelar: 'Cancelar', estilo: 'perigo', ...opcoes };
       this.$nextTick(() => document.getElementById('botao-confirmar')?.focus());
     },
     fecharConfirmacao() {

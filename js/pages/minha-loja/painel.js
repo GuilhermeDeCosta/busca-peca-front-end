@@ -4,6 +4,7 @@ import { obterPainel } from '../../services/lojas.js';
 import { listarMeusAnuncios, pausarAnuncio, reativarAnuncio, excluirAnuncio } from '../../services/pecas.js';
 import { listarPedidosRecebidos } from '../../services/pedidos.js';
 import { formatarMoeda, formatarData, pluralizarDiasUteis } from '../../utils/formatacao.js';
+import { confirmacaoStatus, mensagemSucessoStatus, avisoErroStatus } from '../../utils/status-anuncio.js';
 // import { exigirPapel } from '../../auth.js'; // ativar quando auth.js existir
 
 const ANUNCIOS_POR_PAGINA = 5;
@@ -51,8 +52,9 @@ function paginaPainel() {
     erroPedidos: '',
 
     // Avisos e confirmação
-    aviso: null, // { tipo: 'sucesso' | 'erro', texto }
-    confirmacao: { aberta: false, titulo: '', texto: '', botao: '', aoConfirmar: null },
+    aviso: null, // { tipo: 'sucesso' | 'erro', texto, link?: { href, texto } }
+    temporizadorAviso: null,
+    confirmacao: { aberta: false, titulo: '', texto: '', botao: '', botaoCancelar: 'Cancelar', estilo: 'perigo', aoConfirmar: null },
 
     formatarMoeda,
     formatarData,
@@ -205,29 +207,65 @@ function paginaPainel() {
     get podeExcluir() { return this.selecionado?.status === 'RASCUNHO'; },
     get dicaGerenciar() {
       if (!this.selecionado) return 'Selecione um anúncio na tabela para pausar, reativar ou excluir.';
-      return `Selecionado: ${this.selecionado.titulo} • ${this.selecionado.codigoSku}.`;
+      const status = { ATIVO: 'ativo', PAUSADO: 'pausado', RASCUNHO: 'rascunho' }[this.selecionado.status] || '';
+      return `Selecionado: ${this.selecionado.titulo} • ${this.selecionado.codigoSku} (${status}).`;
     },
 
     async executar(a, acao, mensagemSucesso) {
       this.emAcao = a.idPeca;
-      this.aviso = null;
+      this.fecharAviso();
       try {
         await acao(a.idPeca);
-        this.aviso = { tipo: 'sucesso', texto: mensagemSucesso };
+        this.mostrarAviso({ tipo: 'sucesso', texto: mensagemSucesso });
         await Promise.all([this.carregarAnuncios(), this.carregarPainel()]);
+        return true;
       } catch (erro) {
-        this.aviso = { tipo: 'erro', texto: erro?.mensagem || ERRO_GENERICO };
+        this.mostrarAviso({ tipo: 'erro', texto: erro?.mensagem || ERRO_GENERICO });
+        return false;
       } finally {
         this.emAcao = null;
       }
     },
+
+    // ----- Pausar e reativar (BP1-46): sempre com confirmação -----
     pausar(a = this.selecionado) {
-      if (!a) return;
-      this.executar(a, pausarAnuncio, `Anúncio pausado. ${a.titulo} não aparece mais nas buscas.`);
+      if (a?.status === 'ATIVO') this.pedirMudancaStatus('pausar', a);
     },
     reativar(a = this.selecionado) {
-      if (!a) return;
-      this.executar(a, reativarAnuncio, `Anúncio reativado. ${a.titulo} voltou a aparecer nas buscas.`);
+      if (a?.status === 'PAUSADO') this.pedirMudancaStatus('reativar', a);
+    },
+    pedirMudancaStatus(acao, a) {
+      this.abrirConfirmacao({
+        ...confirmacaoStatus(acao, a),
+        aoConfirmar: () => this.mudarStatus(acao, a),
+      });
+    },
+    async mudarStatus(acao, a) {
+      this.emAcao = a.idPeca;
+      this.fecharAviso();
+      try {
+        await (acao === 'pausar' ? pausarAnuncio : reativarAnuncio)(a.idPeca);
+        this.mostrarAviso({ tipo: 'sucesso', texto: mensagemSucessoStatus(acao, a) });
+        await Promise.all([this.carregarAnuncios(), this.carregarPainel()]);
+      } catch (erro) {
+        const aviso = avisoErroStatus(erro, a, this.linkEditar(a));
+        this.mostrarAviso({ tipo: 'erro', texto: aviso.texto, link: aviso.link });
+        if (aviso.recarregar) await Promise.all([this.carregarAnuncios(), this.carregarPainel()]);
+      } finally {
+        this.emAcao = null;
+      }
+    },
+
+    // ----- Aviso flutuante (aparece perto de onde a pessoa está, sem rolar a página) -----
+    mostrarAviso(aviso) {
+      clearTimeout(this.temporizadorAviso);
+      this.aviso = aviso;
+      // Sucesso some sozinho; erro fica até a pessoa fechar
+      if (aviso.tipo === 'sucesso') this.temporizadorAviso = setTimeout(() => { this.aviso = null; }, 6000);
+    },
+    fecharAviso() {
+      clearTimeout(this.temporizadorAviso);
+      this.aviso = null;
     },
     excluir(a = this.selecionado) {
       if (!a) return;
@@ -235,8 +273,10 @@ function paginaPainel() {
         titulo: 'Excluir rascunho?',
         texto: `${a.titulo} (${a.codigoSku}) será removido da sua lista. Pedidos existentes permanecem no histórico.`,
         botao: 'Excluir rascunho',
-        aoConfirmar: () => this.executar(a, excluirAnuncio, `Rascunho excluído. ${a.titulo} saiu da sua lista.`).then(() => {
-          if (this.selecionado?.idPeca === a.idPeca) this.selecionado = null;
+        botaoCancelar: 'Manter rascunho',
+        estilo: 'perigo',
+        aoConfirmar: () => this.executar(a, excluirAnuncio, `Rascunho excluído. ${a.titulo} saiu da sua lista.`).then((ok) => {
+          if (ok && this.selecionado?.idPeca === a.idPeca) this.selecionado = null;
         }),
       });
     },
@@ -244,7 +284,7 @@ function paginaPainel() {
     // ----- Janela de confirmação -----
     abrirConfirmacao(opcoes) {
       this.elementoAntesDaJanela = document.activeElement;
-      this.confirmacao = { aberta: true, ...opcoes };
+      this.confirmacao = { aberta: true, botaoCancelar: 'Cancelar', estilo: 'perigo', ...opcoes };
       this.$nextTick(() => document.getElementById('botao-confirmar')?.focus());
     },
     fecharConfirmacao() {

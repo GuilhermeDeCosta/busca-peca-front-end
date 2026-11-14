@@ -4,7 +4,7 @@ import { obterPainel } from '../../services/lojas.js';
 import { listarMeusAnuncios, pausarAnuncio, reativarAnuncio, excluirAnuncio } from '../../services/pecas.js';
 import { listarPedidosRecebidos } from '../../services/pedidos.js';
 import { formatarMoeda, formatarData, pluralizarDiasUteis } from '../../utils/formatacao.js';
-import { confirmacaoStatus, mensagemSucessoStatus, avisoErroStatus } from '../../utils/status-anuncio.js';
+import { confirmacaoStatus, mensagemSucessoStatus, avisoErroStatus, confirmacaoExclusao, mensagemSucessoExclusao } from '../../utils/status-anuncio.js';
 // import { exigirPapel } from '../../auth.js'; // ativar quando auth.js existir
 
 const ANUNCIOS_POR_PAGINA = 5;
@@ -54,7 +54,7 @@ function paginaPainel() {
     // Avisos e confirmação
     aviso: null, // { tipo: 'sucesso' | 'erro', texto, link?: { href, texto } }
     temporizadorAviso: null,
-    confirmacao: { aberta: false, titulo: '', texto: '', botao: '', botaoCancelar: 'Cancelar', estilo: 'perigo', aoConfirmar: null },
+    confirmacao: { aberta: false, titulo: '', texto: '', botao: '', botaoCancelar: 'Cancelar', estilo: 'perigo', aoConfirmar: null, alternativa: null },
 
     formatarMoeda,
     formatarData,
@@ -62,7 +62,21 @@ function paginaPainel() {
     async init() {
       // Quando auth.js existir: sem login vai para o login; sem loja vai para criar-loja.html.
       // await exigirPapel('VENDEDOR');
+      this.avisoDaUrl();
       await Promise.all([this.carregarPainel(), this.carregarAnuncios(), this.carregarPedidos()]);
+    },
+
+    // Vindo do formulário depois de excluir: painel.html?excluido=Alternador%20Bosch%2090A
+    avisoDaUrl() {
+      const parametros = new URLSearchParams(location.search);
+      const excluido = parametros.get('excluido');
+      if (!excluido) return;
+      const rascunho = parametros.get('tipo') === 'RASCUNHO';
+      this.mostrarAviso({
+        tipo: 'sucesso',
+        texto: mensagemSucessoExclusao({ titulo: excluido, status: rascunho ? 'RASCUNHO' : 'ATIVO' }),
+      });
+      history.replaceState(null, '', location.pathname); // recarregar a página não repete o aviso
     },
 
     // ----- Carregamento -----
@@ -86,7 +100,11 @@ function paginaPainel() {
       this.carregandoAnuncios = true;
       this.erroAnuncios = '';
       try {
-        const resposta = await listarMeusAnuncios({ ...this.filtros, pagina: this.pagina, tamanho: ANUNCIOS_POR_PAGINA });
+        let resposta = await listarMeusAnuncios({ ...this.filtros, pagina: this.pagina, tamanho: ANUNCIOS_POR_PAGINA });
+        if (!resposta.itens.length && this.pagina > 1) {
+          this.pagina = Math.max(1, Math.min(this.pagina - 1, resposta.totalPaginas));
+          resposta = await listarMeusAnuncios({ ...this.filtros, pagina: this.pagina, tamanho: ANUNCIOS_POR_PAGINA });
+        }
         this.anuncios = resposta.itens;
         this.totalAnuncios = resposta.totalRegistros;
         this.totalPaginas = resposta.totalPaginas;
@@ -204,28 +222,16 @@ function paginaPainel() {
     },
     get podePausar() { return this.selecionado?.status === 'ATIVO'; },
     get podeReativar() { return this.selecionado?.status === 'PAUSADO'; },
-    get podeExcluir() { return this.selecionado?.status === 'RASCUNHO'; },
+    get podeExcluir() { return Boolean(this.selecionado); },
+    get textoBotaoExcluir() {
+      return this.selecionado?.status === 'RASCUNHO' ? 'Excluir rascunho' : 'Excluir anúncio selecionado';
+    },
     get dicaGerenciar() {
       if (!this.selecionado) return 'Selecione um anúncio na tabela para pausar, reativar ou excluir.';
       const status = { ATIVO: 'ativo', PAUSADO: 'pausado', RASCUNHO: 'rascunho' }[this.selecionado.status] || '';
       return `Selecionado: ${this.selecionado.titulo} • ${this.selecionado.codigoSku} (${status}).`;
     },
 
-    async executar(a, acao, mensagemSucesso) {
-      this.emAcao = a.idPeca;
-      this.fecharAviso();
-      try {
-        await acao(a.idPeca);
-        this.mostrarAviso({ tipo: 'sucesso', texto: mensagemSucesso });
-        await Promise.all([this.carregarAnuncios(), this.carregarPainel()]);
-        return true;
-      } catch (erro) {
-        this.mostrarAviso({ tipo: 'erro', texto: erro?.mensagem || ERRO_GENERICO });
-        return false;
-      } finally {
-        this.emAcao = null;
-      }
-    },
 
     // ----- Pausar e reativar (BP1-46): sempre com confirmação -----
     pausar(a = this.selecionado) {
@@ -267,25 +273,42 @@ function paginaPainel() {
       clearTimeout(this.temporizadorAviso);
       this.aviso = null;
     },
+    // ----- Excluir anúncio ou rascunho: sempre com confirmação -----
     excluir(a = this.selecionado) {
       if (!a) return;
+      const confirmacao = confirmacaoExclusao(a);
       this.abrirConfirmacao({
-        titulo: 'Excluir rascunho?',
-        texto: `${a.titulo} (${a.codigoSku}) será removido da sua lista. Pedidos existentes permanecem no histórico.`,
-        botao: 'Excluir rascunho',
-        botaoCancelar: 'Manter rascunho',
-        estilo: 'perigo',
-        aoConfirmar: () => this.executar(a, excluirAnuncio, `Rascunho excluído. ${a.titulo} saiu da sua lista.`).then((ok) => {
-          if (ok && this.selecionado?.idPeca === a.idPeca) this.selecionado = null;
-        }),
+        ...confirmacao,
+        focoNoCancelar: true, // ação sem volta: Enter não exclui por engano
+        aoConfirmar: () => this.confirmarExclusao(a),
+        // Anúncio ativo: oferece pausar no lugar de excluir
+        alternativa: confirmacao.sugerePausar
+          ? { texto: 'Pausar em vez disso', acao: () => this.mudarStatus('pausar', a) }
+          : null,
       });
+    },
+    async confirmarExclusao(a) {
+      this.emAcao = a.idPeca;
+      this.fecharAviso();
+      try {
+        await excluirAnuncio(a.idPeca);
+        if (this.selecionado?.idPeca === a.idPeca) this.selecionado = null;
+        this.mostrarAviso({ tipo: 'sucesso', texto: mensagemSucessoExclusao(a) });
+        await Promise.all([this.carregarAnuncios(), this.carregarPainel()]);
+      } catch (erro) {
+        const aviso = avisoErroStatus(erro, a, this.linkEditar(a));
+        this.mostrarAviso({ tipo: 'erro', texto: aviso.texto, link: aviso.link });
+        if (aviso.recarregar) await Promise.all([this.carregarAnuncios(), this.carregarPainel()]);
+      } finally {
+        this.emAcao = null;
+      }
     },
 
     // ----- Janela de confirmação -----
     abrirConfirmacao(opcoes) {
       this.elementoAntesDaJanela = document.activeElement;
-      this.confirmacao = { aberta: true, botaoCancelar: 'Cancelar', estilo: 'perigo', ...opcoes };
-      this.$nextTick(() => document.getElementById('botao-confirmar')?.focus());
+      this.confirmacao = { aberta: true, botaoCancelar: 'Cancelar', estilo: 'perigo', alternativa: null, ...opcoes };
+      this.$nextTick(() => document.getElementById(opcoes.focoNoCancelar ? 'botao-cancelar' : 'botao-confirmar')?.focus());
     },
     fecharConfirmacao() {
       this.confirmacao.aberta = false;
@@ -293,6 +316,11 @@ function paginaPainel() {
     },
     confirmar() {
       const acao = this.confirmacao.aoConfirmar;
+      this.fecharConfirmacao();
+      acao?.();
+    },
+    escolherAlternativa() {
+      const acao = this.confirmacao.alternativa?.acao;
       this.fecharConfirmacao();
       acao?.();
     },

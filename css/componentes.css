@@ -21,15 +21,27 @@ cabeçalho, card de peça, galeria, chat
 }
 
 .btn--verde {
-    background: var(--verde);
-    color: var(--branco);
+    --bs-btn-color: var(--branco);
+    --bs-btn-bg: var(--verde);
+    --bs-btn-hover-color: var(--branco);
+    --bs-btn-hover-bg: var(--verde-hover);
+    --bs-btn-active-color: var(--branco);
+    --bs-btn-active-bg: var(--verde-hover);
+    --bs-btn-disabled-color: var(--branco);
+    --bs-btn-disabled-bg: var(--verde);
 }
 .btn--verde:hover { background: var(--verde-hover); }
 
 .btn--contorno {
-    background: var(--branco);
-    border-color: var(--cinza-borda);
-    color: var(--azul-escuro);
+    --bs-btn-color: var(--azul-escuro);
+    --bs-btn-bg: var(--branco);
+    --bs-btn-border-color: var(--cinza-borda);
+    --bs-btn-hover-color: var(--azul-escuro);
+    --bs-btn-hover-bg: var(--branco);
+    --bs-btn-hover-border-color: var(--azul-escuro);
+    --bs-btn-active-color: var(--azul-escuro);
+    --bs-btn-active-bg: var(--cinza-fundo);
+    --bs-btn-active-border-color: var(--azul-escuro);
 }
 .btn--contorno:hover { border-color: var(--azul-escuro); }
 

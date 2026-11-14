@@ -35,7 +35,7 @@
 
     // Caminhos das páginas a partir da raiz. Mudou o nome de um arquivo? Mude só aqui.
     const ROTAS = {
-        inicio: 'pages/busca/main.html',
+        inicio: 'index.html',
         resultados: 'pages/busca/resultados.html',
         favoritos: 'pages/conta/favoritos.html',
         perfil: 'pages/conta/perfil.html',
@@ -54,7 +54,7 @@
     // Menu principal. "caminhos" marca o item ativo pela página aberta.
     // Também dá para forçar com <header id="cabecalho" data-ativo="minha-loja">.
     const MENU = [
-        { id: 'inicio', texto: 'Início', rota: 'inicio', caminhos: ['pages/busca/main.html', 'index.html', ''] },
+        { id: 'inicio', texto: 'Início', rota: 'inicio', caminhos: ['index.html', ''] },
         { id: 'buscar', texto: 'Buscar peças', rota: 'resultados', caminhos: ['pages/busca/'] },
         { id: 'categorias', texto: 'Categorias', painel: true },
         { id: 'favoritos', texto: 'Favoritos', rota: 'favoritos', caminhos: ['pages/conta/favoritos'] },

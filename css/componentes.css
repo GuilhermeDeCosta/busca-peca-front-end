@@ -319,3 +319,135 @@ input:focus-visible {
 .rodape a { color: var(--branco); }
 .rodape a:hover { text-decoration: underline; }
 .rodape a:focus-visible { outline: 3px solid #f2b705; outline-offset: 2px; }
+
+
+/* =========================================================
+   RODAPÉ COMPLETO (.rodape--completo) • usado na página inicial
+   Mesmo conteúdo do protótipo: marca, Institucional e Conte com a gente.
+   ========================================================= */
+.rodape--completo { padding: 40px 0 32px; margin-top: 56px; font-size: 15px; }
+.rodape__marca {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 44px;
+    color: var(--branco);
+    font-size: 22px;
+    font-weight: 800;
+    font-style: italic;
+}
+.rodape__marca img { width: 58px; height: auto; filter: brightness(0) invert(1); }
+.rodape__marca-destaque { color: #6fd38f; }
+.rodape__frase { margin: 8px 0 0; }
+.rodape__aviso { margin: 24px 0 0; font-size: 12px; color: #b9c9da; }
+.rodape__titulo { font-size: 15px; font-weight: 700; color: var(--branco); margin-bottom: 12px; }
+.rodape__lista { list-style: none; padding: 0; margin: 0; }
+.rodape__lista li { margin-bottom: 10px; }
+.rodape__lista a { display: inline-block; padding: 2px 0; }
+
+/* =========================================================
+   CARD DE PEÇA • usado com js/components/card-peca.js
+   Início, resultados, favoritos e loja pública.
+   ========================================================= */
+.card-peca {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    background: var(--branco);
+    border: 1px solid var(--cinza-borda);
+    border-radius: 12px;
+    padding: 14px;
+}
+.card-peca__topo { display: flex; justify-content: space-between; align-items: center; margin: -4px -6px 0 0; }
+.card-peca__tag {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--texto-suave);
+    background: #eef1f5;
+    padding: 3px 8px;
+    border-radius: 4px;
+}
+.card-peca__fav {
+    display: inline-grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    border: 0;
+    border-radius: 8px;
+    background: none;
+    color: var(--azul-escuro);
+    font-size: 20px;
+    cursor: pointer;
+}
+.card-peca__fav:hover { background: var(--cinza-fundo); }
+.card-peca__fav[aria-pressed="true"] { color: #c62f3b; }
+.card-peca__fav:disabled { opacity: .6; cursor: wait; }
+
+.card-peca__img {
+    display: block;
+    height: 150px;
+    border-radius: 8px;
+    overflow: hidden;
+    background: linear-gradient(180deg, #e9edf2, #d9dfe6);
+    margin-bottom: 6px;
+}
+.card-peca__img img { width: 100%; height: 100%; object-fit: cover; }
+
+.card-peca__titulo { font-size: 16px; font-weight: 700; line-height: 1.35; margin: 0; min-height: 2.7em; }
+.card-peca__titulo a { color: var(--azul-escuro); }
+.card-peca__titulo a:hover { text-decoration: underline; }
+.card-peca__codigo { font-size: 12px; color: var(--texto-suave); margin: 4px 0 0; }
+.card-peca__preco { font-size: 26px; font-weight: 600; color: var(--azul-escuro); line-height: 1.2; margin: 0; }
+.card-peca__preco-antigo { display: block; font-size: 13px; font-weight: 400; color: var(--texto-suave); }
+.card-peca__loja { font-size: 13px; margin: 0; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.card-peca__loja a { color: var(--texto); }
+.card-peca__loja a:hover { color: var(--azul-escuro); text-decoration: underline; }
+.card-peca__nota { white-space: nowrap; }
+.card-peca__nota .bi { font-size: 11px; margin-right: 2px; }
+.card-peca__local { font-size: 12px; color: var(--texto-suave); margin: 0; }
+.card-peca__estoque { font-size: 12px; color: var(--verde); margin: 0; }
+.card-peca__estoque--zerado { color: #b42318; }
+
+.card-peca__acoes {
+    margin-top: auto;
+    padding-top: 12px;
+    border-top: 1px solid var(--cinza-borda);
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.card-peca__acoes .btn { min-height: 44px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+.card-peca__detalhes {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--azul-escuro);
+}
+.card-peca__detalhes:hover { text-decoration: underline; }
+
+.card-peca a:focus-visible,
+.card-peca button:focus-visible { outline: 3px solid #f2b705; outline-offset: 2px; }
+
+/* Esqueleto enquanto carrega */
+.card-peca.placeholder-glow { gap: 10px; }
+.card-peca.placeholder-glow .card-peca__img { cursor: default; }
+
+/* =========================================================
+   AVISO FLUTUANTE (toast) • usado com js/components/aviso.js
+   ========================================================= */
+.aviso { border-radius: .5rem; padding: .875rem 1rem; font-size: .875rem; }
+.aviso--sucesso { background: #e6f4ea; color: #17633a; }
+.aviso--erro { background: #fdecea; color: #b42318; }
+.aviso-flutuante {
+    position: fixed;
+    right: 1rem;
+    bottom: 1rem;
+    z-index: 1080;
+    width: min(26rem, calc(100vw - 2rem));
+}
+.aviso__link { display: inline-block; margin-left: 4px; color: inherit; font-weight: 700; text-decoration: underline; }
+.aviso-flutuante .btn-close { font-size: .625rem; margin-top: .25rem; }

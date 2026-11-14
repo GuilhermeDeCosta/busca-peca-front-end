@@ -293,3 +293,217 @@ header__voltar { margin-left: auto; }
     .termos-card { border: none; padding: 0; }
     .termos-card section { break-inside: avoid; }
 }
+
+/* =========================================================
+   PÁGINA INICIAL
+   index.html • Fluxo A, etapa 01 • BP1-4, BP1-6
+   O card de peça e o rodapé estão em componentes.css.
+   ========================================================= */
+
+/* Destaque azul com a busca */
+.inicio-hero { background: var(--azul-escuro); color: var(--branco); padding: 48px 0 56px; }
+.inicio-selo {
+    display: inline-block;
+    background: #e5f2e9;
+    color: var(--verde);
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    padding: 4px 10px;
+    border-radius: 6px;
+    margin-bottom: 20px;
+}
+.inicio-hero__titulo {
+    font-size: clamp(2rem, 4.2vw, 3.25rem);
+    font-weight: 800;
+    line-height: 1.15;
+    color: var(--branco);
+    margin-bottom: 20px;
+}
+.inicio-hero__texto { color: #cfe0f1; font-size: 18px; max-width: 46rem; margin-bottom: 24px; }
+
+.inicio-busca {
+    background: var(--branco);
+    border-radius: 12px;
+    padding: 12px 16px 16px;
+    max-width: 48rem;
+}
+.inicio-busca__campo { display: flex; align-items: center; gap: 12px; }
+.inicio-busca__campo .bi { color: var(--texto-suave); font-size: 18px; }
+.inicio-busca__campo input {
+    flex: 1;
+    min-width: 0;
+    min-height: 48px;
+    border: 0;
+    background: transparent;
+    color: var(--texto);
+    font-size: 16px;
+}
+.inicio-busca__campo input::placeholder { color: var(--texto-suave); }
+.inicio-busca__campo input[aria-invalid="true"] { box-shadow: inset 0 -2px 0 #b42318; }
+.inicio-busca__erro { color: #b42318; font-size: 13px; margin: 0 0 8px 30px; }
+.inicio-busca__erro:empty { margin: 0; }
+.inicio-busca__botao { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; margin-top: 4px; }
+
+.inicio-hero__local { color: #a9c3dc; font-size: 13px; margin: 14px 0 0; }
+.inicio-hero__link {
+    background: none;
+    border: 0;
+    padding: 4px 0;
+    color: #dbe8f5;
+    font-size: inherit;
+    text-decoration: underline;
+    cursor: pointer;
+}
+.inicio-hero__link:hover { color: var(--branco); }
+.inicio-hero__link:focus-visible { outline: 3px solid #f2b705; outline-offset: 2px; }
+
+/* Imagem ilustrativa (desktop) */
+.inicio-hero__imagem { position: relative; }
+.inicio-hero__foto {
+    position: relative;
+    display: block;
+    width: 100%;
+    height: 440px;
+    object-fit: cover;
+    border-radius: 16px;
+    overflow: hidden;
+    background:
+        repeating-linear-gradient(90deg, rgba(255, 255, 255, .05) 0 2px, transparent 2px 110px),
+        repeating-linear-gradient(0deg, rgba(255, 255, 255, .04) 0 2px, transparent 2px 64px),
+        radial-gradient(circle at 70% 75%, #3b5874 0, transparent 55%),
+        linear-gradient(135deg, #2b3a4a, #0b1c2c);
+}
+.inicio-hero__icone { position: absolute; color: rgba(255, 255, 255, .85); line-height: 1; }
+.inicio-hero__icone--1 { font-size: 120px; left: 14%; top: 26%; color: rgba(255, 255, 255, .9); }
+.inicio-hero__icone--2 { font-size: 150px; right: 12%; top: 30%; color: rgba(255, 255, 255, .55); }
+.inicio-hero__icone--3 { font-size: 64px; right: 40%; top: 12%; color: rgba(255, 255, 255, .25); }
+.inicio-hero__legenda {
+    position: absolute;
+    left: 20px;
+    right: 20px;
+    bottom: 20px;
+    max-width: 400px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--branco);
+    color: var(--texto);
+    font-size: 14px;
+    font-weight: 600;
+    padding: 12px 16px;
+    border-radius: 8px;
+    margin: 0;
+}
+.inicio-hero__legenda .bi { color: var(--verde); font-size: 18px; }
+
+/* Seções */
+.inicio-secao { padding-top: 48px; }
+.inicio-secao__titulo {
+    font-size: clamp(1.375rem, 2.4vw, 1.75rem);
+    font-weight: 800;
+    color: var(--azul-escuro);
+    margin-bottom: 20px;
+}
+.inicio-secao__topo {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+.inicio-secao__topo .btn { min-height: 44px; display: inline-flex; align-items: center; }
+.inicio-secao__sub { color: var(--texto-suave); font-size: 15px; margin: -8px 0 20px; }
+
+/* Categorias */
+.inicio-categoria {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    height: 100%;
+    background: var(--branco);
+    border: 1px solid var(--cinza-borda);
+    border-radius: 12px;
+    padding: 10px 10px 14px;
+    text-align: center;
+    color: var(--texto);
+}
+a.inicio-categoria:hover { border-color: var(--azul-escuro); }
+a.inicio-categoria:focus-visible { outline: 3px solid #f2b705; outline-offset: 2px; }
+.inicio-categoria__img {
+    display: grid;
+    place-items: center;
+    height: 96px;
+    border-radius: 8px;
+    background: linear-gradient(180deg, #eef1f5, #dde3ea);
+    color: var(--azul-escuro);
+    font-size: 40px;
+}
+.inicio-categoria__nome { font-size: 15px; font-weight: 600; }
+
+/* Estado vazio ou erro de uma lista */
+.inicio-estado {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    padding: 32px 16px;
+    background: var(--branco);
+    border: 1px dashed var(--cinza-borda);
+    border-radius: 12px;
+    text-align: center;
+    color: var(--texto-suave);
+}
+.inicio-estado .bi { font-size: 28px; color: var(--azul-escuro); }
+.inicio-estado p { margin: 0; max-width: 32rem; }
+.inicio-estado .btn { min-height: 44px; display: inline-flex; align-items: center; }
+
+/* Como funciona */
+.inicio-caixa {
+    height: 100%;
+    background: var(--branco);
+    border: 1px solid var(--cinza-borda);
+    border-radius: 12px;
+    padding: 24px;
+}
+.inicio-caixa__titulo { font-size: 20px; font-weight: 700; color: var(--azul-escuro); margin-bottom: 12px; }
+.inicio-etiqueta {
+    display: inline-block;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    padding: 3px 8px;
+    border-radius: 4px;
+    margin-bottom: 16px;
+}
+.inicio-etiqueta--azul { background: #e8f0fb; color: var(--azul-escuro); }
+.inicio-etiqueta--verde { background: #e5f2e9; color: var(--verde); }
+.inicio-passos { padding-left: 20px; margin-bottom: 20px; font-size: 15px; }
+.inicio-passos li { margin-bottom: 12px; }
+.inicio-caixa .btn { min-height: 44px; display: inline-flex; align-items: center; }
+
+/* Chamada "Anuncie suas peças" */
+.inicio-cta {
+    margin-top: 48px;
+    background: var(--azul-escuro);
+    color: var(--branco);
+    border-radius: 16px;
+    padding: 32px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 20px;
+}
+.inicio-cta__titulo { font-size: clamp(1.5rem, 3vw, 2.125rem); font-weight: 800; color: var(--branco); margin-bottom: 6px; }
+.inicio-cta__texto { color: #cfe0f1; font-size: 15px; margin: 0; }
+.inicio-cta__botao { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; white-space: nowrap; }
+
+@media (max-width: 767.98px) {
+    .inicio-hero { padding: 32px 0 40px; }
+    .inicio-hero__texto { font-size: 16px; }
+    .inicio-busca__botao { width: 100%; justify-content: center; }
+    .inicio-secao { padding-top: 36px; }
+    .inicio-cta { flex-direction: column; align-items: flex-start; padding: 24px; }
+    .inicio-cta__botao { width: 100%; justify-content: center; }
+}

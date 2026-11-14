@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Meu perfil e configurações • Busca Peças</title>
+  <meta name="description" content="Seus dados, endereços, notificações e privacidade no Busca Peças.">
+ 
+  <!-- Bibliotecas por CDN com versão fixa (ADR-014) -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+ 
+  <!-- CSS do projeto -->
+  <link rel="stylesheet" href="../../css/variaveis.css">
+  <link rel="stylesheet" href="../../css/base.css">
+  <link rel="stylesheet" href="../../css/componentes.css">
+ 
+  <!-- Componente do cabeçalho e script desta página -->
+  <script src="../../js/components/cabecalho.js" defer></script>
+  <script src="../../js/pages/conta/perfil.js" defer></script>
+</head>
+<body class="d-flex flex-column min-vh-100">
+ 
+  <!-- Cabeçalho: preenchido por js/components/cabecalho.js -->
+  <header id="cabecalho"></header>
+ 
+  <!-- Página logada • Fluxo D, etapa 06 • BP1-60 • /api/usuarios/me -->
+  <main id="conteudo" class="perfil flex-grow-1 py-4">
+    <div class="container-fluid px-3 px-lg-4">
+ 
+      <nav aria-label="Você está em">
+        <ol class="breadcrumb small mb-3">
+          <li class="breadcrumb-item"><a href="../busca/main.html">Início</a></li>
+          <li class="breadcrumb-item active" aria-current="page">Meu perfil e configurações</li>
+        </ol>
+      </nav>
+ 
+      <h1 class="perfil__titulo mb-1">Meu perfil e configurações</h1>
+      <p class="perfil__sub mb-4">Seu acesso é o mesmo para comprar e para vender.</p>
+ 
+      <!-- Carregando / erro ao carregar -->
+      <div id="perfil-carregando" class="text-center text-secondary py-5" role="status">
+        <span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>Carregando seu perfil…
+      </div>
+ 
+      <div id="perfil-erro" class="perfil-aviso perfil-aviso--erro mb-4" role="alert" hidden>
+        <i class="bi bi-exclamation-circle" aria-hidden="true"></i>
+        <div>
+          <span id="perfil-erro-texto">Não foi possível carregar seu perfil.</span>
+          <button type="button" class="perfil-link-botao ms-1" id="botao-tentar-de-novo">Tentar de novo</button>
+        </div>
+      </div>
+ 
+      <div class="row g-4" id="perfil-conteudo" hidden>
+ 
+        
+        <!-- ===================== COLUNA PRINCIPAL ===================== -->
+        <div class="col-lg-8">
+ 
+          <!-- Dados pessoais -->
+          <section class="perfil-card mb-4" aria-labelledby="titulo-pessoais">
+            <h2 id="titulo-pessoais" class="perfil-card__titulo">Dados pessoais</h2>
+            <span class="etiqueta" id="etiqueta-conta">Conta ativa</span>
+ 
+            <form id="form-pessoais" novalidate>
+              <div class="row g-3 mb-3">
+                <div class="col-md-6">
+                  <label for="nome" class="form-label">Nome completo</label>
+                  <input id="nome" name="nome" type="text" class="form-control" maxlength="150" required
+                         autocomplete="name" aria-describedby="erro-nome">
+                  <div id="erro-nome" class="invalid-feedback"></div>
+                </div>
+                <div class="col-md-6">
+                  <label for="telefone" class="form-label">Telefone</label>
+                  <input id="telefone" name="telefone" type="tel" class="form-control" inputmode="numeric"
+                         maxlength="15" placeholder="(00) 00000-0000" autocomplete="tel" aria-describedby="erro-telefone">
+                  <div id="erro-telefone" class="invalid-feedback"></div>
+                </div>
+                <div class="col-12">
+                  <label for="email" class="form-label">E-mail</label>
+                  <input id="email" name="email" type="email" class="form-control" inputmode="email" maxlength="150"
+                         required autocomplete="email" aria-describedby="erro-email">
+                  <div id="erro-email" class="invalid-feedback"></div>
+                </div>
+              </div>
+ 
+              <button type="submit" class="btn btn--verde">
+                <span class="spinner-border spinner-border-sm me-1" aria-hidden="true" hidden></span>
+                <span class="btn__texto">Salvar dados</span>
+              </button>
+ 
+              <div class="perfil-aviso mt-3" id="aviso-pessoais" aria-live="polite" hidden></div>
+            </form>
+ 
+            <a href="recuperar-senha.html" class="btn btn--contorno mt-3">Alterar senha</a>
+          </section>
+           <!-- Dados empresariais -->
+          <section class="perfil-card mb-4" aria-labelledby="titulo-empresa">
+            <h2 id="titulo-empresa" class="perfil-card__titulo">Dados empresariais</h2>
+            <span class="etiqueta etiqueta--neutra" id="etiqueta-verificacao">Sem verificação cadastral</span>
+ 
+            <form id="form-empresa" novalidate>
+              <div class="mb-3">
+                <label for="nomeExibicao" class="form-label">Nome da oficina / empresa</label>
+                <input id="nomeExibicao" name="nomeExibicao" type="text" class="form-control" maxlength="80" required
+                       autocomplete="organization" aria-describedby="erro-nomeExibicao">
+                <div id="erro-nomeExibicao" class="invalid-feedback"></div>
+              </div>
+              <div class="mb-3">
+                <label for="razaoSocial" class="form-label">Razão social</label>
+                <input id="razaoSocial" name="razaoSocial" type="text" class="form-control" maxlength="150"
+                       aria-describedby="erro-razaoSocial">
+                <div id="erro-razaoSocial" class="invalid-feedback"></div>
+              </div>
+              <div class="row g-3 mb-2">
+                <div class="col-md-6">
+                  <label for="documento" class="form-label" id="rotulo-documento">CNPJ</label>
+                  <!-- CPF/CNPJ é pedido ao criar a loja (ADR-013) e não é alterado aqui -->
+                  <input id="documento" type="text" class="form-control" readonly aria-describedby="ajuda-documento">
+                </div>
+                <div class="col-md-6">
+                  <label for="inscricaoEstadual" class="form-label">Inscrição estadual</label>
+                  <input id="inscricaoEstadual" name="inscricaoEstadual" type="text" class="form-control" maxlength="20"
+                         placeholder="Não informada" aria-describedby="erro-inscricaoEstadual">
+                  <div id="erro-inscricaoEstadual" class="invalid-feedback"></div>
+                </div>
+              </div>
+              <p class="perfil-ajuda mb-3" id="ajuda-documento">O documento é informado ao criar a loja.</p>
+ 
+              <button type="submit" class="btn btn--contorno">
+                <span class="spinner-border spinner-border-sm me-1" aria-hidden="true" hidden></span>
+                <span class="btn__texto">Salvar dados empresariais</span>
+              </button>
+ 
+              <div class="perfil-aviso mt-3" id="aviso-empresa" aria-live="polite" hidden></div>
+            </form>
+          </section>
+ 
+          <!-- Meus endereços -->
+          <section class="perfil-card" aria-labelledby="titulo-enderecos">
+            <h2 id="titulo-enderecos" class="perfil-card__titulo">Meus endereços</h2>
+ 
+            <ul class="perfil-enderecos" id="lista-enderecos"></ul>
+            <p class="perfil-ajuda mb-3" id="enderecos-vazio" hidden>Você ainda não tem endereço cadastrado.</p>
+ 
+            <button type="button" class="btn btn--contorno" id="botao-adicionar-endereco">Adicionar endereço</button>
+            <div class="perfil-aviso mt-3" id="aviso-enderecos" aria-live="polite" hidden></div>
+             <!-- Formulário de endereço: abre ao editar ou adicionar -->
+            <form id="form-endereco" class="perfil-endereco-form" novalidate hidden>
+              <h3 class="perfil-card__subtitulo" id="titulo-form-endereco" tabindex="-1">Editar endereço</h3>
+ 
+              <div class="row g-3 mb-3">
+                <div class="col-md-6">
+                  <label for="identificacao" class="form-label">Identificação</label>
+                  <input id="identificacao" name="identificacao" type="text" class="form-control" maxlength="40"
+                         placeholder="Ex.: Oficina, Depósito">
+                </div>
+                <div class="col-md-6">
+                  <label for="cep" class="form-label">CEP</label>
+                  <div class="position-relative">
+                    <input id="cep" name="cep" type="text" class="form-control" inputmode="numeric" maxlength="9"
+                           required placeholder="00000-000" autocomplete="postal-code" aria-describedby="erro-cep">
+                    <span class="spinner-border spinner-border-sm text-secondary perfil-cep-girando" id="cep-buscando"
+                          role="status" hidden><span class="visually-hidden">Buscando endereço</span></span>
+                    <div id="erro-cep" class="invalid-feedback"></div>
+                  </div>
+                </div>
+                <div class="col-md-8">
+                  <label for="logradouro" class="form-label">Rua</label>
+                  <input id="logradouro" name="logradouro" type="text" class="form-control" maxlength="150" required
+                         placeholder="Ex.: Rua das Oficinas" autocomplete="address-line1" aria-describedby="erro-logradouro">
+                  <div id="erro-logradouro" class="invalid-feedback"></div>
+                </div>
+                <div class="col-md-4">
+                  <label for="numero" class="form-label">Número</label>
+                  <input id="numero" name="numero" type="text" class="form-control" maxlength="10" required
+                         placeholder="S/N" aria-describedby="erro-numero">
+                  <div id="erro-numero" class="invalid-feedback"></div>
+                </div>
+                <div class="col-md-6">
+                  <label for="bairro" class="form-label">Bairro</label>
+                  <input id="bairro" name="bairro" type="text" class="form-control" maxlength="80" required
+                         aria-describedby="erro-bairro">
+                  <div id="erro-bairro" class="invalid-feedback"></div>
+                </div>
+                <div class="col-md-6">
+                  <label for="cidade" class="form-label">Cidade / UF</label>
+                  <div class="input-group has-validation">
+                    <input id="cidade" name="cidade" type="text" class="form-control" maxlength="80" required
+                           autocomplete="address-level2" aria-describedby="erro-cidade">
+                    <select id="estado" name="estado" class="form-select flex-grow-0 w-auto" aria-label="UF" required>
+                      <option value="">UF</option>
+                    </select>
+                    <div id="erro-cidade" class="invalid-feedback"></div>
+                  </div>
+                </div>
+                <div class="col-12">
+                  <label for="complemento" class="form-label">Complemento</label>
+                  <input id="complemento" name="complemento" type="text" class="form-control" maxlength="80"
+                         placeholder="Ex.: Galpão A, sala 2">
+                </div>
+                <div class="col-12">
+                  <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="principal" name="principal">
+                    <label class="form-check-label" for="principal">Usar como endereço principal</label>
+                  </div>
+                </div>
+              </div>
+ 
+              <div class="perfil-aviso perfil-aviso--info mb-3">
+                <i class="bi bi-info-circle" aria-hidden="true"></i>
+                <span>Não conseguiu consultar o CEP? Todos os campos podem ser preenchidos manualmente.</span>
+              </div>
+ 
+              <div class="d-flex flex-wrap gap-2">
+                <button type="submit" class="btn btn--verde">
+                  <span class="spinner-border spinner-border-sm me-1" aria-hidden="true" hidden></span>
+                  <span class="btn__texto">Salvar endereço</span>
+                </button>
+                <button type="button" class="btn btn--contorno" id="botao-cancelar-endereco">Cancelar</button>
+              </div>
+            </form>
+          </section>
+        </div>
+         <!-- ===================== COLUNA LATERAL ===================== -->
+        <aside class="col-lg-4">
+          <div class="d-flex flex-column gap-4">
+ 
+            <!-- Notificações -->
+            <section class="perfil-card" aria-labelledby="titulo-notificacoes">
+              <h2 id="titulo-notificacoes" class="perfil-card__titulo">Notificações</h2>
+              <form id="form-notificacoes" novalidate>
+                <div class="perfil-opcao">
+                  <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="notif-pedidos" name="statusPedido">
+                    <label class="form-check-label fw-semibold" for="notif-pedidos">Atualizações dos meus pedidos</label>
+                  </div>
+                  <p class="perfil-ajuda">Avisos de aceite, preparação e retirada.</p>
+                </div>
+                <div class="perfil-opcao" id="opcao-loja" hidden>
+                  <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="notif-loja" name="novoPedido">
+                    <label class="form-check-label fw-semibold" for="notif-loja">Novos pedidos na minha loja</label>
+                  </div>
+                  <p class="perfil-ajuda">Acompanhe as solicitações de compradores.</p>
+                </div>
+                <div class="perfil-opcao">
+                  <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="notif-novidades" name="novidades">
+                    <label class="form-check-label fw-semibold" for="notif-novidades">Novidades do Busca Peça</label>
+                  </div>
+                  <p class="perfil-ajuda">Comunicações opcionais por e-mail.</p>
+                </div>
+ 
+                <button type="submit" class="btn btn--contorno w-100 mt-2">
+                  <span class="spinner-border spinner-border-sm me-1" aria-hidden="true" hidden></span>
+                  <span class="btn__texto">Salvar preferências</span>
+                </button>
+                <div class="perfil-aviso mt-3" id="aviso-notificacoes" aria-live="polite" hidden></div>
+              </form>
+            </section>
+ 
+            <!-- Termos e privacidade -->
+            <section class="perfil-card" aria-labelledby="titulo-termos">
+              <h2 id="titulo-termos" class="perfil-card__titulo">Termos e privacidade</h2>
+              <a href="../institucional/termos-de-uso.html" class="btn btn--contorno w-100 mb-2">Ler Termos de uso</a>
+              <a href="../institucional/termos-de-uso.html#politica-de-privacidade" class="btn btn--contorno w-100">Ler Política de Privacidade</a>
+              <p class="perfil-ajuda mt-3 mb-0" id="texto-aceite" hidden></p>
+            </section>
+ 
+            <!-- Gerenciar minha conta (LGPD: acesso, exportação, inativação e exclusão • ADR-013) -->
+            <section class="perfil-card" aria-labelledby="titulo-conta">
+              <h2 id="titulo-conta" class="perfil-card__titulo">Gerenciar minha conta</h2>
+              <p class="perfil-texto">Você pode baixar seus dados ou solicitar a inativação ou exclusão. Pedidos em andamento precisam ser resolvidos com as lojas.</p>
+ 
+              <button type="button" class="btn btn--contorno w-100 mb-2" id="botao-baixar-dados">
+                <span class="spinner-border spinner-border-sm me-1" aria-hidden="true" hidden></span>
+                <span class="btn__texto">Baixar meus dados</span>
+              </button>
+              <button type="button" class="btn btn--contorno w-100 mb-2" data-solicitar="INATIVAR"
+                      aria-controls="painel-confirmar" aria-expanded="false">Solicitar inativação</button>
+              <button type="button" class="btn btn--perigo w-100" data-solicitar="EXCLUIR"
+                      aria-controls="painel-confirmar" aria-expanded="false">Solicitar exclusão</button>
+              <div class="perfil-aviso mt-3" id="aviso-dados" aria-live="polite" hidden></div>
+            </section>
+ 
+            <!-- Confirmar solicitação: abre ao clicar em inativar ou excluir -->
+            <section class="perfil-card" id="painel-confirmar" aria-labelledby="titulo-confirmar" hidden>
+              <h2 id="titulo-confirmar" class="perfil-card__titulo" tabindex="-1">Confirmar solicitação</h2>
+              <form id="form-confirmar" novalidate>
+                <div class="mb-3">
+                  <label for="tipoSolicitacao" class="form-label">O que deseja fazer?</label>
+                  <select id="tipoSolicitacao" class="form-select">
+                    <option value="INATIVAR">Inativar minha conta</option>
+                    <option value="EXCLUIR">Excluir minha conta</option>
+                  </select>
+                </div>
+ 
+                <p class="perfil-texto" id="texto-impacto"></p>
+ 
+                <div class="mb-3">
+                  <label for="confirmarEmail" class="form-label">Confirme seu e-mail</label>
+                  <input id="confirmarEmail" type="email" class="form-control" inputmode="email" autocomplete="off"
+                         aria-describedby="erro-confirmarEmail">
+                  <div id="erro-confirmarEmail" class="invalid-feedback"></div>
+                </div>
+ 
+                <div class="form-check mb-3">
+                  <input class="form-check-input" type="checkbox" id="entendiImpacto" aria-describedby="erro-entendiImpacto">
+                  <label class="form-check-label" for="entendiImpacto" id="rotulo-impacto">Entendi o impacto na minha conta.</label>
+                  <div id="erro-entendiImpacto" class="invalid-feedback"></div>
+                </div>
+ 
+                <button type="submit" class="btn btn--perigo w-100 mb-2">
+                  <span class="spinner-border spinner-border-sm me-1" aria-hidden="true" hidden></span>
+                  <span class="btn__texto">Confirmar solicitação</span>
+                </button>
+                <button type="button" class="btn btn--contorno w-100" id="botao-manter-conta">Manter minha conta</button>
+ 
+                <div class="perfil-aviso mt-3" id="aviso-confirmar" aria-live="polite" hidden></div>
+              </form>
+            </section>
+ 
+          </div>
+        </aside>
+      </div>
+    </div>
+  </main>
+  <!-- Rodapé: preenchido por js/components/rodape.js (conteúdo provisório) -->
+  <footer id="rodape" class="rodape py-4 mt-4">
+    <div class="container-fluid px-3 px-lg-4">
+      <p class="mb-2">Ambiente demonstrativo • lojas, preços e estoques fictícios</p>
+      <p class="mb-0">
+        <a href="../institucional/sobre.html">Busca Peça</a> •
+        <a href="../institucional/sobre.html#contato">Contato</a> •
+        <a href="../institucional/termos-de-uso.html">Termos de uso</a> •
+        <a href="../institucional/termos-de-uso.html#politica-de-privacidade">Privacidade</a>
+      </p>
+    </div>
+  </footer>
+ 
+</body>
+</html>
+ 

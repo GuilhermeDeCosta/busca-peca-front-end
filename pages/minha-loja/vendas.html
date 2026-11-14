@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Vendas e desempenho • Busca Peças</title>
+  <meta name="description" content="Vendas concluídas, desempenho dos anúncios e histórico de preços da sua loja.">
+
+  <!-- Bibliotecas por CDN com versão fixa (ADR-014) -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+  <!-- CSS do projeto -->
+  <link rel="stylesheet" href="../../css/variaveis.css">
+  <link rel="stylesheet" href="../../css/base.css">
+  <link rel="stylesheet" href="../../css/componentes.css">
+
+  <!-- Estilos só desta tela. Os valores depois da vírgula em var() são o fallback enquanto variaveis.css não define as cores. -->
+  <style>
+    :root {
+      --bp-azul: var(--cor-primaria-escura, #0f3a64);
+      --bp-verde: var(--cor-primaria, #1e7a45);
+      --bp-fundo: var(--cor-fundo, #f3f5f8);
+      --bp-borda: var(--cor-borda, #dfe4ea);
+      --bp-texto-suave: var(--cor-texto-suave, #5b6675);
+      --bp-cabecalho-tabela: #e9eef5;
+    }
+
+    [x-cloak] { display: none !important; }
+    body { background: var(--bp-fundo); }
+
+    .vendas__titulo { color: var(--bp-azul); font-weight: 700; }
+    .vendas .card { border: 1px solid var(--bp-borda); border-radius: .75rem; }
+    .vendas .card-title { color: var(--bp-azul); font-weight: 700; font-size: 1.25rem; }
+    .vendas .form-label { font-weight: 600; font-size: .875rem; margin-bottom: .375rem; }
+    .vendas .form-select { min-height: 2.75rem; }
+
+    .btn-contorno-azul {
+      --bs-btn-color: var(--bp-azul); --bs-btn-border-color: var(--bp-borda); --bs-btn-bg: #fff;
+      --bs-btn-hover-color: var(--bp-azul); --bs-btn-hover-bg: #f4f7fb; --bs-btn-hover-border-color: #c9d3df;
+      --bs-btn-disabled-color: var(--bp-azul); --bs-btn-disabled-bg: #fff; --bs-btn-disabled-border-color: var(--bp-borda);
+      font-weight: 600;
+    }
+
+    /* Cards de indicadores */
+    .indicador__rotulo { color: var(--bp-texto-suave); font-size: .875rem; }
+    .indicador__valor { color: var(--bp-azul); font-weight: 700; font-size: 1.75rem; line-height: 1.2; }
+    .indicador__detalhe { color: #17633a; font-size: .8125rem; }
+
+    /* Tabelas */
+    .tabela-vendas { font-size: .875rem; margin-bottom: 0; }
+    .tabela-vendas thead th {
+      background: var(--bp-cabecalho-tabela); color: var(--bp-texto-suave);
+      font-weight: 600; font-size: .8125rem; padding: .875rem 1rem; border-bottom: 0; white-space: nowrap;
+    }
+    .tabela-vendas td { padding: .875rem 1rem; vertical-align: middle; }
+    .tabela-vendas .nome-anuncio { font-weight: 600; color: #1f2933; min-width: 9rem; }
+
+    .etiqueta { display: inline-block; font-size: .75rem; font-weight: 600; padding: .25rem .5rem; border-radius: .375rem; white-space: nowrap; }
+    .etiqueta--ativa { background: #e6f4ea; color: #17633a; }
+    .etiqueta--atencao { background: #fdf3d8; color: #7a5300; }
+    .etiqueta--neutra { background: #eef1f5; color: var(--bp-texto-suave); }
+
+    .texto-queda { color: #17633a; }
+    .texto-alta { color: #9a6700; }
+
+    .aviso { border-radius: .5rem; padding: .875rem 1rem; font-size: .875rem; }
+    .aviso--info { background: #e8f0fb; color: #1f4f7f; }
+    .aviso--erro { background: #fdecea; color: #b42318; }
+
+    .paginacao .page-link { color: var(--bp-azul); }
+    .paginacao .active > .page-link { background: var(--bp-azul); border-color: var(--bp-azul); color: #fff; }
+
+    /* Cabeçalho e rodapé provisórios (substituídos pelos componentes) */
+    .faixa-topo { background: var(--bp-azul); color: #fff; font-size: .75rem; }
+    .faixa-topo a { color: #fff; text-decoration: none; }
+    .marca { color: var(--bp-azul); font-weight: 800; font-style: italic; font-size: 1.25rem; text-decoration: none; }
+    .marca .bi { color: var(--bp-verde); }
+    .menu-principal .nav-link { color: #3a4553; font-size: .875rem; padding: .75rem .75rem; }
+    .menu-principal .nav-link.active { color: var(--bp-verde); font-weight: 700; }
+    .link-anunciar { color: var(--bp-verde); font-weight: 700; font-size: .875rem; text-decoration: none; }
+    .contador-carrinho { background: #e6f4ea; color: #17633a; font-size: .75rem; font-weight: 600; border-radius: .375rem; padding: .125rem .4rem; }
+    .rodape { background: var(--bp-azul); color: #dbe4ee; font-size: .8125rem; }
+    .rodape a { color: #fff; text-decoration: none; }
+  </style>
+</head>
+<body class="d-flex flex-column min-vh-100">
+
+  <!--
+    Cabeçalho: o componente js/components/cabecalho.js preenche este espaço.
+    O conteúdo abaixo é provisório, só para a tela ficar igual ao protótipo.
+  -->
+  <header id="cabecalho">
+    <div class="faixa-topo py-1">
+      <div class="container-fluid px-3 px-lg-4 d-flex justify-content-between">
+        <span>Peças certas. Oficinas em movimento.</span>
+        <span class="d-none d-sm-inline">Campinas, SP • <a href="#">Alterar localização</a></span>
+      </div>
+    </div>
+    <div class="bg-white border-bottom">
+      <div class="container-fluid px-3 px-lg-4 d-flex align-items-center gap-3 py-2">
+        <a href="../../index.html" class="marca text-nowrap"><i class="bi bi-gear-wide-connected"></i> BUSCA PEÇAS</a>
+        <form class="flex-grow-1 d-none d-md-block" role="search" action="../busca/resultados.html">
+          <div class="input-group">
+            <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+            <input class="form-control border-start-0" type="search" name="q" placeholder="Busque por peça, OEM, EAN ou SKU" aria-label="Buscar peças">
+          </div>
+        </form>
+        <div class="ms-auto d-flex align-items-center gap-3">
+          <div class="text-end lh-sm d-none d-lg-block small">
+            <span class="text-secondary">Olá, Ana Martins</span><br><strong>Oficina Horizonte</strong>
+          </div>
+          <a href="../conta/favoritos.html" class="text-body fs-5" aria-label="Favoritos"><i class="bi bi-heart"></i></a>
+          <a href="../compra/carrinho.html" class="text-body fs-5 d-flex align-items-center gap-1" aria-label="Carrinho, 3 itens">
+            <i class="bi bi-cart3"></i><span class="contador-carrinho">3</span>
+          </a>
+        </div>
+      </div>
+      <nav class="container-fluid px-3 px-lg-4 d-flex align-items-center menu-principal overflow-auto" aria-label="Menu principal">
+        <ul class="nav flex-nowrap">
+          <li class="nav-item"><a class="nav-link ps-0" href="../../index.html">Início</a></li>
+          <li class="nav-item"><a class="nav-link" href="../busca/resultados.html">Buscar peças</a></li>
+          <li class="nav-item"><a class="nav-link" href="#">Categorias</a></li>
+          <li class="nav-item"><a class="nav-link" href="../conta/favoritos.html">Favoritos</a></li>
+          <li class="nav-item"><a class="nav-link" href="../compra/minhas-compras.html">Meus pedidos</a></li>
+          <li class="nav-item"><a class="nav-link active" aria-current="page" href="painel.html">Minha Loja</a></li>
+          <li class="nav-item"><a class="nav-link" href="../conta/perfil.html">Meu perfil</a></li>
+        </ul>
+        <a href="form-peca.html" class="link-anunciar ms-auto text-nowrap ps-3">+ Anuncie suas peças</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="conteudo" class="vendas flex-grow-1 py-4" x-data="vendasLoja">
+    <div class="container-fluid px-3 px-lg-4">
+
+      <nav aria-label="Você está em">
+        <ol class="breadcrumb small mb-3">
+          <li class="breadcrumb-item"><a href="../../index.html" class="link-secondary">Início</a></li>
+          <li class="breadcrumb-item"><a href="painel.html" class="link-secondary">Minha Loja</a></li>
+          <li class="breadcrumb-item active" aria-current="page">Vendas e desempenho</li>
+        </ol>
+      </nav>
+
+      <h1 class="vendas__titulo h2 mb-1">Vendas e desempenho</h1>
+      <p class="text-secondary mb-4" x-text="subtitulo"></p>
+
+      <!-- Período e exportação -->
+      <div class="d-flex flex-wrap align-items-end justify-content-between gap-3 mb-4">
+        <div>
+          <label for="periodo" class="form-label">Período</label>
+          <select id="periodo" class="form-select" style="min-width: 13rem;" x-model="periodoChave" @change="trocarPeriodo()">
+            <template x-for="p in periodos" :key="p.chave">
+              <option :value="p.chave" x-text="p.rotulo" :selected="p.chave === periodoChave"></option>
+            </template>
+          </select>
+        </div>
+        <div class="text-md-end">
+          <button type="button" class="btn btn-contorno-azul px-3" @click="exportar()" :disabled="exportando || carregandoVendas">
+            <span x-show="exportando" x-cloak class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>
+            <span x-text="exportando ? 'Exportando…' : 'Exportar vendas (CSV)'">Exportar vendas (CSV)</span>
+          </button>
+          <div class="small text-secondary mt-1" role="status" x-show="avisoExportacao" x-cloak x-text="avisoExportacao"></div>
+        </div>
+      </div>
+
+      <!-- Indicadores -->
+      <div class="row g-3 mb-4">
+        <template x-for="card in cards" :key="card.rotulo">
+          <div class="col-6 col-lg-3">
+            <div class="card h-100">
+              <div class="card-body p-3 p-md-4">
+                <div class="indicador__rotulo mb-1" x-text="card.rotulo"></div>
+                <template x-if="card.carregando">
+                  <div class="placeholder-glow" aria-hidden="true">
+                    <span class="placeholder rounded d-block mb-2" style="width: 6rem; height: 2rem;"></span>
+                    <span class="placeholder rounded d-block" style="width: 9rem;"></span>
+                  </div>
+                </template>
+                <template x-if="!card.carregando && card.erro">
+                  <div class="indicador__valor">—</div>
+                </template>
+                <template x-if="!card.carregando && !card.erro">
+                  <div>
+                    <div class="indicador__valor mb-1" x-text="card.valor"></div>
+                    <div class="indicador__detalhe" x-text="card.detalhe"></div>
+                  </div>
+                </template>
+              </div>
+            </div>
+          </div>
+        </template>
+      </div>
+
+      <!-- Desempenho dos anúncios (BP1-65) -->
+      <section class="card mb-4" aria-labelledby="titulo-desempenho">
+        <div class="card-body p-3 p-md-4">
+          <h2 id="titulo-desempenho" class="card-title mb-2">Desempenho dos anúncios</h2>
+          <p class="small text-secondary mb-3">Como os compradores encontram e interagem com cada peça.</p>
+
+          <div class="table-responsive" :aria-busy="carregandoDesempenho">
+            <table class="table tabela-vendas">
+              <caption class="visually-hidden">Desempenho de cada anúncio no período. Conversão é pedidos dividido por acessos ao detalhe.</caption>
+              <thead>
+                <tr>
+                  <th scope="col">Anúncio</th>
+                  <th scope="col">Visualizações</th>
+                  <th scope="col">Acessos ao detalhe</th>
+                  <th scope="col">Favoritos</th>
+                  <th scope="col">Pedidos</th>
+                  <th scope="col"><abbr title="Pedidos ÷ acessos ao detalhe" class="text-decoration-none">Conversão</abbr></th>
+                  <th scope="col">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                <template x-if="carregandoDesempenho">
+                  <tr><td colspan="7" class="text-center text-secondary py-4">
+                    <span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>Carregando desempenho…
+                  </td></tr>
+                </template>
+                <template x-if="!carregandoDesempenho && erroDesempenho">
+                  <tr><td colspan="7" class="text-center py-4">
+                    <span class="text-danger" x-text="erroDesempenho"></span>
+                    <button type="button" class="btn btn-link btn-sm" @click="carregarDesempenho()">Tentar de novo</button>
+                  </td></tr>
+                </template>
+                <template x-if="!carregandoDesempenho && !erroDesempenho && !desempenho.length">
+                  <tr><td colspan="7" class="text-center text-secondary py-4">
+                    Sua loja ainda não tem anúncios. <a href="form-peca.html">Cadastre a primeira peça</a>.
+                  </td></tr>
+                </template>
+                <template x-for="a in (carregandoDesempenho || erroDesempenho ? [] : desempenho)" :key="a.idPeca">
+                  <tr>
+                    <td class="nome-anuncio" x-text="a.titulo + ' • ' + a.codigoSku"></td>
+                    <td x-text="numero(a.visualizacoes)"></td>
+                    <td x-text="numero(a.acessosDetalhe)"></td>
+                    <td x-text="numero(a.favoritos)"></td>
+                    <td x-text="numero(a.pedidos)"></td>
+                    <td x-text="conversao(a)"></td>
+                    <td><span class="etiqueta" :class="etiquetaStatus(a).classe" x-text="etiquetaStatus(a).texto"></span></td>
+                  </tr>
+                </template>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <div class="row g-4">
+        <!-- Vendas realizadas (BP1-32) -->
+        <div class="col-lg-7">
+          <section class="card mb-4" aria-labelledby="titulo-vendas">
+            <div class="card-body p-3 p-md-4">
+              <h2 id="titulo-vendas" class="card-title mb-2">Vendas realizadas</h2>
+              <p class="small text-secondary mb-3">Pedidos concluídos, para controle de saída do estoque.</p>
+
+              <div class="table-responsive" :aria-busy="carregandoVendas">
+                <table class="table tabela-vendas">
+                  <thead>
+                    <tr>
+                      <th scope="col">Pedido</th>
+                      <th scope="col">Data</th>
+                      <th scope="col">Comprador</th>
+                      <th scope="col">Peça</th>
+                      <th scope="col">Qtd.</th>
+                      <th scope="col">Valor</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <template x-if="carregandoVendas">
+                      <tr><td colspan="6" class="text-center text-secondary py-4">
+                        <span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>Carregando vendas…
+                      </td></tr>
+                    </template>
+                    <template x-if="!carregandoVendas && erroVendas">
+                      <tr><td colspan="6" class="text-center py-4">
+                        <span class="text-danger" x-text="erroVendas"></span>
+                        <button type="button" class="btn btn-link btn-sm" @click="carregarVendas()">Tentar de novo</button>
+                      </td></tr>
+                    </template>
+                    <template x-if="!carregandoVendas && !erroVendas && !vendas.length">
+                      <tr><td colspan="6" class="text-center text-secondary py-4">Nenhuma venda concluída neste período.</td></tr>
+                    </template>
+                    <template x-for="v in (carregandoVendas || erroVendas ? [] : vendas)" :key="v.idPedido">
+                      <tr>
+                        <td class="text-nowrap"><a :href="'pedidos.html?id=' + v.idPedido" class="text-decoration-none" x-text="v.codigo"></a></td>
+                        <td x-text="diaMes(v.data)"></td>
+                        <td x-text="v.comprador"></td>
+                        <td x-text="v.peca"></td>
+                        <td x-text="v.quantidade"></td>
+                        <td class="text-nowrap" x-text="formatarMoeda(v.valor)"></td>
+                      </tr>
+                    </template>
+                  </tbody>
+                </table>
+              </div>
+
+              <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-3" x-show="!carregandoVendas && vendas.length" x-cloak>
+                <p class="small text-secondary mb-0" x-text="resumoLista"></p>
+                <nav aria-label="Páginas de vendas" x-show="totalPaginas > 1">
+                  <ul class="pagination pagination-sm paginacao mb-0">
+                    <li class="page-item" :class="{ disabled: pagina === 1 }">
+                      <button type="button" class="page-link" @click="irParaPagina(pagina - 1)" aria-label="Página anterior">&lsaquo;</button>
+                    </li>
+                    <template x-for="n in totalPaginas" :key="n">
+                      <li class="page-item" :class="{ active: n === pagina }">
+                        <button type="button" class="page-link" @click="irParaPagina(n)" x-text="n" :aria-current="n === pagina ? 'page' : null"></button>
+                      </li>
+                    </template>
+                    <li class="page-item" :class="{ disabled: pagina === totalPaginas }">
+                      <button type="button" class="page-link" @click="irParaPagina(pagina + 1)" aria-label="Próxima página">&rsaquo;</button>
+                    </li>
+                  </ul>
+                </nav>
+              </div>
+            </div>
+          </section>
+
+          <div class="aviso aviso--info">Visualizações e acessos são contados por dia e por usuário.</div>
+        </div>
+
+        <!-- Histórico de preços (BP1-53) -->
+        <div class="col-lg-5">
+          <section class="card" aria-labelledby="titulo-historico">
+            <div class="card-body p-3 p-md-4">
+              <h2 id="titulo-historico" class="card-title mb-2">Histórico de preços</h2>
+              <p class="small text-secondary mb-3">Quando e por quanto você alterou o valor de uma peça.</p>
+
+              <label for="pecaHistorico" class="form-label">Peça</label>
+              <select id="pecaHistorico" class="form-select mb-3" x-model="idPecaHistorico" @change="carregarHistorico()"
+                      :disabled="carregandoDesempenho || !desempenho.length">
+                <option value="" x-show="!desempenho.length">Nenhuma peça cadastrada</option>
+                <template x-for="a in desempenho" :key="a.idPeca">
+                  <option :value="String(a.idPeca)" x-text="a.titulo + ' • ' + a.codigoSku" :selected="String(a.idPeca) === idPecaHistorico"></option>
+                </template>
+              </select>
+
+              <div class="table-responsive" :aria-busy="carregandoHistorico">
+                <table class="table tabela-vendas">
+                  <caption class="visually-hidden">Alterações de preço da peça escolhida, da mais recente para a mais antiga.</caption>
+                  <thead>
+                    <tr>
+                      <th scope="col">Data</th>
+                      <th scope="col">De</th>
+                      <th scope="col">Para</th>
+                      <th scope="col">Variação</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <template x-if="carregandoHistorico || (carregandoDesempenho && !historico.length)">
+                      <tr><td colspan="4" class="text-center text-secondary py-4">
+                        <span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>Carregando histórico…
+                      </td></tr>
+                    </template>
+                    <template x-if="!carregandoHistorico && erroHistorico">
+                      <tr><td colspan="4" class="text-center py-4">
+                        <span class="text-danger" x-text="erroHistorico"></span>
+                        <button type="button" class="btn btn-link btn-sm" @click="carregarHistorico()">Tentar de novo</button>
+                      </td></tr>
+                    </template>
+                    <template x-if="!carregandoHistorico && !carregandoDesempenho && !erroHistorico && idPecaHistorico && !historico.length">
+                      <tr><td colspan="4" class="text-center text-secondary py-4">Nenhuma alteração de preço registrada.</td></tr>
+                    </template>
+                    <template x-for="(linha, i) in (carregandoHistorico || erroHistorico ? [] : historico)" :key="linha.data + i">
+                      <tr>
+                        <td class="text-nowrap" x-text="formatarData(linha.data)"></td>
+                        <td class="text-nowrap" x-text="linha.precoAnterior == null ? '—' : formatarMoeda(linha.precoAnterior)"></td>
+                        <td class="text-nowrap" x-text="formatarMoeda(linha.precoNovo)"></td>
+                        <td class="text-nowrap" :class="variacao(linha).classe" x-text="variacao(linha).texto"></td>
+                      </tr>
+                    </template>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </section>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Rodapé: preenchido por js/components/rodape.js (conteúdo provisório) -->
+  <footer id="rodape" class="rodape py-4 mt-4">
+    <div class="container-fluid px-3 px-lg-4">
+      <p class="mb-2">Busca Peça • Peças certas. Oficinas em movimento.</p>
+      <p class="mb-0">
+        <a href="../institucional/sobre.html">Busca Peça</a> •
+        <a href="../institucional/sobre.html">Contato</a> •
+        <a href="../institucional/termos-de-uso.html">Termos de uso</a> •
+        <a href="../institucional/politica-de-privacidade.html">Privacidade</a>
+      </p>
+    </div>
+  </footer>
+
+  <!-- O módulo da página vem ANTES do Alpine, para registrar o componente no alpine:init. -->
+  <script type="module" src="../../js/pages/minha-loja/vendas.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

@@ -100,3 +100,131 @@ export const referenciasSimuladas = {
     aplicacoes: [{ marca: 'Chevrolet', modelo: 'Corsa', anoInicial: 2002, anoFinal: 2012, versao: '1.0 / 1.4 • confirmar OEM' }],
   },
 };
+
+// ---------------------------------------------------------------------------
+// Vendas e desempenho (tela minha-loja/vendas.html)
+// Os números de cada mês são sorteados com uma semente fixa (ano + mês),
+// então o mesmo mês mostra sempre os mesmos valores. Outubro de 2026 começa
+// com as vendas e métricas do protótipo.
+// ---------------------------------------------------------------------------
+
+function sorteador(semente) {
+  let s = semente >>> 0;
+  return () => {
+    s = (s + 0x6d2b79f5) >>> 0;
+    let t = s;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+const COMPRADORES = ['Auto Center Parque', 'Mecânica Boa Vista', 'Oficina Rumo Certo', 'Oficina Central',
+  'Garagem São Jorge', 'Centro Automotivo Lima', 'Mecânica Irmãos Prado', 'Auto Elétrica Faísca'];
+
+const VENDAS_PROTOTIPO = [
+  { codigo: 'BP-2078', dia: 15, comprador: 'Auto Center Parque', idPeca: 102, peca: 'Retrovisor Onix', quantidade: 1, valor: 219.9 },
+  { codigo: 'BP-2074', dia: 14, comprador: 'Mecânica Boa Vista', idPeca: 103, peca: 'Filtro de ar', quantidade: 2, valor: 85.8 },
+  { codigo: 'BP-2069', dia: 12, comprador: 'Oficina Rumo Certo', idPeca: 101, peca: 'Alternador Bosch 90A', quantidade: 1, valor: 799.0 },
+  { codigo: 'BP-2061', dia: 9, comprador: 'Oficina Central', idPeca: 105, peca: 'Bomba d’água', quantidade: 1, valor: 159.9 },
+  { codigo: 'BP-2055', dia: 6, comprador: 'Auto Center Parque', idPeca: 103, peca: 'Filtro de ar', quantidade: 3, valor: 128.7 },
+];
+
+const METRICAS_PROTOTIPO = {
+  101: { visualizacoes: 412, acessosDetalhe: 128, favoritos: 9, pedidos: 5 },
+  102: { visualizacoes: 366, acessosDetalhe: 94, favoritos: 6, pedidos: 4 },
+  103: { visualizacoes: 241, acessosDetalhe: 52, favoritos: 2, pedidos: 6 },
+  104: { visualizacoes: 138, acessosDetalhe: 21, favoritos: 1, pedidos: 0 },
+  105: { visualizacoes: 107, acessosDetalhe: 17, favoritos: 0, pedidos: 3 },
+};
+
+/** Vendas concluídas de um mês (mes de 1 a 12), da mais recente para a mais antiga. */
+export function gerarVendasDoMes(ano, mes) {
+  const sortear = sorteador(ano * 100 + mes);
+  const ultimoDia = new Date(ano, mes, 0).getDate();
+  const ehOutubro2026 = ano === 2026 && mes === 10;
+  const total = ehOutubro2026 ? 18 : 6 + Math.floor(sortear() * 15);
+  const vendas = ehOutubro2026 ? VENDAS_PROTOTIPO.map((v) => ({ ...v })) : [];
+  let numero = 2000 + (ano - 2026) * 300 + mes * 25;
+
+  while (vendas.length < total) {
+    const peca = anunciosSimulados[Math.floor(sortear() * anunciosSimulados.length)];
+    const quantidade = 1 + Math.floor(sortear() * 3);
+    vendas.push({
+      codigo: `BP-${numero++}`,
+      dia: 1 + Math.floor(sortear() * (ehOutubro2026 ? 5 : ultimoDia)),
+      comprador: COMPRADORES[Math.floor(sortear() * COMPRADORES.length)],
+      idPeca: peca.idPeca,
+      peca: peca.titulo,
+      quantidade,
+      valor: Math.round(peca.preco * quantidade * 100) / 100,
+    });
+  }
+
+  return vendas
+    .map((v, i) => ({
+      idPedido: Number(v.codigo.slice(3)) || 1000 + i,
+      codigo: v.codigo,
+      data: `${ano}-${String(mes).padStart(2, '0')}-${String(v.dia).padStart(2, '0')}T14:00:00-03:00`,
+      comprador: v.comprador,
+      idPeca: v.idPeca,
+      peca: v.peca,
+      quantidade: v.quantidade,
+      valor: v.valor,
+    }))
+    .sort((a, b) => b.data.localeCompare(a.data) || b.codigo.localeCompare(a.codigo));
+}
+
+/** Pedidos recusados no mês (para a taxa de aceite). */
+export function gerarRecusadosDoMes(ano, mes) {
+  if (ano === 2026 && mes === 10) return 1;
+  return Math.floor(sorteador(ano * 100 + mes + 7)() * 4);
+}
+
+/** Métricas de cada anúncio no mês (visualizações, acessos, favoritos, pedidos). */
+export function gerarMetricasDoMes(ano, mes) {
+  const sortear = sorteador(ano * 100 + mes + 13);
+  const ehOutubro2026 = ano === 2026 && mes === 10;
+  return anunciosSimulados.map((p) => {
+    const fixa = ehOutubro2026 && METRICAS_PROTOTIPO[p.idPeca];
+    const visualizacoes = fixa ? fixa.visualizacoes : 20 + Math.floor(sortear() * 380);
+    const acessosDetalhe = fixa ? fixa.acessosDetalhe : Math.floor(visualizacoes * (0.05 + sortear() * 0.3));
+    return {
+      idPeca: p.idPeca,
+      titulo: p.titulo,
+      codigoSku: p.codigoSku,
+      status: p.status,
+      baixoEstoque: p.status === 'ATIVO' && p.quantidadeEstoque <= p.limiteAlertaEstoque,
+      visualizacoes,
+      acessosDetalhe,
+      favoritos: fixa ? fixa.favoritos : Math.floor(acessosDetalhe * sortear() * 0.15),
+      pedidos: fixa ? fixa.pedidos : (p.status === 'RASCUNHO' ? 0 : Math.floor(acessosDetalhe * sortear() * 0.12)),
+    };
+  });
+}
+
+/** Histórico de preços de uma peça, do mais recente para o mais antigo. */
+export function gerarHistoricoPreco(idPeca) {
+  const peca = anunciosSimulados.find((p) => p.idPeca === Number(idPeca));
+  if (!peca) return [];
+  if (peca.idPeca === 101) {
+    return [
+      { data: '2026-10-14T10:05:00-03:00', precoAnterior: 799.0, precoNovo: 749.0 },
+      { data: '2026-10-02T09:30:00-03:00', precoAnterior: 829.0, precoNovo: 799.0 },
+      { data: '2026-09-20T16:45:00-03:00', precoAnterior: null, precoNovo: 829.0 },
+    ];
+  }
+  const sortear = sorteador(peca.idPeca);
+  const mudancas = Math.floor(sortear() * 3);
+  const linhas = [];
+  let preco = peca.preco;
+  let data = new Date('2026-10-20T10:00:00-03:00');
+  for (let i = 0; i < mudancas; i++) {
+    const anterior = Math.round(preco * (1 + (sortear() * 0.16 - 0.06)) * 10) / 10;
+    linhas.push({ data: data.toISOString(), precoAnterior: anterior, precoNovo: preco });
+    preco = anterior;
+    data = new Date(data.getTime() - (5 + Math.floor(sortear() * 20)) * 86400000);
+  }
+  linhas.push({ data: data.toISOString(), precoAnterior: null, precoNovo: preco });
+  return linhas;
+}

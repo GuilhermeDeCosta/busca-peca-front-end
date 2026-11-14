@@ -10,7 +10,8 @@
 // Nenhuma outra mudança é necessária na tela.
 
 // import { api } from '../api.js';
-import { esperar as esperarSimulacao, lojaSimulada, anunciosSimulados, pedidosSimulados, ultimaConversaSimulada } from './simulacao.js';
+import { esperar as esperarSimulacao, lojaSimulada, anunciosSimulados, pedidosSimulados, ultimaConversaSimulada,
+  gerarVendasDoMes, gerarRecusadosDoMes, gerarMetricasDoMes } from './simulacao.js';
 
 const USAR_SIMULACAO = true;
 
@@ -103,6 +104,35 @@ export async function obterPainel() {
   // return api.get('/lojas/minha/painel');
 }
 
+/**
+ * GET /api/lojas/minha/vendas?de=&ate=&pagina=&tamanho= — vendas concluídas no período, com totais (BP1-32).
+ * @param {{ de: string, ate: string, pagina?: number, tamanho?: number }} filtros datas em AAAA-MM-DD
+ * @returns {Promise<{
+ *   resumo: { vendasConcluidas: number, valorItens: number, vendasPeriodoAnterior: number,
+ *             pedidosRecebidos: number, pedidosRecusados: number },
+ *   itens: { idPedido: number, codigo: string, data: string, comprador: string, peca: string, quantidade: number, valor: number }[],
+ *   totalRegistros: number, totalPaginas: number, pagina: number
+ * }>}
+ */
+export async function obterVendas({ de, ate, pagina = 1, tamanho = 5 }) {
+  if (USAR_SIMULACAO) return simularVendas({ de, pagina, tamanho });
+  // return api.get(`/lojas/minha/vendas?${new URLSearchParams({ de, ate, pagina, tamanho })}`);
+}
+
+/**
+ * Desempenho de cada anúncio no período (BP1-65). Rota a criar no back-end:
+ * GET /api/lojas/minha/desempenho?de=&ate= (soma a tabela metrica_anuncio por peça).
+ * Existe hoje só GET /api/pecas/{id}/metricas, que exigiria uma chamada por anúncio.
+ * @returns {Promise<{
+ *   totais: { visualizacoes: number, acessosDetalhe: number },
+ *   itens: { idPeca, titulo, codigoSku, status, baixoEstoque, visualizacoes, acessosDetalhe, favoritos, pedidos }[]
+ * }>}
+ */
+export async function obterDesempenho({ de, ate }) {
+  if (USAR_SIMULACAO) return simularDesempenho({ de });
+  // return api.get(`/lojas/minha/desempenho?${new URLSearchParams({ de, ate })}`);
+}
+
 // ---------------------------------------------------------------------------
 // Simulações (apagar quando a API estiver pronta)
 // ---------------------------------------------------------------------------
@@ -181,4 +211,43 @@ async function simularStatusLoja(ativa) {
   await esperarSimulacao(600);
   lojaSimulada.ativa = ativa;
   return structuredClone(lojaSimulada);
+}
+
+function anoMes(dataIso) {
+  const [ano, mes] = dataIso.split('-').map(Number);
+  return { ano, mes };
+}
+
+async function simularVendas({ de, pagina, tamanho }) {
+  await esperarSimulacao(500);
+  const { ano, mes } = anoMes(de);
+  const anterior = mes === 1 ? { ano: ano - 1, mes: 12 } : { ano, mes: mes - 1 };
+  const vendas = gerarVendasDoMes(ano, mes);
+  const recusados = gerarRecusadosDoMes(ano, mes);
+  return {
+    resumo: {
+      vendasConcluidas: vendas.length,
+      valorItens: Math.round(vendas.reduce((soma, v) => soma + v.valor, 0) * 100) / 100,
+      vendasPeriodoAnterior: gerarVendasDoMes(anterior.ano, anterior.mes).length,
+      pedidosRecebidos: vendas.length + recusados,
+      pedidosRecusados: recusados,
+    },
+    itens: vendas.slice((pagina - 1) * tamanho, pagina * tamanho),
+    totalRegistros: vendas.length,
+    totalPaginas: Math.max(1, Math.ceil(vendas.length / tamanho)),
+    pagina,
+  };
+}
+
+async function simularDesempenho({ de }) {
+  await esperarSimulacao(600);
+  const { ano, mes } = anoMes(de);
+  const itens = gerarMetricasDoMes(ano, mes).sort((a, b) => b.visualizacoes - a.visualizacoes);
+  return {
+    totais: {
+      visualizacoes: itens.reduce((soma, i) => soma + i.visualizacoes, 0),
+      acessosDetalhe: itens.reduce((soma, i) => soma + i.acessosDetalhe, 0),
+    },
+    itens,
+  };
 }

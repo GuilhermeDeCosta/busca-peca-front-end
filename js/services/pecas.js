@@ -6,7 +6,7 @@
 //   3. Apague as funções simular*() do fim do arquivo.
 
 // import { api } from '../api.js';
-import { esperar, anunciosSimulados, referenciasSimuladas } from './simulacao.js';
+import { esperar, anunciosSimulados, referenciasSimuladas, gerarHistoricoPreco } from './simulacao.js';
 
 const USAR_SIMULACAO = true;
 
@@ -105,6 +105,19 @@ export async function salvarAnuncio(anuncio) {
   if (ordem.length) await api.patch(`/pecas/${id}/fotos/ordem`, { ordem });
 
   return { idPeca: id, salvoEm: peca.atualizadoEm || new Date().toISOString() };
+}
+
+/**
+ * GET /api/pecas/{id}/historico-preco — alterações de preço, da mais recente para a mais antiga (BP1-53).
+ * A linha mais antiga (precoAnterior nulo) é a publicação do anúncio.
+ * @returns {Promise<{ data: string, precoAnterior: number|null, precoNovo: number }[]>}
+ */
+export async function obterHistoricoPreco(idPeca) {
+  if (USAR_SIMULACAO) {
+    await esperar(350);
+    return gerarHistoricoPreco(idPeca);
+  }
+  // return api.get(`/pecas/${idPeca}/historico-preco`);
 }
 
 // ---------------------------------------------------------------------------

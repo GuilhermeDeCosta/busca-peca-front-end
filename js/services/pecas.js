@@ -6,7 +6,7 @@
 //   3. Apague as funções simular*() do fim do arquivo.
 
 // import { api } from '../api.js';
-import { esperar, anunciosSimulados, referenciasSimuladas, gerarHistoricoPreco } from './simulacao.js';
+import { esperar, anunciosSimulados, pedidosSimulados, referenciasSimuladas, gerarHistoricoPreco } from './simulacao.js';
 
 const USAR_SIMULACAO = true;
 
@@ -42,7 +42,13 @@ export async function reativarAnuncio(idPeca) {
   // return api.patch(`/pecas/${idPeca}/reativar`);
 }
 
-/** DELETE /api/pecas/{id} — exclusão lógica (BP1-44) */
+/**
+ * DELETE /api/pecas/{id} — exclui um anúncio ativo, pausado ou rascunho. Responde 204, sem corpo.
+ * Exclusão lógica (Documentação do Back-end): a peça sai da loja e das buscas, mas pedidos,
+ * avaliações e o histórico de vendas continuam apontando para ela. Fica registrada em log_auditoria.
+ * Rejeita com 409 PEDIDOS_EM_ANDAMENTO se houver pedido aguardando aceite, aceito, pronto ou em entrega,
+ * e com 404 se o anúncio já foi excluído (por exemplo, em outra aba).
+ */
 export async function excluirAnuncio(idPeca) {
   if (USAR_SIMULACAO) return simularExcluir(idPeca);
   // return api.delete(`/pecas/${idPeca}`);
@@ -175,11 +181,24 @@ async function simularMudarStatus(idPeca, novoStatus) {
   return { idPeca: peca.idPeca, status: peca.status, atualizadoEm: peca.atualizadoEm };
 }
 
+const STATUS_EM_ANDAMENTO = ['AGUARDANDO_ACEITE', 'ACEITO', 'PRONTO_RETIRADA', 'EM_ENTREGA'];
+
 async function simularExcluir(idPeca) {
-  await esperar(400);
-  const indice = anunciosSimulados.findIndex((p) => p.idPeca === idPeca);
-  if (indice === -1) throw { status: 404, mensagem: 'Anúncio não encontrado.' };
-  anunciosSimulados.splice(indice, 1);
+  await esperar(500);
+  const indice = anunciosSimulados.findIndex((p) => p.idPeca === Number(idPeca));
+  if (indice === -1) throw { status: 404, erro: 'NAO_ENCONTRADO', mensagem: 'Este anúncio já foi excluído. A lista foi atualizada.' };
+  // A mesma regra que a API vai aplicar
+  const emAndamento = pedidosSimulados.filter((p) => STATUS_EM_ANDAMENTO.includes(p.status) && p.idPecas?.includes(Number(idPeca)));
+  if (emAndamento.length) {
+    const codigos = emAndamento.map((p) => p.codigo).join(', ');
+    throw {
+      status: 409,
+      erro: 'PEDIDOS_EM_ANDAMENTO',
+      mensagem: `Esta peça tem ${emAndamento.length === 1 ? 'um pedido' : 'pedidos'} em andamento (${codigos}). Conclua ou recuse antes de excluir, ou pause o anúncio.`,
+    };
+  }
+  console.info('[simulação] DELETE /api/pecas/' + idPeca);
+  anunciosSimulados.splice(indice, 1); // na API é exclusão lógica: anuncio_ativo = falso
 }
 
 async function simularReferencia(tipo, codigo) {

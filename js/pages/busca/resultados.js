@@ -282,3 +282,307 @@ function paginaResultados() {
       if (botao.getAttribute('aria-expanded') !== 'true') botao.click();
       else document.getElementById('cabecalho-cep')?.focus();
     },
+
+    // ---------- Busca ----------
+
+    // Ids dos veículos escolhidos (parâmetro "veiculo" de GET /api/busca)
+    idsVeiculo() {
+      const { marca, modelo, ano } = this.filtros;
+      if (!marca || !this.veiculos.length) return '';
+      return this.veiculos
+        .filter((v) => (!modelo || v.modelo === modelo) && (!ano || String(v.ano) === String(ano)))
+        .map((v) => v.idVeiculo)
+        .join(',');
+    },
+
+    filtrosParaApi() {
+      const f = this.filtros;
+      const [precoMin, precoMax] = (f.preco || '').split('-');
+      const local = this.local || {};
+      return {
+        q: this.q,
+        categoria: f.categoria,
+        veiculo: this.idsVeiculo(),
+        condicao: f.condicao,
+        origem: f.origem,
+        prontaEntrega: f.prontaEntrega,
+        cep: local.cep,
+        lat: local.lat,
+        lng: local.lng,
+        raioKm: this.local ? f.raioKm : '', // sem coordenadas o filtro de distância é ignorado (ADR-012)
+        formaPagamento: f.formaPagamento,
+        notaMinima: f.notaMinima,
+        precoMin: precoMin && precoMin !== '0' ? precoMin : '',
+        precoMax: precoMax || '',
+        ordenar: this.ordenar === 'distancia' && !this.local ? 'relevancia' : this.ordenar,
+        pagina: this.pagina,
+        tamanho: TAMANHO_PAGINA,
+      };
+    },
+
+    // Endereço legível e compartilhável: marca/modelo/ano por nome, preço em precoMin/precoMax
+    atualizarEndereco() {
+      const f = this.filtros;
+      const [precoMin, precoMax] = (f.preco || '').split('-');
+      const local = this.local || {};
+      const valores = {
+        q: this.q,
+        ...f,
+        preco: '',
+        raioKm: this.local ? f.raioKm : '',
+        precoMin: precoMin && precoMin !== '0' ? precoMin : '',
+        precoMax,
+        ordenar: this.ordenar !== 'relevancia' ? this.ordenar : '',
+        pagina: this.pagina > 1 ? this.pagina : '',
+        cep: local.cep,
+        lat: local.lat,
+        lng: local.lng,
+      };
+      const params = new URLSearchParams();
+      Object.entries(valores).forEach(([chave, valor]) => { if (valor) params.set(chave, valor); });
+      const consulta = params.toString();
+      history.replaceState(null, '', consulta ? `?${consulta}` : window.location.pathname);
+      try { sessionStorage.setItem(CHAVE_ULTIMA_BUSCA, consulta); } catch (e) { /* navegador bloqueou */ }
+      return consulta;
+    },
+
+    async buscar() {
+      this.atualizarEndereco();
+      this.erro = '';
+
+      // BP1-4, fluxo alternativo 6: menos de 3 caracteres não busca
+      this.termoCurto = this.q.length > 0 && this.q.length < MINIMO_CARACTERES;
+      if (this.termoCurto) {
+        this.carregando = false;
+        this.totalRegistros = 0;
+        this.$refs.lista.innerHTML = '';
+        return;
+      }
+
+      const minhaRequisicao = ++this.requisicao; // ignora respostas antigas se o usuário mudar rápido
+      this.carregando = true;
+      this.$refs.lista.setAttribute('aria-busy', 'true');
+      this.$refs.lista.innerHTML = htmlCardsCarregando(6);
+
+      try {
+        const resposta = await buscarPecas(this.filtrosParaApi(), this.filtros);
+        if (minhaRequisicao !== this.requisicao) return;
+
+        this.totalRegistros = resposta.totalRegistros || 0;
+        this.totalLojas = resposta.totalLojas || 0;
+        this.totalPaginas = resposta.totalPaginas || 1;
+        if (this.pagina > this.totalPaginas && this.totalRegistros > 0) {
+          this.pagina = this.totalPaginas; // a página pedida não existe mais com os novos filtros
+          return this.buscar();
+        }
+        this.mostrarPecas(resposta.itens || []);
+      } catch (erro) {
+        if (minhaRequisicao !== this.requisicao) return;
+        if (erro?.status === 400 && (erro.campos || []).some((c) => c.campo === 'q')) {
+          this.termoCurto = true;
+        } else {
+          this.erro = erro?.mensagem || ERRO_GENERICO;
+        }
+        this.totalRegistros = 0;
+        this.$refs.lista.innerHTML = '';
+      } finally {
+        if (minhaRequisicao === this.requisicao) {
+          this.carregando = false;
+          this.$refs.lista.removeAttribute('aria-busy');
+        }
+      }
+    },
+
+    mostrarPecas(itens) {
+      itens.forEach((p) => pecasNaTela.set(Number(p.idPeca), p));
+      this.$refs.lista.innerHTML = itens
+        .map((p) => `<div class="col">${htmlCardPeca(p, { comparar: true, selecionado: idsSelecionados.has(Number(p.idPeca)) })}</div>`)
+        .join('');
+    },
+
+    // ---------- Ordenação e paginação ----------
+
+    aoMudarOrdem() {
+      this.pagina = 1;
+      this.buscar();
+    },
+
+    get paginas() {
+      return numerosDePagina(this.pagina, this.totalPaginas);
+    },
+
+    irParaPagina(numero) {
+      if (numero < 1 || numero > this.totalPaginas || numero === this.pagina) return;
+      this.pagina = numero;
+      this.buscar();
+      // Leva o foco para o topo da lista (teclado e leitor de tela)
+      this.$refs.topoLista.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      this.$refs.topoLista.focus({ preventScroll: true });
+    },
+
+    // ---------- Painel de filtros no celular ----------
+
+    abrirPainel() {
+      this.painelAberto = true;
+      document.body.classList.add('overflow-hidden');
+      this.$nextTick(() => this.$refs.fecharPainel?.focus());
+    },
+    fecharPainel() {
+      if (!this.painelAberto) return;
+      this.painelAberto = false;
+      document.body.classList.remove('overflow-hidden');
+      this.$refs.botaoFiltros?.focus();
+    },
+
+    // ---------- Cliques nos cards ----------
+
+    async aoClicarLista(evento) {
+      const botao = evento.target.closest('button[data-acao]');
+      if (!botao || botao.disabled) return;
+      const idPeca = Number(botao.closest('[data-id-peca]')?.dataset.idPeca);
+      if (botao.dataset.acao === 'carrinho') this.adicionar(botao, idPeca);
+      if (botao.dataset.acao === 'favorito') this.favoritar(botao, idPeca);
+    },
+
+    aoMarcarComparar(evento) {
+      const caixa = evento.target;
+      if (caixa.dataset.acao !== 'comparar') return;
+      const idPeca = Number(caixa.closest('[data-id-peca]')?.dataset.idPeca);
+      const peca = pecasNaTela.get(idPeca);
+      if (!peca) return;
+
+      if (caixa.checked) {
+        if (idsSelecionados.size >= MAXIMO_COMPARAR) {
+          caixa.checked = false;
+          mostrarAviso({ tipo: 'erro', texto: `Você pode comparar até ${MAXIMO_COMPARAR} opções de cada vez.` });
+          return;
+        }
+        idsSelecionados.add(idPeca);
+        this.selecao.push({
+          idPeca, titulo: peca.titulo, codigoOem: peca.codigoOem, marcaPeca: peca.marcaPeca, nomeLoja: peca.loja?.nomeLoja,
+        });
+      } else {
+        idsSelecionados.delete(idPeca);
+        this.selecao = this.selecao.filter((s) => s.idPeca !== idPeca);
+      }
+    },
+
+    get resumoSelecao() {
+      const oems = new Set(this.selecao.map((s) => s.codigoOem).filter(Boolean));
+      const lojas = [...new Set(this.selecao.map((s) => s.nomeLoja))];
+      const lojasTexto = lojas.length > 1 ? `${lojas.slice(0, -1).join(', ')} e ${lojas.at(-1)}` : lojas[0] || '';
+      if (oems.size === 1 && this.selecao.every((s) => s.codigoOem)) {
+        return `${this.selecao[0].marcaPeca || ''} OEM ${[...oems][0]} • ${lojasTexto}`.trim();
+      }
+      return this.selecao.map((s) => s.titulo).join(' • ');
+    },
+
+    get linkComparar() {
+      return linkPara('comparar', { ids: this.selecao.map((s) => s.idPeca).join(',') });
+    },
+
+    limparSelecao() {
+      idsSelecionados.clear();
+      this.selecao = [];
+      this.$refs.lista.querySelectorAll('[data-acao="comparar"]').forEach((c) => { c.checked = false; });
+    },
+
+    // Visitante vai para o login e volta para a peça (Documentação do Front-end, "Navegação")
+    irParaLogin(destino) {
+      window.location.href = linkLogin(destino);
+    },
+
+    async usuarioLogado() {
+      return window.Cabecalho ? window.Cabecalho.pronto : null;
+    },
+
+    async adicionar(botao, idPeca) {
+      if (!(await this.usuarioLogado())) return this.irParaLogin(linkPara('detalhePeca', { id: idPeca }));
+      const peca = pecasNaTela.get(idPeca);
+      definirCarregando(botao, true);
+      try {
+        const resposta = await adicionarAoCarrinho(idPeca, 1);
+        if (typeof resposta?.quantidadeTotal === 'number') {
+          document.dispatchEvent(new CustomEvent('carrinho:atualizado', { detail: { quantidade: resposta.quantidadeTotal } }));
+        }
+        mostrarAviso({
+          tipo: 'sucesso',
+          texto: `Adicionado ao carrinho: ${peca?.titulo || 'peça'}.`,
+          link: { href: linkPara('carrinho'), texto: 'Ver carrinho' },
+        });
+      } catch (erro) {
+        if (erro?.status === 401) return this.irParaLogin(linkPara('detalhePeca', { id: idPeca }));
+        mostrarAviso({ tipo: 'erro', texto: erro?.mensagem || ERRO_GENERICO });
+      } finally {
+        definirCarregando(botao, false);
+      }
+    },
+
+    async favoritar(botao, idPeca) {
+      if (!(await this.usuarioLogado())) return this.irParaLogin(linkPara('detalhePeca', { id: idPeca }));
+      const peca = pecasNaTela.get(idPeca);
+      const favoritar = botao.getAttribute('aria-pressed') !== 'true';
+      definirCarregando(botao, true);
+      try {
+        if (favoritar) await adicionarFavorito(idPeca);
+        else await removerFavorito(idPeca);
+        if (peca) peca.favorito = favoritar;
+        definirFavorito(botao, favoritar, peca?.titulo || 'peça');
+        mostrarAviso(favoritar
+          ? { tipo: 'sucesso', texto: 'Peça salva nos favoritos.', link: { href: linkPara('favoritos'), texto: 'Ver favoritos' } }
+          : { tipo: 'sucesso', texto: 'Peça removida dos favoritos.' });
+      } catch (erro) {
+        if (erro?.status === 401) return this.irParaLogin(linkPara('detalhePeca', { id: idPeca }));
+        mostrarAviso({ tipo: 'erro', texto: erro?.mensagem || ERRO_GENERICO });
+      } finally {
+        definirCarregando(botao, false);
+      }
+    },
+
+    // ---------- Salvar busca (BP1-11) ----------
+
+    async abrirModalSalvar() {
+      // BP1-11: precisa estar logado; o visitante entra e volta para esta mesma busca
+      if (!(await this.usuarioLogado())) return this.irParaLogin(window.location.href);
+      this.modalSalvar = { aberto: true, nome: this.titulo, erro: '', salvando: false };
+      this.$nextTick(() => this.$refs.nomeBusca?.select());
+    },
+
+    fecharModalSalvar() {
+      this.modalSalvar.aberto = false;
+      this.$nextTick(() => this.$refs.botaoSalvar?.focus());
+    },
+
+    async confirmarSalvar() {
+      const nome = this.modalSalvar.nome.trim();
+      if (!nome) {
+        this.modalSalvar.erro = 'Dê um nome para a busca.';
+        this.$refs.nomeBusca?.focus();
+        return;
+      }
+      this.modalSalvar.salvando = true;
+      this.modalSalvar.erro = '';
+      try {
+        const parametros = new URLSearchParams(window.location.search);
+        parametros.delete('pagina'); // salva os filtros, não a página aberta
+        await salvarBusca(nome, parametros.toString());
+        this.fecharModalSalvar();
+        mostrarAviso({
+          tipo: 'sucesso',
+          texto: 'Busca salva com sucesso em seu painel.',
+          link: { href: linkPara('buscasSalvas'), texto: 'Ver buscas salvas' },
+        });
+      } catch (erro) {
+        if (erro?.status === 401) return this.irParaLogin(window.location.href);
+        const doCampo = (erro?.campos || []).find((c) => c.campo === 'nome');
+        this.modalSalvar.erro = doCampo?.mensagem || erro?.mensagem || ERRO_GENERICO;
+      } finally {
+        this.modalSalvar.salvando = false;
+      }
+    },
+  };
+}
+
+document.addEventListener('alpine:init', () => {
+  window.Alpine.data('resultadosBusca', paginaResultados);
+});

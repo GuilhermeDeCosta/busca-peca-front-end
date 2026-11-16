@@ -10,6 +10,7 @@
    decide o que fazer (chamar os services do carrinho e dos favoritos):
      data-acao="carrinho"  → Adicionar ao carrinho
      data-acao="favorito"  → Salvar ou remover dos favoritos (aria-pressed)
+     data-acao="comparar"  → caixa "Comparar" (só com a opção { comparar: true })
    O <article> tem data-id-peca com o id da peça.
 
    Uso:
@@ -22,13 +23,12 @@ import { RAIZ, linkPara } from '../utils/links.js';
 export const IMAGEM_PADRAO = new URL('assets/img/peca-sem-foto.svg', RAIZ).href;
 
 const CONDICOES = {
-  NOVO: 'Novo', NOVA: 'Novo', USADO: 'Usado', USADA: 'Usado',
-  REMANUFATURADO: 'Remanufaturado', REMANUFATURADA: 'Remanufaturado',
+  // Valores da Documentação do Banco (16/11/2026): NOVA, USADA, RECONDICIONADA
+  NOVA: 'Novo', USADA: 'Usado', RECONDICIONADA: 'Recondicionado',
+  // Valores antigos, ainda citados na Documentação do Back-end v2
+  NOVO: 'Novo', USADO: 'Usado', REMANUFATURADO: 'Remanufaturado',
 };
-const ORIGENS = {
-  NACIONAL: 'Nacional', IMPORTADA: 'Importado', IMPORTADO: 'Importado', ORIGINAL: 'Original',
-  OEM: 'OEM', GENUINA: 'Genuína', PARALELA: 'Paralela', GENERICA: 'Genérica',
-};
+const ORIGENS = { NACIONAL: 'Nacional', IMPORTADA: 'Importado' }; // NACIONAL ou IMPORTADA (BP1-13)
 
 // "Novo • Nacional"
 export function rotuloCondicao(peca) {
@@ -65,8 +65,10 @@ function htmlPreco(peca) {
 /**
  * HTML de um card de peça.
  * @param {object} peca item de GET /api/busca (ver services/busca.js)
+ * @param {{ comparar?: boolean, selecionado?: boolean }} [opcoes]
+ *   comparar: mostra a caixa "Comparar" (resultados da busca, BP1-10)
  */
-export function htmlCardPeca(peca) {
+export function htmlCardPeca(peca, opcoes = {}) {
   const titulo = esc(peca.titulo);
   const loja = peca.loja || {};
   const detalhe = linkPara('detalhePeca', { id: peca.idPeca });
@@ -81,6 +83,10 @@ export function htmlCardPeca(peca) {
   <article class="card-peca" data-id-peca="${esc(peca.idPeca)}">
     <div class="card-peca__topo">
       <span class="card-peca__tag">${esc(rotuloCondicao(peca))}</span>
+      ${opcoes.comparar ? `<label class="card-peca__comparar">
+        <input type="checkbox" class="form-check-input" data-acao="comparar" ${opcoes.selecionado ? 'checked' : ''}>
+        Comparar<span class="visually-hidden"> ${titulo}</span>
+      </label>` : ''}
       <button type="button" class="card-peca__fav" data-acao="favorito" aria-pressed="${favorito}"
               aria-label="${favorito ? 'Remover dos favoritos' : 'Salvar nos favoritos'}: ${titulo}">
         <i class="bi ${favorito ? 'bi-heart-fill' : 'bi-heart'}" aria-hidden="true"></i>

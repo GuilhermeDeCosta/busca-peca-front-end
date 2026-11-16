@@ -1,41 +1,116 @@
-// Links entre páginas, montados a partir da raiz do projeto.
-// Funcionam em qualquer pasta de pages/ (js/utils/ → ../../ é a raiz).
-// Os caminhos seguem os do js/components/cabecalho.js. Mudou o nome de um arquivo? Mude aqui e lá.
+// DADOS SIMULADOS DA BUSCA — apagar este arquivo quando a API de busca estiver pronta.
+// Os objetos seguem o formato que GET /api/busca vai devolver (JSON em camelCase).
+// Peças, lojas, preços e estoques são os do protótipo (Fluxo A) e são fictícios.
+//
+// Valores conforme a Documentação do Banco e a base funcional da API (16/11/2026):
+//   condicao: NOVA | USADA | RECONDICIONADA      origem: NACIONAL | IMPORTADA
+//   formas de pagamento da loja (loja_metodo_pagamento):
+//   PIX | DINHEIRO | CARTAO_CREDITO | CARTAO_DEBITO | BOLETO | FATURADO
 
-export const RAIZ = new URL('../../', import.meta.url);
+export { esperar } from './simulacao.js';
 
-export const PAGINAS = {
-  inicio: 'index.html',
-  resultados: 'pages/busca/resultados.html',
-  detalhePeca: 'pages/busca/detalhe-peca.html',
-  lojaPublica: 'pages/busca/loja-publica.html',
-  comparar: 'pages/busca/comparar.html',
-  login: 'pages/conta/login.html',
-  favoritos: 'pages/conta/favoritos.html',
-  buscasSalvas: 'pages/conta/buscas-salvas.html',
-  carrinho: 'pages/compra/carrinho.html',
-  criarLoja: 'pages/minha-loja/criar-loja.html',
-  painelLoja: 'pages/minha-loja/painel.html',
-  novaPeca: 'pages/minha-loja/form-peca.html',
+const LOJAS = {
+  avenida: {
+    idLoja: 11, nomeLoja: 'Autopeças Avenida', avaliacaoMedia: 4.8, cidade: 'Campinas', estado: 'SP',
+    distanciaKm: 3.2, formasPagamento: ['PIX', 'BOLETO', 'FATURADO'],
+  },
+  motorNorte: {
+    idLoja: 12, nomeLoja: 'Motor Norte Peças', avaliacaoMedia: 4.9, cidade: 'Campinas', estado: 'SP',
+    distanciaKm: 5.6, formasPagamento: ['PIX', 'DINHEIRO', 'CARTAO_DEBITO'],
+  },
+  horizonte: {
+    idLoja: 1, nomeLoja: 'Horizonte Peças', avaliacaoMedia: 4.8, cidade: 'Campinas', estado: 'SP',
+    distanciaKm: 1.4, formasPagamento: ['PIX', 'CARTAO_CREDITO'],
+  },
+  rotaSul: {
+    idLoja: 13, nomeLoja: 'Rota Sul Autopeças', avaliacaoMedia: 4.7, cidade: 'Valinhos', estado: 'SP',
+    distanciaKm: 14.8, formasPagamento: ['PIX', 'CARTAO_CREDITO', 'CARTAO_DEBITO'],
+  },
+  pecaCerta: {
+    idLoja: 14, nomeLoja: 'Peça Certa Sumaré', avaliacaoMedia: 3.9, cidade: 'Sumaré', estado: 'SP',
+    distanciaKm: 27.5, formasPagamento: ['PIX', 'DINHEIRO'],
+  },
 };
 
-/**
- * Endereço de uma página com parâmetros. Valores vazios são ignorados.
- * Ex.: linkPara('resultados', { q: 'farol', categoria: 3 })
- */
-export function linkPara(pagina, params = {}) {
-  const url = new URL(PAGINAS[pagina], RAIZ);
-  Object.entries(params).forEach(([chave, valor]) => {
-    if (valor !== undefined && valor !== null && valor !== '') url.searchParams.set(chave, valor);
-  });
-  return url.href;
-}
+const ONIX = [{ marca: 'Chevrolet', modelo: 'Onix', anoInicio: 2020, anoFim: 2023 }];
+const GOL = [{ marca: 'Volkswagen', modelo: 'Gol', anoInicio: 2013, anoFim: 2022 }];
+const UNO = [{ marca: 'Fiat', modelo: 'Uno', anoInicio: 2011, anoFim: 2021 }];
+const LINHA_GM = [
+  { marca: 'Chevrolet', modelo: 'Onix', anoInicio: 2013, anoFim: 2023 },
+  { marca: 'Chevrolet', modelo: 'Prisma', anoInicio: 2013, anoFim: 2019 },
+];
 
-/**
- * Login que volta para a página pedida depois de entrar (login.js lê ?voltar=).
- * @param {string} destino endereço completo da página de volta
- */
-export function linkLogin(destino = window.location.href) {
-  const url = new URL(destino, window.location.href);
-  return linkPara('login', { voltar: url.pathname + url.search });
-}
+// Cada peça: campos de GET /api/busca + "compatibilidade" (usada só na simulação para o filtro de veículo)
+// fotoUrl: null mostra a imagem padrão (assets/img/peca-sem-foto.svg)
+const base = { codigoOem: '', codigoSku: '', codigoEan: '', precoPromocional: null, condicao: 'NOVA', origem: 'NACIONAL', fotoUrl: null };
+
+export const pecasSimuladas = [
+  // ---- Faróis do Onix (tela A02 do protótipo: "Farol Onix 2020") ----
+  { ...base, idPeca: 201, titulo: 'Farol direito Chevrolet Onix 2020–2023', codigoOem: '52159336', codigoSku: 'AV-FAR-ON20D', marcaPeca: 'Arteb',
+    idCategoria: 52, preco: 489.9, quantidadeEstoque: 4, prontaEntrega: false, prazoExpedicaoDias: 1,
+    publicadoEm: '2026-11-13T10:00:00-03:00', loja: LOJAS.avenida, compatibilidade: ONIX },
+  { ...base, idPeca: 209, titulo: 'Farol direito Onix 2020–2023 Arteb', codigoOem: '52159336', marcaPeca: 'Arteb',
+    idCategoria: 52, preco: 519.0, quantidadeEstoque: 2, prontaEntrega: false, prazoExpedicaoDias: 2,
+    publicadoEm: '2026-11-12T18:00:00-03:00', loja: LOJAS.rotaSul, compatibilidade: ONIX },
+  { ...base, idPeca: 210, titulo: 'Farol direito Onix • original Arteb', codigoOem: '52159336', marcaPeca: 'Arteb',
+    idCategoria: 52, preco: 549.9, quantidadeEstoque: 4, prontaEntrega: false, prazoExpedicaoDias: 1,
+    publicadoEm: '2026-11-12T08:00:00-03:00', loja: LOJAS.motorNorte, compatibilidade: ONIX },
+  { ...base, idPeca: 206, titulo: 'Farol esquerdo Onix 2020–2023', codigoOem: '52159335', marcaPeca: 'Arteb',
+    idCategoria: 52, preco: 479.9, quantidadeEstoque: 2, prontaEntrega: false, prazoExpedicaoDias: 2,
+    publicadoEm: '2026-11-09T15:00:00-03:00', loja: LOJAS.rotaSul, compatibilidade: ONIX },
+  { ...base, idPeca: 207, titulo: 'Par de faróis Chevrolet Onix', codigoSku: 'PAR-ON20', marcaPeca: 'Arteb',
+    idCategoria: 52, preco: 969.0, quantidadeEstoque: 4, prontaEntrega: false, prazoExpedicaoDias: 1,
+    publicadoEm: '2026-11-08T10:00:00-03:00', loja: LOJAS.avenida, compatibilidade: ONIX },
+  { ...base, idPeca: 211, titulo: 'Farol Onix 2020 • conjunto ótico', codigoOem: '52159336', marcaPeca: 'Arteb',
+    idCategoria: 52, preco: 499.9, quantidadeEstoque: 2, prontaEntrega: false, prazoExpedicaoDias: 2,
+    publicadoEm: '2026-11-06T09:00:00-03:00', loja: LOJAS.rotaSul, compatibilidade: ONIX },
+
+  // ---- Outras peças (página inicial e outras buscas) ----
+  { ...base, idPeca: 202, titulo: 'Filtro de óleo Tecfil PSL55', codigoSku: 'FIL-PSL55', marcaPeca: 'Tecfil',
+    idCategoria: 43, preco: 29.9, quantidadeEstoque: 18, prontaEntrega: true, prazoExpedicaoDias: 0,
+    publicadoEm: '2026-11-12T16:00:00-03:00', loja: LOJAS.motorNorte, compatibilidade: [...LINHA_GM, ...GOL] },
+  { ...base, idPeca: 203, titulo: 'Retrovisor elétrico Chevrolet Onix', codigoOem: '52163774', marcaPeca: 'Metagal',
+    idCategoria: 51, preco: 219.9, quantidadeEstoque: 6, prontaEntrega: true, prazoExpedicaoDias: 0,
+    publicadoEm: '2026-11-12T09:00:00-03:00', loja: LOJAS.avenida, compatibilidade: ONIX },
+  { ...base, idPeca: 204, titulo: 'Alternador Bosch 90A • linha GM', codigoOem: '0124325163', codigoSku: 'ALT-90GM', marcaPeca: 'Bosch',
+    idCategoria: 11, preco: 749.0, quantidadeEstoque: 2, prontaEntrega: true, prazoExpedicaoDias: 0,
+    publicadoEm: '2026-11-11T14:00:00-03:00', loja: LOJAS.horizonte, compatibilidade: LINHA_GM },
+  { ...base, idPeca: 205, titulo: 'Para-choque dianteiro Onix 2020', codigoOem: '52159318', marcaPeca: 'Original',
+    idCategoria: 5, preco: 379.9, quantidadeEstoque: 3, prontaEntrega: true, prazoExpedicaoDias: 0,
+    publicadoEm: '2026-11-10T11:00:00-03:00', loja: LOJAS.rotaSul, compatibilidade: ONIX },
+  { ...base, idPeca: 208, titulo: 'Lanterna traseira Fiat Argo 2018–2022', codigoOem: '52012345', marcaPeca: 'Fitam',
+    idCategoria: 52, preco: 329.9, precoPromocional: 299.9, quantidadeEstoque: 3, prontaEntrega: true, prazoExpedicaoDias: 0,
+    publicadoEm: '2026-11-07T09:30:00-03:00', loja: LOJAS.avenida, compatibilidade: [{ marca: 'Fiat', modelo: 'Argo', anoInicio: 2018, anoFim: 2022 }] },
+  { ...base, idPeca: 212, titulo: 'Pastilha de freio dianteira Cobreq', codigoSku: 'PAS-N1234', marcaPeca: 'Cobreq',
+    idCategoria: 21, preco: 128.5, quantidadeEstoque: 9, prontaEntrega: true, prazoExpedicaoDias: 0,
+    publicadoEm: '2026-11-05T10:00:00-03:00', loja: LOJAS.motorNorte, compatibilidade: [...GOL, ...UNO] },
+  { ...base, idPeca: 213, titulo: 'Disco de freio ventilado Gol G5', codigoOem: '5U0615301', marcaPeca: 'Fremax',
+    idCategoria: 22, preco: 189.9, quantidadeEstoque: 4, prontaEntrega: false, prazoExpedicaoDias: 3,
+    publicadoEm: '2026-11-04T10:00:00-03:00', loja: LOJAS.pecaCerta, compatibilidade: GOL },
+  { ...base, idPeca: 214, titulo: 'Amortecedor traseiro Palio usado', codigoSku: 'AMO-PL03', marcaPeca: 'Cofap',
+    idCategoria: 31, preco: 112.0, condicao: 'USADA', quantidadeEstoque: 2, prontaEntrega: true, prazoExpedicaoDias: 0,
+    publicadoEm: '2026-11-03T10:00:00-03:00', loja: LOJAS.pecaCerta, compatibilidade: [{ marca: 'Fiat', modelo: 'Palio', anoInicio: 2010, anoFim: 2017 }] },
+  { ...base, idPeca: 215, titulo: 'Sensor de oxigênio Bosch Gol', codigoOem: '0258006537', marcaPeca: 'Bosch', origem: 'IMPORTADA',
+    idCategoria: 13, preco: 189.9, quantidadeEstoque: 6, prontaEntrega: true, prazoExpedicaoDias: 0,
+    publicadoEm: '2026-11-02T10:00:00-03:00', loja: LOJAS.horizonte, compatibilidade: GOL },
+  { ...base, idPeca: 216, titulo: 'Motor de partida recondicionado Uno', codigoSku: 'MPA-UN01', marcaPeca: 'Valeo', condicao: 'RECONDICIONADA',
+    idCategoria: 12, preco: 349.0, quantidadeEstoque: 1, prontaEntrega: false, prazoExpedicaoDias: 2,
+    publicadoEm: '2026-11-01T10:00:00-03:00', loja: LOJAS.pecaCerta, compatibilidade: UNO },
+  { ...base, idPeca: 217, titulo: 'Correia dentada Gates linha GM', codigoSku: 'COR-5527', marcaPeca: 'Gates',
+    idCategoria: 41, preco: 89.9, quantidadeEstoque: 7, prontaEntrega: true, prazoExpedicaoDias: 0,
+    publicadoEm: '2026-10-31T10:00:00-03:00', loja: LOJAS.rotaSul, compatibilidade: LINHA_GM },
+  { ...base, idPeca: 218, titulo: 'Bomba d’água Uno Fire', codigoSku: 'BOM-UN02', marcaPeca: 'Urba',
+    idCategoria: 42, preco: 159.9, quantidadeEstoque: 3, prontaEntrega: true, prazoExpedicaoDias: 0,
+    publicadoEm: '2026-10-30T10:00:00-03:00', loja: LOJAS.motorNorte, compatibilidade: UNO },
+  { ...base, idPeca: 219, titulo: 'Kit embreagem LUK Gol 1.0', codigoSku: 'EMB-VW06', marcaPeca: 'LUK', origem: 'IMPORTADA',
+    idCategoria: 44, preco: 689.0, quantidadeEstoque: 1, prontaEntrega: false, prazoExpedicaoDias: 5,
+    publicadoEm: '2026-10-29T10:00:00-03:00', loja: LOJAS.avenida, compatibilidade: GOL },
+  { ...base, idPeca: 220, titulo: 'Retrovisor manual Gol G5 esquerdo', codigoSku: 'RET-GL05', marcaPeca: 'Metagal',
+    idCategoria: 51, preco: 139.9, quantidadeEstoque: 5, prontaEntrega: true, prazoExpedicaoDias: 0,
+    publicadoEm: '2026-10-28T10:00:00-03:00', loja: LOJAS.horizonte, compatibilidade: GOL },
+];
+
+// Favoritos, carrinho e buscas salvas em memória: somem ao recarregar a página
+export const favoritosSimulados = new Set();
+export const carrinhoSimulado = new Map(); // idPeca → quantidade
+export const buscasSalvasSimuladas = [];

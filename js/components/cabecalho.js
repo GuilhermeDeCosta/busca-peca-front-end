@@ -370,7 +370,7 @@
         }
         categoriasCarregadas = true;
         lista.innerHTML = categorias.map(function (c) {
-            return `<li><a href="${link('resultados', { categoria: c.id })}">${esc(c.nome)}</a></li>`;
+            return `<li><a href="${link('resultados', { categoria: c.idCategoria })}">${esc(c.nome)}</a></li>`;
         }).join('') + `<li><a class="fw-semibold" href="${link('resultados')}">Ver todas</a></li>`;
     }
 

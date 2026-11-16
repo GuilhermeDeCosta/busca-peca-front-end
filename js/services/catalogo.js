@@ -1,12 +1,12 @@
 // Serviço de catálogo: categorias e veículos (Documentação do Back-end, seção 5.3).
 //
-// QUANDO A API E O api.js ESTIVEREM PRONTOS: descomente o import do api.js e as linhas
-// "return api...", troque USAR_SIMULACAO para false e apague o import de ./simulacao.js.
+// Rotas já prontas na API (Swagger): GET /categorias, /veiculos/marcas e /veiculos?marca=.
+// Para voltar a testar sem o back-end, troque USAR_SIMULACAO para true.
 
-// import { api } from '../api.js';
+import { api } from '../api.js';
 import { esperar, categoriasSimuladas, veiculosSimulados } from './simulacao.js';
 
-const USAR_SIMULACAO = true;
+const USAR_SIMULACAO = false;
 
 // Lista fixa até existir uma rota de marcas de peça
 const MARCAS_PECA = ['Bosch', 'Valeo', 'Magneti Marelli', 'NGK', 'Cofap', 'Monroe', 'SKF', 'Gates',
@@ -21,7 +21,7 @@ export async function listarCategorias() {
     await esperar(250);
     return structuredClone(categoriasSimuladas);
   }
-  // return api.get('/categorias');
+  return api.get('/categorias');
 }
 
 /**
@@ -33,7 +33,7 @@ export async function listarMarcasVeiculo() {
     await esperar(250);
     return Object.keys(veiculosSimulados);
   }
-  // return api.get('/veiculos/marcas');
+  return api.get('/veiculos/marcas');
 }
 
 /**
@@ -47,8 +47,8 @@ export async function listarModelos(marca) {
     await esperar(200);
     return [...(veiculosSimulados[marca] || [])];
   }
-  // const veiculos = await api.get(`/veiculos?marca=${encodeURIComponent(marca)}`);
-  // return [...new Set(veiculos.map((v) => v.modelo))].sort();
+  const veiculos = await api.get(`/veiculos?marca=${encodeURIComponent(marca)}`);
+  return [...new Set(veiculos.map((v) => v.modelo))].sort();
 }
 
 /**

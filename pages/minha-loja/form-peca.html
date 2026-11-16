@@ -83,6 +83,19 @@
     .aviso--sucesso { background: #e6f4ea; color: #17633a; }
     .aviso--erro { background: #fdecea; color: #b42318; }
     .aviso--atencao { background: #fdf3d8; color: #7a5300; }
+    .aviso--info { background: #e8f0fb; color: #1f4f7f; }
+    .aviso__link { color: inherit; text-decoration: underline; }
+
+    /* Autopreenchimento: o que veio da consulta e o que falta completar */
+    .selo-catalogo, .selo-completar {
+      display: inline-block; margin-left: .5rem; padding: .05rem .4rem; border-radius: .375rem;
+      font-size: .6875rem; font-weight: 600; vertical-align: .1em;
+    }
+    .selo-catalogo { background: #e6f4ea; color: #17633a; }
+    .selo-completar { background: #fdf3d8; color: #7a5300; }
+    h2 .selo-completar { font-size: .75rem; }
+    .form-peca .campo-completar:not(.is-invalid) { border-color: #d9a400; background-color: #fffbeb; }
+    .form-peca .card.card-completar { border-color: #d9a400; }
 
     /* Compatibilidade */
     .tabela-form { font-size: .875rem; margin-bottom: 0; }
@@ -233,55 +246,94 @@
                 <div class="row g-3 mb-3">
                   <div class="col-md-6">
                     <label for="tipoCodigo" class="form-label">Tipo de código</label>
-                    <select id="tipoCodigo" class="form-select" x-model="consulta.tipo" @change="consulta.codigo = ''; consulta.estado = ''">
-                      <option value="OEM">OEM</option>
-                      <option value="EAN">EAN</option>
-                      <option value="SKU">SKU</option>
+                    <select id="tipoCodigo" class="form-select" x-model="consulta.tipo" @change="trocarTipoConsulta()" :disabled="buscando">
+                      <option value="OEM">OEM (código da montadora ou fabricante)</option>
+                      <option value="EAN">EAN (código de barras)</option>
+                      <option value="SKU">SKU (código de catálogo)</option>
                     </select>
                   </div>
                   <div class="col-md-6">
                     <label for="codigoConsulta" class="form-label">Código</label>
-                    <input id="codigoConsulta" type="text" class="form-control" autocomplete="off"
+                    <input id="codigoConsulta" type="text" class="form-control" autocomplete="off" maxlength="50"
                            :inputmode="consulta.tipo === 'EAN' ? 'numeric' : 'text'"
                            :placeholder="{ OEM: 'Ex.: 0124325163', EAN: 'Ex.: 7891234567895', SKU: 'Ex.: ALT-90GM' }[consulta.tipo]"
                            :value="consulta.codigo" @input="aoDigitarCodigoConsulta($event)"
-                           @keydown.enter.prevent="buscarPorCodigo()"
-                           :class="{ 'is-invalid': erros.consulta }" aria-describedby="erro-consulta">
+                           @keydown.enter.prevent="buscarPorCodigo()" :readonly="buscando"
+                           :class="{ 'is-invalid': erros.consulta }" aria-describedby="erro-consulta ajuda-consulta">
                     <div id="erro-consulta" class="invalid-feedback" x-text="erros.consulta"></div>
+                    <div id="ajuda-consulta" class="form-text" x-show="!erros.consulta">
+                      A consulta é um atalho: se não encontrar ou demorar, você preenche à mão e o código fica guardado.
+                    </div>
                   </div>
                 </div>
 
-                <button type="button" class="btn btn-primary px-3 mb-3" @click="buscarPorCodigo()" :disabled="consulta.estado === 'buscando'">
-                  <span x-show="consulta.estado === 'buscando'" x-cloak class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>
-                  <i x-show="consulta.estado !== 'buscando'" class="bi bi-search me-1" aria-hidden="true"></i>
-                  <span x-text="consulta.estado === 'buscando' ? 'Buscando…' : 'Buscar dados pelo código'">Buscar dados pelo código</span>
-                </button>
+                <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+                  <button type="button" class="btn btn-primary px-3" @click="buscarPorCodigo()" :disabled="buscando">
+                    <span x-show="buscando" x-cloak class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>
+                    <i x-show="!buscando" class="bi bi-search me-1" aria-hidden="true"></i>
+                    <span x-text="buscando ? 'Buscando…' : 'Buscar dados pelo código'">Buscar dados pelo código</span>
+                  </button>
+                  <button type="button" class="btn btn-contorno-azul px-3" x-show="buscando" x-cloak @click="continuarManual()">
+                    Cancelar e preencher à mão
+                  </button>
+                </div>
 
                 <div aria-live="polite">
+                  <p class="small text-secondary mb-3" x-show="buscando && consulta.demorando" x-cloak>
+                    <i class="bi bi-hourglass-split me-1" aria-hidden="true"></i>A consulta está demorando. Esperamos até
+                    <span x-text="segundosLimite"></span> segundos; se preferir, cancele e preencha à mão.
+                  </p>
+
+                  <!-- Encontrado (passo 6) -->
                   <div class="aviso aviso--sucesso d-flex gap-2 mb-3" x-show="consulta.estado === 'encontrado'" x-cloak>
                     <i class="bi bi-check-circle mt-1" aria-hidden="true"></i>
                     <div>
                       <strong class="d-block">Dados de referência encontrados</strong>
-                      <span x-text="consulta.resumo + '. Campos preenchidos para sua revisão.'"></span>
+                      <span x-text="consulta.resumo + '. Campos preenchidos para sua revisão, marcados com “do catálogo”.'"></span>
                     </div>
                   </div>
+
+                  <!-- Dados incompletos (fluxo alternativo 3) -->
+                  <div class="aviso aviso--atencao d-flex gap-2 mb-3" x-show="consulta.estado === 'parcial'" x-cloak>
+                    <i class="bi bi-info-circle mt-1" aria-hidden="true"></i>
+                    <div>
+                      <strong class="d-block">Dados encontrados em parte</strong>
+                      <span x-text="consulta.resumo + '. A consulta não trouxe ' + textoFaltantes + '. Complete os campos destacados em amarelo: eles são obrigatórios para publicar.'"></span>
+                      <button type="button" class="btn btn-link btn-sm p-0 d-block fw-semibold aviso__link" x-show="faltantesPendentes"
+                              @click="continuarManual()">Completar agora</button>
+                    </div>
+                  </div>
+
+                  <!-- Não encontrado (fluxo alternativo 1) -->
                   <div class="aviso aviso--atencao d-flex gap-2 mb-3" x-show="consulta.estado === 'nao-encontrado'" x-cloak>
                     <i class="bi bi-info-circle mt-1" aria-hidden="true"></i>
                     <div>
                       <strong class="d-block">Código não encontrado no catálogo automático</strong>
                       Por favor, preencha os dados técnicos manualmente. O código informado já está no formulário.
+                      <span class="d-block mt-1">Confira se digitou certo ou troque o tipo de código e busque de novo.</span>
                     </div>
                   </div>
-                  <div class="aviso aviso--atencao d-flex gap-2 mb-3" x-show="consulta.estado === 'indisponivel'" x-cloak>
+
+                  <!-- Base fora do ar ou sem resposta (fluxo alternativo 2) -->
+                  <div class="aviso aviso--atencao d-flex gap-2 mb-3" x-show="consulta.estado === 'indisponivel' || consulta.estado === 'tempo-esgotado'" x-cloak>
                     <i class="bi bi-exclamation-triangle mt-1" aria-hidden="true"></i>
                     <div>
-                      <strong class="d-block">Consulta indisponível</strong>
+                      <strong class="d-block" x-text="consulta.estado === 'tempo-esgotado' ? 'A consulta não respondeu a tempo' : 'Consulta indisponível'"></strong>
                       Não foi possível consultar o código agora. Continue com o preenchimento manual.
+                      <span class="d-block mt-1">O código informado já está no formulário.
+                        <button type="button" class="btn btn-link btn-sm p-0 align-baseline fw-semibold aviso__link" @click="buscarPorCodigo()">Tentar de novo</button>
+                      </span>
                     </div>
+                  </div>
+
+                  <!-- Cancelada pelo vendedor -->
+                  <div class="aviso aviso--info d-flex gap-2 mb-3" x-show="consulta.estado === 'cancelada'" x-cloak>
+                    <i class="bi bi-pencil mt-1" aria-hidden="true"></i>
+                    <div>Consulta cancelada. Continue com o preenchimento manual; o código informado já está no formulário.</div>
                   </div>
                 </div>
 
-                <button type="button" class="btn btn-link btn-texto-azul px-3" @click="continuarManual()">Continuar com preenchimento manual</button>
+                <button type="button" class="btn btn-link btn-texto-azul px-3" x-show="!buscando" @click="continuarManual()">Continuar com preenchimento manual</button>
               </div>
             </section>
 
@@ -291,27 +343,27 @@
                 <h2 id="titulo-informacoes" class="card-title mb-3">Informações da peça</h2>
 
                 <div class="mb-3">
-                  <label for="titulo" class="form-label">Título do anúncio</label>
+                  <label for="titulo" class="form-label">Título do anúncio<span class="selo-catalogo" x-show="doCatalogo('titulo')" x-cloak>do catálogo</span><span class="selo-completar" x-show="aCompletar('titulo')" x-cloak>completar</span></label>
                   <input id="titulo" type="text" class="form-control" maxlength="150" required
                          placeholder="Ex.: Alternador Bosch 90A • linha GM"
                          x-model="form.titulo" @input="limparErro('titulo')"
-                         :class="{ 'is-invalid': erros.titulo }" aria-describedby="erro-titulo">
+                         :class="{ 'is-invalid': erros.titulo, 'campo-completar': aCompletar('titulo') }" aria-describedby="erro-titulo">
                   <div id="erro-titulo" class="invalid-feedback" x-text="erros.titulo"></div>
                 </div>
 
                 <div class="mb-3">
-                  <label for="descricao" class="form-label">Descrição técnica</label>
+                  <label for="descricao" class="form-label">Descrição técnica<span class="selo-catalogo" x-show="doCatalogo('descricao')" x-cloak>do catálogo</span><span class="selo-completar" x-show="aCompletar('descricao')" x-cloak>completar</span></label>
                   <textarea id="descricao" class="form-control" rows="3" maxlength="3000"
                             placeholder="Estado, especificações, o que vem na embalagem e o que conferir antes de comprar."
-                            x-model="form.descricao" :class="{ 'is-invalid': erros.descricao }" aria-describedby="erro-descricao"></textarea>
+                            x-model="form.descricao" :class="{ 'is-invalid': erros.descricao, 'campo-completar': aCompletar('descricao') }" aria-describedby="erro-descricao"></textarea>
                   <div id="erro-descricao" class="invalid-feedback" x-text="erros.descricao"></div>
                 </div>
 
                 <div class="row g-3 mb-3">
                   <div class="col-md-6">
-                    <label for="idCategoria" class="form-label">Categoria</label>
+                    <label for="idCategoria" class="form-label">Categoria<span class="selo-catalogo" x-show="doCatalogo('idCategoria')" x-cloak>do catálogo</span><span class="selo-completar" x-show="aCompletar('idCategoria')" x-cloak>completar</span></label>
                     <select id="idCategoria" class="form-select" required x-model="form.idCategoria" @change="limparErro('idCategoria')"
-                            :class="{ 'is-invalid': erros.idCategoria }" aria-describedby="erro-idCategoria">
+                            :class="{ 'is-invalid': erros.idCategoria, 'campo-completar': aCompletar('idCategoria') }" aria-describedby="erro-idCategoria">
                       <option value="">Escolha a categoria</option>
                       <template x-for="grupo in categoriasAgrupadas" :key="grupo.idCategoria">
                         <optgroup :label="grupo.nome">
@@ -325,8 +377,8 @@
                     <div id="erro-idCategoria" class="invalid-feedback" x-text="erros.idCategoria"></div>
                   </div>
                   <div class="col-md-6">
-                    <label for="marcaPeca" class="form-label">Marca da peça</label>
-                    <select id="marcaPeca" class="form-select" x-model="form.marcaPeca">
+                    <label for="marcaPeca" class="form-label">Marca da peça<span class="selo-catalogo" x-show="doCatalogo('marcaPeca')" x-cloak>do catálogo</span><span class="selo-completar" x-show="aCompletar('marcaPeca')" x-cloak>completar</span></label>
+                    <select id="marcaPeca" class="form-select" x-model="form.marcaPeca" :class="{ 'campo-completar': aCompletar('marcaPeca') }">
                       <option value="">Escolha a marca</option>
                       <template x-for="marca in marcasPeca" :key="marca">
                         <option :value="marca" x-text="marca" :selected="form.marcaPeca === marca"></option>
@@ -337,7 +389,7 @@
 
                 <div class="row g-3 mb-3">
                   <div class="col-md-4">
-                    <label for="codigoOem" class="form-label">OEM</label>
+                    <label for="codigoOem" class="form-label">OEM<span class="selo-catalogo" x-show="doCatalogo('codigoOem')" x-cloak>do catálogo</span><span class="selo-completar" x-show="aCompletar('codigoOem')" x-cloak>completar</span></label>
                     <input id="codigoOem" type="text" class="form-control" maxlength="50" required autocomplete="off"
                            placeholder="Código do fabricante"
                            :value="form.codigoOem" @input="aoDigitarCodigo('codigoOem', 'OEM', $event)"
@@ -345,7 +397,7 @@
                     <div id="erro-codigoOem" class="invalid-feedback" x-text="erros.codigoOem"></div>
                   </div>
                   <div class="col-md-4">
-                    <label for="codigoEan" class="form-label">EAN</label>
+                    <label for="codigoEan" class="form-label">EAN<span class="selo-catalogo" x-show="doCatalogo('codigoEan')" x-cloak>do catálogo</span><span class="selo-completar" x-show="aCompletar('codigoEan')" x-cloak>completar</span></label>
                     <input id="codigoEan" type="text" class="form-control" inputmode="numeric" maxlength="14" autocomplete="off"
                            placeholder="Não informado"
                            :value="form.codigoEan" @input="aoDigitarCodigo('codigoEan', 'EAN', $event)"
@@ -363,15 +415,17 @@
                 </div>
 
                 <div class="mb-3">
-                  <label for="caracteristicas" class="form-label">Características técnicas</label>
+                  <label for="caracteristicas" class="form-label">Características técnicas<span class="selo-catalogo" x-show="doCatalogo('caracteristicas')" x-cloak>do catálogo</span><span class="selo-completar" x-show="aCompletar('caracteristicas')" x-cloak>completar</span></label>
                   <input id="caracteristicas" type="text" class="form-control" maxlength="255"
                          placeholder="Ex.: 12 V • 90 A • polia 6 canais • conector padrão GM"
-                         x-model="form.caracteristicas">
+                         x-model="form.caracteristicas" @input="limparErro('caracteristicas')"
+                         :class="{ 'is-invalid': erros.caracteristicas, 'campo-completar': aCompletar('caracteristicas') }" aria-describedby="erro-caracteristicas">
+                  <div id="erro-caracteristicas" class="invalid-feedback" x-text="erros.caracteristicas"></div>
                 </div>
 
                 <div class="row g-3">
                   <div class="col-md-6">
-                    <label for="condicao" class="form-label">Condição</label>
+                    <label for="condicao" class="form-label">Condição<span class="selo-catalogo" x-show="doCatalogo('condicao')" x-cloak>do catálogo</span><span class="selo-completar" x-show="aCompletar('condicao')" x-cloak>completar</span></label>
                     <select id="condicao" class="form-select" required x-model="form.condicao"
                             :class="{ 'is-invalid': erros.condicao }" aria-describedby="erro-condicao">
                       <template x-for="c in condicoes" :key="c.valor">
@@ -381,7 +435,7 @@
                     <div id="erro-condicao" class="invalid-feedback" x-text="erros.condicao"></div>
                   </div>
                   <div class="col-md-6">
-                    <label for="origem" class="form-label">Origem</label>
+                    <label for="origem" class="form-label">Origem<span class="selo-catalogo" x-show="doCatalogo('origem')" x-cloak>do catálogo</span><span class="selo-completar" x-show="aCompletar('origem')" x-cloak>completar</span></label>
                     <select id="origem" class="form-select" required x-model="form.origem"
                             :class="{ 'is-invalid': erros.origem }" aria-describedby="erro-origem">
                       <template x-for="o in origens" :key="o.valor">
@@ -395,9 +449,9 @@
             </section>
 
             <!-- 2b. Compatibilidade -->
-            <section id="secao-compatibilidade" data-etapa="2" class="card mb-4" aria-labelledby="titulo-compatibilidade">
+            <section id="secao-compatibilidade" data-etapa="2" :class="{ 'card-completar': aCompletar('aplicacoes') }" class="card mb-4" aria-labelledby="titulo-compatibilidade">
               <div class="card-body p-3 p-md-4">
-                <h2 id="titulo-compatibilidade" class="card-title mb-2">Compatibilidade</h2>
+                <h2 id="titulo-compatibilidade" class="card-title mb-2">Compatibilidade<span class="selo-completar" x-show="aCompletar('aplicacoes')" x-cloak>completar</span></h2>
                 <p class="text-secondary mb-3">Informe somente aplicações verificadas pela sua loja.</p>
 
                 <div class="row g-3 mb-3">

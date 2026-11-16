@@ -55,18 +55,45 @@ export async function excluirAnuncio(idPeca) {
 }
 
 /**
- * GET /api/pecas/autopreenchimento?codigo=&tipo= — consulta a base externa de códigos (BP1-9, BP1-63).
- * @param {'OEM'|'EAN'|'SKU'} tipo
- * @returns {Promise<object|null>} dados de referência, ou null quando o código não é encontrado.
- * Rejeita com { status: 503 | 504 } quando a base externa está fora do ar ou demora (ADR-012).
+ * Tempo máximo que a tela espera a consulta por código. A API espera a base externa por 3 s
+ * (ADR-012) e responde 504; os 8 s daqui cobrem essa espera mais a rede, e garantem que a tela
+ * nunca fica presa em "Buscando…" se a própria API travar. Mover para config.js quando ele existir.
  */
-export async function consultarReferencia(tipo, codigo) {
-  if (USAR_SIMULACAO) return simularReferencia(tipo, codigo);
+export const TEMPO_LIMITE_CONSULTA_MS = 8000;
+
+/**
+ * GET /api/pecas/autopreenchimento?tipo=&codigo= — consulta a base externa de códigos (BP1-9, BP1-63, ADR-002).
+ * @param {'OEM'|'EAN'|'SKU'} tipo
+ * @param {string} codigo já normalizado e validado
+ * @param {{ signal?: AbortSignal }} opcoes signal para cancelar ("Continuar com preenchimento manual")
+ * @returns {Promise<object|null>} dados de referência, ou null quando o código não é encontrado (404).
+ *   Formato: { titulo, descricao, idCategoria, marcaPeca, codigoOem, codigoEan, caracteristicas,
+ *   condicao, origem, pesoKg, dimensoes, aplicacoes: [{ marca, modelo, anoInicial, anoFinal, versao }],
+ *   camposFaltantes?: string[] }. Campos sem informação vêm nulos (dados incompletos, fluxo alternativo 3).
+ * Rejeita com:
+ *   { erro: 'TEMPO_ESGOTADO' } — a API respondeu 504 ou passou de TEMPO_LIMITE_CONSULTA_MS;
+ *   { erro: 'BASE_INDISPONIVEL' } — a API respondeu 502/503 ou outro erro;
+ *   { erro: 'CANCELADA' } — o vendedor cancelou para preencher à mão.
+ */
+export async function consultarReferencia(tipo, codigo, { signal } = {}) {
+  const controle = new AbortController();
+  const cancelar = () => controle.abort();
+  signal?.addEventListener('abort', cancelar);
+  let estourou = false;
+  const relogio = setTimeout(() => { estourou = true; controle.abort(); }, TEMPO_LIMITE_CONSULTA_MS);
+
   try {
-    return await api.get(`/pecas/autopreenchimento?${new URLSearchParams({ tipo, codigo })}`);
+    if (USAR_SIMULACAO) return await simularReferencia(tipo, codigo, controle.signal);
+    // api.js precisa repassar o signal ao fetch: fetch(url, { ..., signal })
+    return await api.get(`/pecas/autopreenchimento?${new URLSearchParams({ tipo, codigo })}`, { signal: controle.signal });
   } catch (erro) {
+    if (signal?.aborted) throw { status: 0, erro: 'CANCELADA' };
+    if (estourou || erro?.status === 504) throw { status: 504, erro: 'TEMPO_ESGOTADO', mensagem: 'A consulta demorou demais.' };
     if (erro?.status === 404) return null;
-    throw erro;
+    throw { status: erro?.status || 0, erro: 'BASE_INDISPONIVEL', mensagem: erro?.mensagem || 'Consulta indisponível.' };
+  } finally {
+    clearTimeout(relogio);
+    signal?.removeEventListener('abort', cancelar);
   }
 }
 
@@ -201,11 +228,27 @@ async function simularExcluir(idPeca) {
   anunciosSimulados.splice(indice, 1); // na API é exclusão lógica: anuncio_ativo = falso
 }
 
-async function simularReferencia(tipo, codigo) {
-  await esperar(900);
+// Espera que pode ser interrompida (cancelar ou tempo limite), como um fetch real
+function esperarCancelavel(ms, signal) {
+  return new Promise((resolver, rejeitar) => {
+    const relogio = setTimeout(resolver, ms);
+    signal?.addEventListener('abort', () => { clearTimeout(relogio); rejeitar(new DOMException('Abortado', 'AbortError')); }, { once: true });
+  });
+}
+
+// Códigos para testar sem API:
+//   OEM 0124325163    → dados completos (alternador Bosch)
+//   EAN 7891234567895 → dados incompletos (sem categoria, descrição e aplicação)
+//   OEM 999           → base externa fora do ar (503)
+//   OEM 888           → API não responde; a tela desiste em TEMPO_LIMITE_CONSULTA_MS
+//   qualquer outro    → código não encontrado (404)
+async function simularReferencia(tipo, codigo, signal) {
   console.info('[simulação] GET /api/pecas/autopreenchimento', { tipo, codigo });
-  // Para testar a base externa fora do ar, use o código 999.
-  if (codigo === '999') throw { status: 504, mensagem: 'Base externa sem resposta.' };
+  if (codigo === '888') {
+    await esperarCancelavel(60000, signal);
+  }
+  await esperarCancelavel(codigo === '999' ? 1200 : 900, signal);
+  if (codigo === '999') throw { status: 503, erro: 'BASE_INDISPONIVEL', mensagem: 'Base externa fora do ar.' };
   const referencia = referenciasSimuladas[codigo];
   return referencia ? structuredClone(referencia) : null;
 }

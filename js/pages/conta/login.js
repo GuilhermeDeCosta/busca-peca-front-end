@@ -6,10 +6,11 @@
 // ---------- CONFIGURAÇÃO ----------
 // true  = funciona sem o back-end (para testar a tela)
 // false = chama a API Spring de verdade (POST /api/auth/login)
-const MODO_DEMO = true;
+const MODO_DEMO = false;
 
 const API_URL = 'http://localhost:8080/api';   // depois vem do config.js
-const PAGINA_INICIAL = 'main.html';             // para onde ir depois de entrar
+// Enquanto não existe a página inicial (pages/busca/main.html), o login leva ao perfil
+const PAGINA_INICIAL = 'perfil.html';           // para onde ir depois de entrar
 const TEMPO_LIMITE_MS = 15000;                  // doc do front: cancela após 15 s
 
 // Usuário de teste do modo demonstração

@@ -333,3 +333,102 @@ function paginaDetalhe() {
         this.salvandoFavorito = false;
       }
     },
+
+    // BP1-52 / Documentação do Front-end ("Avise-me quando chegar")
+    async avisarQuandoChegar() {
+      if (!(await usuarioLogado())) return this.irParaLogin();
+      try {
+        await pedirAvisoDisponibilidade(this.idPeca);
+        this.avisoPedido = true;
+        mostrarAviso({ tipo: 'sucesso', texto: 'Pronto! Avisaremos você quando esta peça voltar ao estoque.' });
+      } catch (erro) {
+        if (erro?.status === 401) return this.irParaLogin();
+        mostrarAviso({ tipo: 'erro', texto: erro?.mensagem || ERRO_GENERICO });
+      }
+    },
+
+    // BP1-28: conversa com a loja sobre esta peça
+    async conversar() {
+      const destino = linkPara('conversas', { loja: this.peca.loja?.idLoja, peca: this.idPeca });
+      if (!(await usuarioLogado())) return this.irParaLogin(destino);
+      window.location.href = destino;
+    },
+
+    // "CEP para referência": distância desta loja até o CEP. Frete e prazo seguem a combinar (ADR-012).
+    aoDigitarCep() {
+      this.cep = mascararCep(this.cep);
+      this.erroCep = '';
+    },
+    async consultarEntrega() {
+      this.resultadoCep = null;
+      if (!validarCep(this.cep)) {
+        this.erroCep = 'CEP inválido ou área sem cobertura de entrega.'; // BP1-23, fluxo alternativo
+        this.$refs.campoCep?.focus();
+        return;
+      }
+      this.consultandoCep = true;
+      try {
+        const resposta = await obterPeca(this.idPeca, { cep: somenteDigitos(this.cep) });
+        this.resultadoCep = {
+          distancia: resposta.distanciaKm != null ? `${formatarDecimal(resposta.distanciaKm)} km` : '',
+          cep: this.cep,
+        };
+      } catch (erro) {
+        this.erroCep = erro?.mensagem || 'Não foi possível consultar agora. Combine a entrega com o vendedor.';
+      } finally {
+        this.consultandoCep = false;
+      }
+    },
+
+    // ---------- Cliques nos cards de "Outras opções" ----------
+
+    async aoClicarOutras(evento) {
+      const botao = evento.target.closest('button[data-acao]');
+      if (!botao || botao.disabled) return;
+      const id = Number(botao.closest('[data-id-peca]')?.dataset.idPeca);
+      const peca = this.outras.find((p) => p.idPeca === id);
+      if (!(await usuarioLogado())) return this.irParaLogin(linkPara('detalhePeca', { id }));
+
+      if (botao.dataset.acao === 'carrinho') {
+        definirCarregando(botao, true);
+        try {
+          const resposta = await adicionarAoCarrinho(id, 1);
+          if (typeof resposta?.quantidadeTotal === 'number') {
+            document.dispatchEvent(new CustomEvent('carrinho:atualizado', { detail: { quantidade: resposta.quantidadeTotal } }));
+          }
+          mostrarAviso({ tipo: 'sucesso', texto: `Adicionado ao carrinho: ${peca?.titulo || 'peça'}.`, link: { href: linkPara('carrinho'), texto: 'Ver carrinho' } });
+        } catch (erro) {
+          mostrarAviso({ tipo: 'erro', texto: erro?.mensagem || ERRO_GENERICO });
+        } finally {
+          definirCarregando(botao, false);
+        }
+      }
+
+      if (botao.dataset.acao === 'favorito') {
+        const favoritar = botao.getAttribute('aria-pressed') !== 'true';
+        definirCarregando(botao, true);
+        try {
+          if (favoritar) await adicionarFavorito(id);
+          else await removerFavorito(id);
+          definirFavorito(botao, favoritar, peca?.titulo || 'peça');
+          mostrarAviso({ tipo: 'sucesso', texto: favoritar ? 'Peça salva nos favoritos.' : 'Peça removida dos favoritos.' });
+        } catch (erro) {
+          mostrarAviso({ tipo: 'erro', texto: erro?.mensagem || ERRO_GENERICO });
+        } finally {
+          definirCarregando(botao, false);
+        }
+      }
+    },
+
+    abrirLocalizacao() {
+      const botao = document.querySelector('#cabecalho [data-abre="painel-localizacao"]');
+      if (!botao) return;
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      if (botao.getAttribute('aria-expanded') !== 'true') botao.click();
+    },
+  };
+}
+
+document.addEventListener('alpine:init', () => {
+  window.Alpine.data('detalhePeca', paginaDetalhe);
+});

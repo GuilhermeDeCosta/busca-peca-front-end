@@ -222,3 +222,40 @@ async function simularSalvar({ idPeca, dados, aplicacoes, fotos, status }) {
   anunciosSimulados.unshift({ idPeca: novoId, ...registro });
   return { idPeca: novoId, salvoEm };
 }
+
+/**
+ * GET /api/pecas/{id}?cep=&lat=&lng= — detalhe público de um anúncio (BP1-4, BP1-10).
+ * Usado em Comparar opções e no Detalhe da peça. Com cep ou lat/lng, a API devolve a distância.
+ * @param {number} idPeca
+ * @param {{ cep?: string, lat?: string, lng?: string }} [local]
+ * @returns {Promise<{ idPeca, titulo, codigoOem, codigoSku, codigoEan, marcaPeca, preco, precoPromocional,
+ *   condicao, origem, quantidadeEstoque, prontaEntrega, prazoExpedicaoDias, fotos: object[], favorito,
+ *   distanciaKm, loja: { idLoja, nomeLoja, avaliacaoMedia, totalAvaliacoes, cidade, estado,
+ *   retiradaBalcao, motoboyProprio, entregaCombinar, formasPagamento: string[] } }>}
+ * Rejeita com 404 quando o anúncio não existe ou não está ATIVO.
+ */
+export async function obterPeca(idPeca, local = {}) {
+  if (USAR_SIMULACAO) return simularObterPecaPublica(idPeca, local);
+  // const params = new URLSearchParams();
+  // ['cep', 'lat', 'lng'].forEach((chave) => { if (local[chave]) params.set(chave, local[chave]); });
+  // return api.get(`/pecas/${idPeca}${params.toString() ? `?${params}` : ''}`);
+}
+
+// Simulação do detalhe público (apagar junto com simulacao-busca.js)
+async function simularObterPecaPublica(idPeca, local) {
+  const { pecasSimuladas } = await import('./simulacao-busca.js');
+  await esperar(350);
+  const peca = pecasSimuladas.find((p) => p.idPeca === Number(idPeca));
+  if (!peca || peca.quantidadeEstoque <= 0) {
+    throw { status: 404, erro: 'NAO_ENCONTRADO', mensagem: 'Este anúncio não está mais disponível.' };
+  }
+  const { distanciaKm, ...loja } = peca.loja;
+  const { compatibilidade, publicadoEm, ...dados } = peca;
+  return {
+    ...structuredClone(dados),
+    fotos: peca.fotoUrl ? [{ url: peca.fotoUrl }] : [],
+    loja: structuredClone(loja),
+    distanciaKm: local.cep || local.lat ? distanciaKm : null,
+    favorito: false,
+  };
+}

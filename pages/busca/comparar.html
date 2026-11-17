@@ -109,3 +109,129 @@
               </select>
             </div>
           </div>
+
+          <!-- No celular a tabela rola na horizontal dentro da própria área (Documentação do Front-end) -->
+          <div class="table-responsive comparar-tabela" tabindex="0" aria-label="Tabela de comparação; role para os lados no celular">
+            <table class="table align-middle mb-0">
+              <caption class="visually-hidden">Comparação entre as lojas: cada coluna é um anúncio</caption>
+              <thead>
+                <tr>
+                  <th scope="col">Critério</th>
+                  <template x-for="p in colunas" :key="p.idPeca">
+                    <th scope="col"><a :href="linkLoja(p)" x-text="p.loja?.nomeLoja"></a></th>
+                  </template>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <th scope="row">Anúncio</th>
+                  <template x-for="p in colunas" :key="p.idPeca">
+                    <td>
+                      <div class="comparar__anuncio">
+                        <img :src="foto(p)" :alt="p.titulo" width="56" height="40" loading="lazy">
+                        <div>
+                          <a :href="linkDetalhe(p)" x-text="p.titulo"></a>
+                          <small class="d-block" x-text="codigo(p)"></small>
+                        </div>
+                      </div>
+                    </td>
+                  </template>
+                </tr>
+                <tr>
+                  <th scope="row">Preço da peça</th>
+                  <template x-for="p in colunas" :key="p.idPeca"><td class="comparar__preco" x-text="textoPreco(p)"></td></template>
+                </tr>
+                <tr>
+                  <th scope="row">Condição / origem</th>
+                  <template x-for="p in colunas" :key="p.idPeca"><td x-text="textoCondicao(p)"></td></template>
+                </tr>
+                <tr>
+                  <th scope="row">Estoque</th>
+                  <template x-for="p in colunas" :key="p.idPeca"><td class="comparar__estoque" x-text="textoEstoque(p)"></td></template>
+                </tr>
+                <tr>
+                  <th scope="row">Expedição</th>
+                  <template x-for="p in colunas" :key="p.idPeca"><td x-text="textoExpedicao(p)"></td></template>
+                </tr>
+                <tr>
+                  <th scope="row">Distância</th>
+                  <template x-for="p in colunas" :key="p.idPeca"><td x-text="textoDistancia(p)"></td></template>
+                </tr>
+                <tr>
+                  <th scope="row">Recebimento</th>
+                  <template x-for="p in colunas" :key="p.idPeca"><td x-text="textoRecebimento(p)"></td></template>
+                </tr>
+                <tr>
+                  <th scope="row">Formas aceitas pela loja</th>
+                  <template x-for="p in colunas" :key="p.idPeca"><td x-text="textoPagamento(p)"></td></template>
+                </tr>
+                <tr>
+                  <th scope="row">Avaliação técnica</th>
+                  <template x-for="p in colunas" :key="p.idPeca"><td x-text="textoAvaliacao(p)"></td></template>
+                </tr>
+                <tr>
+                  <th scope="row">Destaques</th>
+                  <template x-for="p in colunas" :key="p.idPeca">
+                    <td>
+                      <template x-for="d in destaques(p)" :key="d.texto">
+                        <span class="comparar__destaque" :class="`comparar__destaque--${d.tipo}`" x-text="d.texto"></span>
+                      </template>
+                      <span x-show="!destaques(p).length">—</span>
+                    </td>
+                  </template>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- ===== Uma caixa por loja, com as ações ===== -->
+        <div class="row row-cols-1 row-cols-md-2 g-3 mt-1" :class="{ 'row-cols-xl-3': colunas.length === 3 }">
+          <template x-for="p in colunas" :key="p.idPeca">
+            <div class="col">
+              <section class="comparar-loja" :aria-label="p.loja?.nomeLoja">
+                <h2 class="comparar-loja__nome" x-text="p.loja?.nomeLoja"></h2>
+                <p class="comparar-loja__resumo" x-text="resumoLoja(p)"></p>
+                <div class="comparar-loja__acoes">
+                  <button type="button" class="btn btn--verde" @click="adicionar($event, p)">
+                    <i class="bi bi-cart3" aria-hidden="true"></i> Adicionar ao carrinho
+                  </button>
+                  <a class="btn btn--contorno" :href="linkDetalhe(p)">Ver detalhes</a>
+                  <button type="button" class="btn btn--contorno" @click="conversar(p)">Conversar com a loja</button>
+                </div>
+              </section>
+            </div>
+          </template>
+        </div>
+
+        <p class="comparar__nota">
+          <i class="bi bi-info-circle" aria-hidden="true"></i>
+          Combine o pagamento diretamente com a loja, fora da plataforma. O preço não inclui frete.
+        </p>
+      </div>
+    </template>
+
+    <div class="comparar__rodape" x-show="!carregando" x-cloak>
+      <a class="btn btn--contorno" :href="linkResultados"><i class="bi bi-arrow-left" aria-hidden="true"></i> Voltar aos resultados</a>
+      <button type="button" class="btn btn--contorno" @click="removerSelecao()" x-show="suficiente">Remover seleção</button>
+    </div>
+  </main>
+
+  <!-- Rodapé: provisório até existir js/components/rodape.js -->
+  <footer id="rodape" class="rodape mt-5">
+    <div class="container-fluid px-3 px-lg-4 py-4">
+      <p class="mb-1">Ambiente demonstrativo • lojas, preços e estoques fictícios</p>
+      <p class="mb-0">
+        <a href="../institucional/sobre.html">Busca Peça</a> •
+        <a href="mailto:contato@buscapeca.example.com">Contato</a> •
+        <a href="../institucional/termos-de-uso.html">Termos de uso</a> •
+        <a href="../institucional/termos-de-uso.html#politica-de-privacidade">Privacidade</a>
+      </p>
+    </div>
+  </footer>
+
+  <!-- O módulo da página vem ANTES do Alpine, para registrar o componente no alpine:init. -->
+  <script type="module" src="../../js/pages/busca/comparar.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js"></script>
+</body>
+</html>

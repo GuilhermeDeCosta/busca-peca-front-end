@@ -151,3 +151,40 @@
                 <span x-text="avisoPedido ? 'Aviso pedido' : 'Avise-me quando chegar'"></span>
               </button>
             </template>
+
+            <!-- BP1-48 -->
+            <button type="button" class="detalhe-favorito" @click="alternarFavorito()" :disabled="salvandoFavorito" :aria-pressed="peca.favorito ? 'true' : 'false'">
+              <i class="bi" :class="peca.favorito ? 'bi-heart-fill' : 'bi-heart'" aria-hidden="true"></i>
+              <span x-text="peca.favorito ? 'Remover dos favoritos' : 'Salvar nos favoritos'"></span>
+            </button>
+
+            <!-- BP1-10: só aparece se outra loja tem a mesma peça (fluxo alternativo) -->
+            <a class="detalhe-comparar" :href="linkComparar" x-show="ofertas.length" x-cloak>
+              <i class="bi bi-layout-split" aria-hidden="true"></i>
+              <span x-text="`Comparar outras ofertas (${ofertas.length})`"></span>
+            </a>
+
+            <p class="detalhe-nota-azul">
+              <i class="bi bi-info-circle" aria-hidden="true"></i>
+              Combine o pagamento diretamente com a loja, fora da plataforma.
+            </p>
+          </section>
+
+          <!-- ===== Descrição técnica ===== -->
+          <section class="detalhe-caixa detalhe-descricao" aria-labelledby="titulo-descricao">
+            <h2 id="titulo-descricao" class="detalhe-caixa__titulo">Descrição técnica</h2>
+            <p class="detalhe-descricao__texto" x-text="peca.descricao"></p>
+            <div class="table-responsive">
+              <table class="table detalhe-tabela mb-0">
+                <thead><tr><th scope="col">Especificação</th><th scope="col">Informação</th></tr></thead>
+                <tbody>
+                  <template x-for="e in especificacoes" :key="e.rotulo">
+                    <tr><th scope="row" x-text="e.rotulo"></th><td x-text="e.valor"></td></tr>
+                  </template>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+</body>
+</html>

@@ -672,3 +672,100 @@ a.inicio-categoria:focus-visible { outline: 3px solid #f2b705; outline-offset: 2
     .resultados__comparar-botao { width: 100%; justify-content: center; }
 }
 
+/* Cole no FIM do css/base.css */
+
+/* =========================================================
+   COMPARAR OPÇÕES
+   pages/busca/comparar.html • Fluxo A, etapa 04 • BP1-10
+   Usa também .resultados__trilha, .resultados__titulo, .resultados__resumo,
+   .resultados__regiao e .resultados-estado (seção RESULTADOS DA BUSCA).
+   ========================================================= */
+.comparar-caixa {
+    background: var(--branco);
+    border: 1px solid var(--cinza-borda);
+    border-radius: 12px;
+    padding: 24px;
+}
+.comparar-caixa.placeholder-glow .placeholder { display: block; }
+.comparar-caixa__topo {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 12px 24px;
+    margin-bottom: 16px;
+}
+.comparar-caixa__titulo { font-size: 20px; font-weight: 800; color: var(--azul-escuro); margin: 0 0 4px; }
+.comparar-caixa__sub { font-size: 14px; color: var(--texto-suave); margin: 0; }
+.comparar__ordem { min-width: 14rem; }
+.comparar__ordem .form-label { font-size: 14px; font-weight: 600; margin-bottom: 6px; }
+.comparar__ordem .form-select { min-height: 44px; }
+
+/* Tabela lado a lado */
+.comparar-tabela:focus-visible { outline: 3px solid #f2b705; outline-offset: 2px; }
+.comparar-tabela .table { font-size: 14px; min-width: 40rem; }
+.comparar-tabela thead th {
+    background: #e9edf2;
+    color: var(--texto-suave);
+    font-size: 13px;
+    font-weight: 600;
+    padding: 12px 16px;
+    border-bottom: 0;
+}
+.comparar-tabela thead th a { color: var(--azul-escuro); }
+.comparar-tabela thead th a:hover { text-decoration: underline; }
+.comparar-tabela th[scope="row"] { width: 22%; font-weight: 700; color: var(--texto); }
+.comparar-tabela td,
+.comparar-tabela th[scope="row"] { padding: 14px 16px; border-color: var(--cinza-borda); }
+.comparar__anuncio { display: flex; align-items: center; gap: 10px; }
+.comparar__anuncio img { width: 56px; height: 40px; object-fit: cover; border-radius: 6px; background: var(--cinza-fundo); flex-shrink: 0; }
+.comparar__anuncio a { color: var(--texto); }
+.comparar__anuncio a:hover { color: var(--azul-escuro); text-decoration: underline; }
+.comparar__anuncio small { color: var(--texto-suave); font-size: 12px; }
+.comparar__preco { font-weight: 700; color: var(--azul-escuro); }
+.comparar__estoque { color: var(--verde); }
+.comparar__destaque {
+    display: inline-block;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 6px;
+    margin: 2px 6px 2px 0;
+}
+.comparar__destaque--verde { background: #e5f2e9; color: var(--verde); }
+.comparar__destaque--azul { background: #e8f0fb; color: var(--azul-escuro); }
+
+/* Uma caixa por loja */
+.comparar-loja {
+    height: 100%;
+    background: var(--branco);
+    border: 1px solid var(--cinza-borda);
+    border-radius: 12px;
+    padding: 20px 24px;
+}
+.comparar-loja__nome { font-size: 18px; font-weight: 800; color: var(--azul-escuro); margin: 0 0 4px; }
+.comparar-loja__resumo { font-size: 14px; color: var(--texto-suave); margin: 0 0 16px; }
+.comparar-loja__acoes { display: flex; flex-wrap: wrap; gap: 8px; }
+.comparar-loja__acoes .btn { min-height: 44px; display: inline-flex; align-items: center; gap: 6px; }
+
+.comparar__aviso {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    background: #fff4d6;
+    border: 1px solid #f5e0a3;
+    color: #7a5200;
+    border-radius: 8px;
+    padding: 12px 16px;
+    font-size: 14px;
+    margin-bottom: 16px;
+}
+.comparar__nota { font-size: 13px; color: var(--texto-suave); margin: 16px 0 0; }
+.comparar__rodape { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 24px; }
+.comparar__rodape .btn { min-height: 44px; display: inline-flex; align-items: center; gap: 6px; }
+
+@media (max-width: 575.98px) {
+    .comparar-caixa { padding: 16px; }
+    .comparar__ordem { width: 100%; }
+    .comparar-loja__acoes .btn { flex: 1 1 100%; justify-content: center; }
+}

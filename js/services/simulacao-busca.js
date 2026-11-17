@@ -9,26 +9,32 @@
 
 export { esperar } from './simulacao.js';
 
+// Campos de recebimento da loja (V11 da API): retirada no balcão, motoboy próprio, entrega a combinar
 const LOJAS = {
   avenida: {
-    idLoja: 11, nomeLoja: 'Autopeças Avenida', avaliacaoMedia: 4.8, cidade: 'Campinas', estado: 'SP',
+    idLoja: 11, nomeLoja: 'Autopeças Avenida', avaliacaoMedia: 4.8, totalAvaliacoes: 128, cidade: 'Campinas', estado: 'SP',
     distanciaKm: 3.2, formasPagamento: ['PIX', 'BOLETO', 'FATURADO'],
+    retiradaBalcao: true, motoboyProprio: false, entregaCombinar: true,
   },
   motorNorte: {
-    idLoja: 12, nomeLoja: 'Motor Norte Peças', avaliacaoMedia: 4.9, cidade: 'Campinas', estado: 'SP',
+    idLoja: 12, nomeLoja: 'Motor Norte Peças', avaliacaoMedia: 4.9, totalAvaliacoes: 211, cidade: 'Campinas', estado: 'SP',
     distanciaKm: 5.6, formasPagamento: ['PIX', 'DINHEIRO', 'CARTAO_DEBITO'],
+    retiradaBalcao: true, motoboyProprio: true, entregaCombinar: true,
   },
   horizonte: {
-    idLoja: 1, nomeLoja: 'Horizonte Peças', avaliacaoMedia: 4.8, cidade: 'Campinas', estado: 'SP',
+    idLoja: 1, nomeLoja: 'Horizonte Peças', avaliacaoMedia: 4.8, totalAvaliacoes: 64, cidade: 'Campinas', estado: 'SP',
     distanciaKm: 1.4, formasPagamento: ['PIX', 'CARTAO_CREDITO'],
+    retiradaBalcao: true, motoboyProprio: false, entregaCombinar: false,
   },
   rotaSul: {
-    idLoja: 13, nomeLoja: 'Rota Sul Autopeças', avaliacaoMedia: 4.7, cidade: 'Valinhos', estado: 'SP',
+    idLoja: 13, nomeLoja: 'Rota Sul Autopeças', avaliacaoMedia: 4.7, totalAvaliacoes: 86, cidade: 'Valinhos', estado: 'SP',
     distanciaKm: 14.8, formasPagamento: ['PIX', 'CARTAO_CREDITO', 'CARTAO_DEBITO'],
+    retiradaBalcao: true, motoboyProprio: true, entregaCombinar: true,
   },
   pecaCerta: {
-    idLoja: 14, nomeLoja: 'Peça Certa Sumaré', avaliacaoMedia: 3.9, cidade: 'Sumaré', estado: 'SP',
+    idLoja: 14, nomeLoja: 'Peça Certa Sumaré', avaliacaoMedia: 3.9, totalAvaliacoes: 17, cidade: 'Sumaré', estado: 'SP',
     distanciaKm: 27.5, formasPagamento: ['PIX', 'DINHEIRO'],
+    retiradaBalcao: true, motoboyProprio: false, entregaCombinar: true,
   },
 };
 

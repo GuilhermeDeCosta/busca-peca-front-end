@@ -140,3 +140,77 @@ export const detalhesSimulados = {
     caracteristicas: '12 V • 90 A • polia 6 canais • conector padrão GM',
   },
 };
+
+// Página pública das lojas (A05). Formato de GET /api/lojas/{id} na API (LojaPublicaResponse):
+// sem documento, telefone e endereço completo do dono (ADR-013), só cidade e UF.
+const EXTRAS_LOJA = {
+  11: {
+    descricao: 'Loja de autopeças com balcão em Campinas. Atendemos oficinas da região com peças novas nacionais e importadas.',
+    horarioRetirada: 'Seg. a sex., 8h–18h • sáb., 8h–12h', freteGratisRaioKm: 5, pedidoMinimoFreteGratis: 300,
+    vendedorVerificado: true, ativaDesde: '2025-03-10',
+  },
+  12: {
+    descricao: 'Filtros, correias e peças de manutenção com pronta entrega para oficinas de Campinas.',
+    horarioRetirada: 'Seg. a sex., 7h30–18h', freteGratisRaioKm: 10, pedidoMinimoFreteGratis: 200,
+    vendedorVerificado: true, ativaDesde: '2024-08-02',
+  },
+  1: {
+    descricao: 'Excedentes de estoque da Oficina Horizonte. Peças novas e revisadas da linha GM, Fiat e VW.',
+    horarioRetirada: 'Seg. a sex., 8h–18h • sáb., 8h–12h', freteGratisRaioKm: 10, pedidoMinimoFreteGratis: 200,
+    vendedorVerificado: false, ativaDesde: '2026-10-14',
+  },
+  13: {
+    descricao: 'Faróis, lanternas e lataria para a linha GM. Motoboy próprio em Valinhos e Campinas.',
+    horarioRetirada: 'Seg. a sáb., 8h–17h', freteGratisRaioKm: null, pedidoMinimoFreteGratis: null,
+    vendedorVerificado: true, ativaDesde: '2025-06-21',
+  },
+  14: {
+    descricao: 'Peças usadas e recondicionadas com garantia combinada no balcão.',
+    horarioRetirada: 'Seg. a sex., 9h–17h', freteGratisRaioKm: null, pedidoMinimoFreteGratis: null,
+    vendedorVerificado: false, ativaDesde: '2026-02-03',
+  },
+};
+
+export const lojasPublicasSimuladas = Object.values(LOJAS).map((l) => {
+  const extra = EXTRAS_LOJA[l.idLoja] || {};
+  return {
+    idLoja: l.idLoja,
+    nomeLoja: l.nomeLoja,
+    descricao: extra.descricao || '',
+    logoUrl: null,
+    bannerUrl: null,
+    avaliacaoMedia: l.avaliacaoMedia,
+    vendedorVerificado: Boolean(extra.vendedorVerificado),
+    cidade: l.cidade,
+    estado: l.estado,
+    retiradaBalcao: l.retiradaBalcao,
+    horarioRetirada: extra.horarioRetirada || '',
+    entregaCombinar: l.entregaCombinar,
+    motoboyProprio: l.motoboyProprio,
+    entregaRapida: l.motoboyProprio,
+    freteGratisRaioKm: extra.freteGratisRaioKm ?? null,
+    pedidoMinimoFreteGratis: extra.pedidoMinimoFreteGratis ?? null,
+    aceitaFaturamentoCnpj: l.formasPagamento.includes('FATURADO'),
+    metodosPagamento: [...l.formasPagamento],
+    ativaDesde: extra.ativaDesde || null,
+    totalAvaliacoes: l.totalAvaliacoes,
+  };
+});
+
+// Avaliações técnicas (GET /api/lojas/{id}/avaliacoes): uma por pedido concluído (Documentação do Banco)
+const COMENTARIOS = [
+  { autor: 'Oficina Rumo Certo', nota: 5, comentario: 'Peça conforme o anúncio e retirada rápida no balcão.' },
+  { autor: 'Mecânica Boa Vista', nota: 4, comentario: 'Conferiram o conector antes de separar. Atendimento bom.' },
+  { autor: 'Auto Center Parque', nota: 5, comentario: 'Embalagem original e nota no balcão.' },
+  { autor: 'Oficina Dois Irmãos', nota: 5, comentario: 'Código OEM batia certinho. Voltarei a comprar.' },
+  { autor: 'Retífica Santa Cruz', nota: 4, comentario: 'Demorou um pouco para responder, mas a peça veio certa.' },
+];
+export function avaliacoesSimuladas(idLoja) {
+  const loja = Object.values(LOJAS).find((l) => l.idLoja === Number(idLoja));
+  const total = loja?.totalAvaliacoes || 0;
+  return Array.from({ length: total }, (_, i) => ({
+    idAvaliacao: Number(idLoja) * 1000 + i + 1,
+    ...COMENTARIOS[i % COMENTARIOS.length],
+    dataAvaliacao: new Date(Date.UTC(2026, 9, 28) - i * 86400000 * 2).toISOString(),
+  }));
+}

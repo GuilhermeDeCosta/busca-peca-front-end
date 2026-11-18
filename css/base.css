@@ -997,3 +997,88 @@ a.inicio-categoria:focus-visible { outline: 3px solid #f2b705; outline-offset: 2
     .detalhe-caixa { padding: 16px; }
     .detalhe-compra__preco { font-size: 28px; }
 }
+
+/* =========================================================
+   LOJA PÚBLICA
+   pages/busca/loja-publica.html • Fluxo A, A05 • BP1-14, 15, 18, 28, 55
+   Usa também .resultados__trilha, .resultados__titulo, .resultados__resumo,
+   .resultados-estado, .detalhe-caixa, .detalhe-etiqueta e .detalhe-botao.
+   ========================================================= */
+
+/* Faixa do topo: banner da loja (ou azul da marca), logo, nota e conversa */
+.loja-banner {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 16px 24px;
+    background: var(--azul-escuro);
+    color: var(--branco);
+    border-radius: 12px;
+    padding: 28px 32px;
+}
+.loja-banner--imagem {
+    background-size: cover;
+    background-position: center;
+    box-shadow: inset 0 0 0 2000px rgba(15, 61, 104, .72); /* escurece a foto para o texto ficar legível */
+}
+.loja-banner__logo {
+    display: grid;
+    place-items: center;
+    width: 72px;
+    height: 72px;
+    flex-shrink: 0;
+    border-radius: 12px;
+    background: var(--branco);
+    color: var(--azul-escuro);
+    font-size: 28px;
+    font-weight: 800;
+    overflow: hidden;
+}
+.loja-banner__logo img { width: 100%; height: 100%; object-fit: contain; }
+.loja-banner__texto { flex: 1 1 16rem; min-width: 0; }
+.loja-banner__titulo { font-size: clamp(1.125rem, 2vw, 1.375rem); font-weight: 800; margin: 0 0 4px; }
+.loja-banner__nota { font-size: 14px; color: #cfe0f1; margin: 0; }
+.loja-banner__botao { min-height: 44px; display: inline-flex; align-items: center; gap: 8px; }
+
+.loja-etiquetas { display: flex; flex-wrap: wrap; gap: 6px; list-style: none; padding: 0; margin: 0 0 8px; }
+
+/* Sobre a loja */
+.loja-sobre__texto { font-size: 14px; line-height: 1.6; margin: 0 0 16px; }
+.loja-sobre__lista { margin: 0; font-size: 13px; }
+.loja-sobre__lista > div {
+    display: grid;
+    grid-template-columns: 7.5rem minmax(0, 1fr);
+    gap: 8px;
+    padding: 10px 0;
+    border-top: 1px solid var(--cinza-borda);
+}
+.loja-sobre__lista dt { font-weight: 400; color: var(--texto-suave); }
+.loja-sobre__lista dd { margin: 0; }
+.loja-sobre__nota { font-size: 12px; color: var(--texto-suave); margin: 12px 0 0; }
+
+/* Avaliações */
+.loja-avaliacoes { list-style: none; padding: 0; margin: 0; }
+.loja-avaliacoes li { padding: 12px 0; border-top: 1px solid var(--cinza-borda); }
+.loja-avaliacoes li:first-child { border-top: 0; padding-top: 0; }
+.loja-avaliacoes__topo { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px; font-size: 14px; margin: 0 0 4px; }
+.loja-avaliacoes__estrelas { color: #b7791f; letter-spacing: 1px; }
+.loja-avaliacoes__texto { font-size: 14px; margin: 0; }
+.loja-avaliacoes__data { font-size: 12px; color: var(--texto-suave); margin: 4px 0 0; }
+
+/* Peças da loja */
+.loja-pecas__total { font-weight: 700; }
+.loja-filtros {
+    display: grid;
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, 1fr);
+    gap: 12px;
+    margin-bottom: 20px;
+}
+.loja-filtros .form-label { font-size: 14px; font-weight: 600; margin-bottom: 6px; }
+.loja-filtros .form-control,
+.loja-filtros .form-select { min-height: 44px; }
+
+@media (max-width: 767.98px) {
+    .loja-banner { padding: 20px; }
+    .loja-banner__botao { width: 100%; justify-content: center; }
+    .loja-filtros { grid-template-columns: minmax(0, 1fr); }
+}

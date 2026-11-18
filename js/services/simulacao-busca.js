@@ -120,3 +120,20 @@ export const pecasSimuladas = [
 export const favoritosSimulados = new Set();
 export const carrinhoSimulado = new Map(); // idPeca → quantidade
 export const buscasSalvasSimuladas = [];
+
+
+// Descrição e características do detalhe da peça (A04). Peças sem entrada aqui usam um texto padrão.
+export const detalhesSimulados = {
+  201: {
+    descricao: 'Farol dianteiro direito Arteb para Chevrolet Onix 2020 a 2023. Peça nova de origem nacional, com lente transparente e carcaça de encaixe original. Fornecido sem lâmpadas. Lado direito do veículo, lado do passageiro.',
+    caracteristicas: '1 farol direito, sem lâmpadas',
+  },
+  209: {
+    descricao: 'Farol direito Arteb para Onix 2020 a 2023, lado do passageiro. Peça nova, nacional, sem lâmpadas.',
+    caracteristicas: '1 farol direito, sem lâmpadas',
+  },
+  204: {
+    descricao: 'Alternador novo Bosch 90A, 12 V, com polia de 6 canais. Peça nacional para reposição na linha GM. Confira código, conectores e aplicação antes de solicitar.',
+    caracteristicas: '12 V • 90 A • polia 6 canais • conector padrão GM',
+  },
+};

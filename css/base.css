@@ -769,3 +769,231 @@ a.inicio-categoria:focus-visible { outline: 3px solid #f2b705; outline-offset: 2
     .comparar__ordem { width: 100%; }
     .comparar-loja__acoes .btn { flex: 1 1 100%; justify-content: center; }
 }
+
+
+/* =========================================================
+   DETALHE DA PEÇA
+   pages/busca/detalhe-peca.html • Fluxo A, etapa 05
+   BP1-4, 10, 22, 28, 48, 52, 66
+   Usa também .resultados__trilha, .resultados__titulo, .resultados__resumo
+   e .resultados-estado (seção RESULTADOS DA BUSCA) e o card de peça.
+   ========================================================= */
+
+/* Grade: no desktop, galeria e descrição à esquerda; compra e loja à direita.
+   No celular a compra vem logo depois das fotos (Documentação do Front-end: celular primeiro). */
+.detalhe-grade {
+    display: grid;
+    gap: 24px;
+    grid-template-columns: minmax(0, 1fr); /* minmax(0, …) impede que as tabelas alarguem a página no celular */
+    grid-template-areas: "galeria" "compra" "loja" "descricao" "compatibilidade";
+}
+@media (min-width: 992px) {
+    .detalhe-grade {
+        grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+        grid-template-areas:
+            "galeria compra"
+            "descricao loja"
+            "compatibilidade compatibilidade";
+        align-items: start;
+    }
+}
+.detalhe-galeria { grid-area: galeria; }
+.detalhe-compra { grid-area: compra; }
+.detalhe-descricao { grid-area: descricao; }
+.detalhe-loja { grid-area: loja; }
+.detalhe-compatibilidade { grid-area: compatibilidade; }
+
+.detalhe-caixa {
+    background: var(--branco);
+    border: 1px solid var(--cinza-borda);
+    border-radius: 12px;
+    padding: 24px;
+}
+.detalhe-caixa__titulo { font-size: 20px; font-weight: 800; color: var(--azul-escuro); margin: 0 0 12px; }
+.detalhe-botao { min-height: 44px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; margin-top: 10px; }
+.detalhe-erro { color: #b42318; font-size: 13px; margin: 6px 0 0; min-height: 0; }
+.detalhe-erro:empty { display: none; }
+
+/* Galeria */
+.detalhe-galeria {
+    background: var(--branco);
+    border: 1px solid var(--cinza-borda);
+    border-radius: 12px;
+    padding: 16px;
+}
+.detalhe-galeria__principal {
+    position: relative;
+    border-radius: 8px;
+    overflow: hidden;
+    background: linear-gradient(180deg, #e9edf2, #d9dfe6);
+    aspect-ratio: 16 / 9;
+}
+.detalhe-galeria__principal img { width: 100%; height: 100%; object-fit: contain; }
+.detalhe-galeria__seta {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 44px;
+    height: 44px;
+    border: 0;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, .92);
+    color: var(--azul-escuro);
+    font-size: 18px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, .15);
+}
+.detalhe-galeria__seta--anterior { left: 12px; }
+.detalhe-galeria__seta--proxima { right: 12px; }
+.detalhe-galeria__miniaturas {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(88px, 1fr));
+    gap: 10px;
+    list-style: none;
+    padding: 0;
+    margin: 12px 0 0;
+}
+.detalhe-galeria__miniatura {
+    display: block;
+    width: 100%;
+    aspect-ratio: 16 / 10;
+    padding: 0;
+    border: 2px solid var(--cinza-borda);
+    border-radius: 8px;
+    overflow: hidden;
+    background: var(--cinza-fundo);
+    cursor: pointer;
+}
+.detalhe-galeria__miniatura img { width: 100%; height: 100%; object-fit: cover; }
+.detalhe-galeria__miniatura--ativa { border-color: var(--verde); }
+.detalhe-galeria__nota { font-size: 12px; color: var(--texto-suave); margin: 10px 0 0; }
+
+/* Caixa de compra */
+.detalhe-etiquetas { display: flex; flex-wrap: wrap; gap: 6px; list-style: none; padding: 0; margin: 0 0 12px; }
+.detalhe-etiqueta { font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: 6px; }
+.detalhe-etiqueta--cinza { background: #eef1f5; color: var(--texto-suave); }
+.detalhe-etiqueta--verde { background: #e5f2e9; color: var(--verde); }
+.detalhe-etiqueta--vermelho { background: #fdecea; color: #b42318; }
+.detalhe-compra__preco { font-size: 32px; font-weight: 800; color: var(--azul-escuro); line-height: 1.15; margin: 0 0 4px; }
+.detalhe-compra__preco-antigo { display: block; font-size: 14px; font-weight: 400; color: var(--texto-suave); }
+.detalhe-compra__estoque { color: var(--verde); font-weight: 600; font-size: 14px; margin: 0 0 4px; }
+.detalhe-compra__estoque--zerado { color: #b42318; }
+.detalhe-compra__expedicao { font-size: 13px; color: var(--texto-suave); margin: 0 0 16px; }
+.detalhe-compra .form-label { font-size: 14px; font-weight: 600; margin-bottom: 6px; }
+
+.detalhe-quantidade {
+    display: flex;
+    align-items: stretch;
+    border: 1px solid var(--cinza-borda);
+    border-radius: 8px;
+    overflow: hidden;
+    min-height: 44px;
+}
+.detalhe-quantidade--erro { border-color: #b42318; }
+.detalhe-quantidade button {
+    width: 48px;
+    border: 0;
+    background: var(--branco);
+    color: var(--azul-escuro);
+    font-size: 20px;
+    cursor: pointer;
+}
+.detalhe-quantidade button:disabled { color: #b9c2cd; cursor: not-allowed; }
+.detalhe-quantidade input {
+    flex: 1;
+    min-width: 0;
+    border: 0;
+    border-left: 1px solid var(--cinza-borda);
+    border-right: 1px solid var(--cinza-borda);
+    text-align: center;
+    font-size: 16px;
+    -moz-appearance: textfield;
+}
+.detalhe-quantidade input::-webkit-outer-spin-button,
+.detalhe-quantidade input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.detalhe-quantidade button:focus-visible,
+.detalhe-quantidade input:focus-visible { outline: 3px solid #f2b705; outline-offset: -3px; }
+
+.detalhe-favorito,
+.detalhe-comparar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    min-height: 44px;
+    margin-top: 8px;
+    border: 0;
+    background: none;
+    color: var(--azul-escuro);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+}
+.detalhe-favorito[aria-pressed="true"] .bi { color: #c62f3b; }
+.detalhe-favorito:hover span,
+.detalhe-comparar:hover span { text-decoration: underline; }
+.detalhe-favorito:focus-visible,
+.detalhe-comparar:focus-visible { outline: 3px solid #f2b705; outline-offset: 2px; }
+.detalhe-nota-azul {
+    display: flex;
+    gap: 8px;
+    background: #e8f0fb;
+    color: var(--azul-escuro);
+    border-radius: 8px;
+    padding: 12px 14px;
+    font-size: 13px;
+    margin: 12px 0 0;
+}
+
+/* Descrição técnica e tabelas */
+.detalhe-descricao__texto { font-size: 14px; line-height: 1.6; margin-bottom: 16px; }
+.detalhe-tabela { font-size: 14px; }
+.detalhe-tabela thead th {
+    background: #e9edf2;
+    color: var(--texto-suave);
+    font-size: 13px;
+    font-weight: 600;
+    border-bottom: 0;
+    padding: 10px 14px;
+}
+.detalhe-tabela th[scope="row"] { font-weight: 700; color: var(--texto); width: 38%; }
+.detalhe-tabela td,
+.detalhe-tabela th[scope="row"] { padding: 12px 14px; border-color: var(--cinza-borda); }
+.detalhe-tabela td { color: var(--azul-escuro); }
+
+/* Loja */
+.detalhe-loja__nome { font-size: 18px; font-weight: 800; margin: 0 0 4px; }
+.detalhe-loja__nome a { color: var(--azul-escuro); }
+.detalhe-loja__nome a:hover { text-decoration: underline; }
+.detalhe-loja__nota { font-size: 14px; margin: 0 0 2px; }
+.detalhe-loja__local { font-size: 13px; color: var(--texto-suave); margin: 0 0 16px; }
+.detalhe-loja__subtitulo { font-size: 15px; font-weight: 700; color: var(--texto); margin: 0 0 4px; }
+.detalhe-loja__texto { font-size: 14px; margin: 0 0 12px; }
+.detalhe-loja .form-label { font-size: 14px; font-weight: 600; margin-bottom: 6px; }
+.detalhe-loja .form-control { min-height: 44px; }
+.detalhe-loja__resultado { font-size: 13px; background: #e5f2e9; color: #17633a; border-radius: 8px; padding: 10px 12px; margin: 10px 0 0; }
+.detalhe-loja__ajuda { font-size: 12px; color: var(--texto-suave); margin: 8px 0 0; }
+
+/* Compatibilidade */
+.detalhe-compatibilidade .detalhe-tabela th[scope="row"] { width: auto; }
+.detalhe-compatibilidade__vazia { font-size: 14px; color: var(--texto-suave); }
+.detalhe-alerta {
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+    background: #fff4d6;
+    border: 1px solid #f5e0a3;
+    color: #7a5200;
+    border-radius: 8px;
+    padding: 12px 14px;
+    font-size: 13px;
+    margin: 0;
+}
+
+/* Outras opções */
+.detalhe-outras { margin-top: 40px; }
+
+@media (max-width: 575.98px) {
+    .detalhe-caixa { padding: 16px; }
+    .detalhe-compra__preco { font-size: 28px; }
+}

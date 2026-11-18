@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Loja • Busca Peças</title>
+
+  <!-- Bibliotecas por CDN com versão fixa (ADR-014) -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+  <!-- CSS do projeto (os estilos desta tela estão em base.css, seção "LOJA PÚBLICA") -->
+  <link rel="stylesheet" href="../../css/variaveis.css">
+  <link rel="stylesheet" href="../../css/base.css">
+  <link rel="stylesheet" href="../../css/componentes.css">
+  <style>[x-cloak] { display: none !important; }</style>
+
+  <!-- Componente do cabeçalho -->
+  <script src="../../js/components/cabecalho.js" defer></script>
+</head>
+<body class="d-flex flex-column min-vh-100">
+
+  <!-- Cabeçalho: preenchido por js/components/cabecalho.js -->
+  <header id="cabecalho"></header>
+
+  <!-- Página pública • BP1-14, 15, 18, 28, 55 • GET /api/lojas/{id} • Fluxo A, A05 -->
+  <main id="conteudo" class="loja container-fluid px-3 px-lg-4 py-4 flex-grow-1" x-data="lojaPublica">
+
+    <!-- Carregando -->
+    <div class="placeholder-glow" x-show="carregando" aria-hidden="true">
+      <span class="placeholder col-3 rounded mb-3"></span>
+      <span class="placeholder w-100 rounded mb-4" style="height:140px"></span>
+      <span class="placeholder col-5 placeholder-lg rounded"></span>
+    </div>
+
+    <!-- Loja não existe ou está pausada (404) -->
+    <div class="resultados-estado mt-3" x-show="!carregando && naoEncontrada" x-cloak role="alert">
+      <i class="bi bi-shop" aria-hidden="true"></i>
+      <h1 class="h3">Esta loja não está disponível</h1>
+      <p>A loja pode ter sido pausada pelo vendedor. Busque a mesma peça em outras lojas.</p>
+      <a class="btn btn--verde" href="resultados.html">Buscar peças</a>
+    </div>
+
+    <!-- Erro da API -->
+    <div class="resultados-estado mt-3" x-show="!carregando && erro" x-cloak role="alert">
+      <i class="bi bi-exclamation-circle" aria-hidden="true"></i>
+      <h1 class="h3" x-text="erro"></h1>
+      <button type="button" class="btn btn--contorno" @click="carregar()">Tentar novamente</button>
+    </div>
+
+    <!-- ===== Topo: banner, logo, nota e conversa (BP1-55, BP1-15) ===== -->
+    <template x-if="!carregando && loja">
+      <div>
+        <nav aria-label="Você está aqui">
+          <ol class="breadcrumb resultados__trilha">
+            <li class="breadcrumb-item"><a href="../../index.html">Início</a></li>
+            <li class="breadcrumb-item">Lojas</li>
+            <li class="breadcrumb-item active" aria-current="page" x-text="loja.nomeLoja"></li>
+          </ol>
+        </nav>
+
+        <!-- Banner da loja (bannerUrl). Sem banner, fica a faixa azul da marca. -->
+        <section class="loja-banner" :class="{ 'loja-banner--imagem': loja.bannerUrl }"
+                 :style="loja.bannerUrl ? `background-image: url('${loja.bannerUrl}')` : ''" aria-label="Apresentação da loja">
+          <div class="loja-banner__logo">
+            <template x-if="loja.logoUrl"><img :src="loja.logoUrl" :alt="`Logo da ${loja.nomeLoja}`"></template>
+            <template x-if="!loja.logoUrl"><span aria-hidden="true" x-text="inicial"></span></template>
+          </div>
+          <div class="loja-banner__texto">
+            <p class="loja-banner__titulo" x-text="chamada"></p>
+            <p class="loja-banner__nota" x-text="textoAvaliacaoTopo"></p>
+          </div>
+          <button type="button" class="btn btn--contorno loja-banner__botao" @click="conversar()">
+            <i class="bi bi-chat-dots" aria-hidden="true"></i> Conversar com a loja
+          </button>
+        </section>
+
+        <h1 class="resultados__titulo mt-4" x-text="loja.nomeLoja"></h1>
+        <p class="resultados__resumo mb-2" x-text="textoLocal"></p>
+        <ul class="loja-etiquetas" aria-label="Situação e recebimento">
+          <template x-for="e in etiquetas" :key="e.texto">
+            <li class="detalhe-etiqueta" :class="`detalhe-etiqueta--${e.tipo}`" x-text="e.texto"></li>
+          </template>
+        </ul>
+      </div>
+    </template>
+
+    <div class="row g-4 mt-1" x-show="!carregando && loja" x-cloak>
+
+      <!-- ===== Coluna da esquerda: sobre e avaliações ===== -->
+      <div class="col-lg-4 col-xl-3">
+        <template x-if="loja">
+          <div class="d-flex flex-column gap-4">
+            <section class="detalhe-caixa" aria-labelledby="titulo-sobre">
+              <h2 id="titulo-sobre" class="detalhe-caixa__titulo">Sobre a loja</h2>
+              <p class="loja-sobre__texto" x-show="loja.descricao" x-text="loja.descricao"></p>
+              <dl class="loja-sobre__lista">
+                <template x-for="i in informacoes" :key="i.rotulo">
+                  <div>
+                    <dt x-text="i.rotulo"></dt>
+                    <dd x-text="i.valor"></dd>
+                  </div>
+                </template>
+              </dl>
+              <p class="loja-sobre__nota">Pagamento combinado direto com a loja, fora da plataforma. O endereço de retirada é informado depois que a loja aceita o pedido.</p>
+            </section>
+
+            <!-- BP1-15: avaliações feitas por quem comprou (uma por pedido concluído) -->
+            <section class="detalhe-caixa" aria-labelledby="titulo-avaliacoes">
+              <h2 id="titulo-avaliacoes" class="detalhe-caixa__titulo">Avaliações técnicas</h2>
+              <p class="loja-sobre__nota mt-0 mb-3">Feitas por oficinas que compraram e retiraram a peça.</p>
+              <p class="loja-sobre__texto" x-show="!carregandoAvaliacoes && !avaliacoes.length">Esta loja ainda não recebeu avaliações.</p>
+              <ul class="loja-avaliacoes">
+                <template x-for="a in avaliacoes" :key="a.idAvaliacao">
+                  <li>
+                    <p class="loja-avaliacoes__topo">
+                      <strong x-text="a.autor"></strong>
+                      <span class="loja-avaliacoes__estrelas" :aria-label="`Nota ${a.nota} de 5`" x-text="estrelas(a.nota)"></span>
+                    </p>
+                    <p class="loja-avaliacoes__texto" x-text="a.comentario"></p>
+                    <p class="loja-avaliacoes__data" x-text="dataAvaliacao(a.dataAvaliacao)"></p>
+                  </li>
+                </template>
+              </ul>
+              <button type="button" class="btn btn--contorno w-100 detalhe-botao" x-show="temMaisAvaliacoes"
+                      @click="carregarAvaliacoes()" :disabled="carregandoAvaliacoes">
+                <span class="spinner-border spinner-border-sm" x-show="carregandoAvaliacoes" aria-hidden="true"></span>
+                <span x-text="paginaAvaliacoes === 1 ? 'Ver todas as avaliações' : 'Ver mais avaliações'"></span>
+              </button>
+            </section>
+          </div>
+        </template>
+      </div>
+
+      <!-- ===== Peças da loja (GET /api/busca?loja=) ===== -->
+      <section class="col-lg-8 col-xl-9" aria-labelledby="titulo-pecas">
+        <div class="detalhe-caixa">
+          <h2 id="titulo-pecas" class="detalhe-caixa__titulo" tabindex="-1" x-ref="topoPecas">
+            Peças da loja <span class="loja-pecas__total" x-show="!carregandoPecas && !termoCurto"
+                                x-text="`• ${totalPecas} ${totalPecas === 1 ? 'anúncio' : 'anúncios'}`"></span>
+          </h2>
+
+          <form class="loja-filtros" @submit.prevent="aplicarFiltros()" role="search" aria-label="Buscar nesta loja">
+            <div>
+              <label class="form-label" for="busca-loja">Buscar nesta loja</label>
+              <input id="busca-loja" type="search" class="form-control" placeholder="Nome, OEM ou SKU" maxlength="120"
+                     x-model="q" @input="aoDigitar()" aria-describedby="ajuda-busca-loja">
+              <p id="ajuda-busca-loja" class="detalhe-erro" x-show="termoCurto">Digite pelo menos 3 caracteres para buscar.</p>
+            </div>
+            <div>
+              <label class="form-label" for="categoria-loja">Categoria</label>
+              <select id="categoria-loja" class="form-select" x-model="categoria" @change="aplicarFiltros()">
+                <option value="">Todas as categorias</option>
+                <template x-for="c in categorias" :key="c.idCategoria">
+                  <optgroup :label="c.nome">
+                    <option :value="String(c.idCategoria)" x-text="`Tudo em ${c.nome}`"></option>
+                    <template x-for="s in c.subcategorias || []" :key="s.idCategoria">
+                      <option :value="String(s.idCategoria)" x-text="s.nome"></option>
+                    </template>
+                  </optgroup>
+                </template>
+              </select>
+            </div>
+            <div>
+              <label class="form-label" for="ordem-loja">Ordenar por</label>
+              <select id="ordem-loja" class="form-select" x-model="ordenar" @change="aplicarFiltros()">
+                <template x-for="o in ORDENACOES" :key="o.valor">
+                  <option :value="o.valor" :selected="ordenar === o.valor" x-text="o.texto"></option>
+                </template>
+              </select>
+            </div>
+          </form>
+
+          <!-- Sem peças (com ou sem filtro) -->
+          <div class="resultados-estado mb-0" x-show="semPecas" x-cloak>
+            <i class="bi bi-search" aria-hidden="true"></i>
+            <h3 x-text="filtrando ? 'Nenhuma peça desta loja combina com a busca' : 'Esta loja ainda não tem peças anunciadas'"></h3>
+            <button type="button" class="btn btn--contorno" x-show="filtrando" @click="limparFiltros()">Limpar busca</button>
+          </div>
+
+          <!-- Erro ao carregar as peças -->
+          <div class="resultados-estado mb-0" x-show="erroPecas" x-cloak role="alert">
+            <i class="bi bi-exclamation-circle" aria-hidden="true"></i>
+            <h3 x-text="erroPecas"></h3>
+            <button type="button" class="btn btn--contorno" @click="carregarPecas()">Tentar novamente</button>
+          </div>
+
+          <!-- Cards: montados por js/components/card-peca.js -->
+          <div class="row row-cols-1 row-cols-sm-2 row-cols-xl-3 g-3" x-ref="lista" @click="aoClicarLista($event)"></div>
+
+          <!-- Paginação (componente js/components/paginacao.js) -->
+          <nav class="mt-4" aria-label="Páginas de peças da loja" x-show="totalPaginas > 1 && !carregandoPecas" x-cloak>
+            <ul class="paginacao">
+              <li><button type="button" class="paginacao__botao" @click="irParaPagina(pagina - 1)" :disabled="pagina === 1">Anterior</button></li>
+              <template x-for="(p, i) in paginas" :key="`${p}-${i}`">
+                <li>
+                  <template x-if="p === '…'"><span class="paginacao__reticencias" aria-hidden="true">…</span></template>
+                  <template x-if="p !== '…'">
+                    <button type="button" class="paginacao__botao" @click="irParaPagina(p)" x-text="p"
+                            :aria-current="p === pagina ? 'page' : null" :aria-label="`Página ${p}`"></button>
+                  </template>
+                </li>
+              </template>
+              <li><button type="button" class="paginacao__botao" @click="irParaPagina(pagina + 1)" :disabled="pagina === totalPaginas">Próxima</button></li>
+            </ul>
+          </nav>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <!-- Rodapé: provisório até existir js/components/rodape.js -->
+  <footer id="rodape" class="rodape mt-5">
+    <div class="container-fluid px-3 px-lg-4 py-4">
+      <p class="mb-1">Ambiente demonstrativo • lojas, preços e estoques fictícios</p>
+      <p class="mb-0">
+        <a href="../institucional/sobre.html">Busca Peça</a> •
+        <a href="mailto:contato@buscapeca.example.com">Contato</a> •
+        <a href="../institucional/termos-de-uso.html">Termos de uso</a> •
+        <a href="../institucional/termos-de-uso.html#politica-de-privacidade">Privacidade</a>
+      </p>
+    </div>
+  </footer>
+
+  <!-- O módulo da página vem ANTES do Alpine, para registrar o componente no alpine:init. -->
+  <script type="module" src="../../js/pages/busca/loja-publica.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js"></script>
+</body>
+</html>

@@ -13,6 +13,7 @@ export const PAGINAS = {
   login: 'pages/conta/login.html',
   favoritos: 'pages/conta/favoritos.html',
   buscasSalvas: 'pages/conta/buscas-salvas.html',
+  conversas: 'pages/conta/conversas.html',
   carrinho: 'pages/compra/carrinho.html',
   criarLoja: 'pages/minha-loja/criar-loja.html',
   painelLoja: 'pages/minha-loja/painel.html',

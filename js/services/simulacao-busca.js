@@ -38,7 +38,10 @@ const LOJAS = {
   },
 };
 
-const ONIX = [{ marca: 'Chevrolet', modelo: 'Onix', anoInicio: 2020, anoFim: 2023 }];
+const ONIX = [
+  { marca: 'Chevrolet', modelo: 'Onix', anoInicio: 2020, anoFim: 2023, versao: '1.0 / 1.0 Turbo • confirmar conectores' },
+  { marca: 'Chevrolet', modelo: 'Onix Plus', anoInicio: 2020, anoFim: 2023, versao: 'Consultar aplicação com o vendedor' },
+];
 const GOL = [{ marca: 'Volkswagen', modelo: 'Gol', anoInicio: 2013, anoFim: 2022 }];
 const UNO = [{ marca: 'Fiat', modelo: 'Uno', anoInicio: 2011, anoFim: 2021 }];
 const LINHA_GM = [

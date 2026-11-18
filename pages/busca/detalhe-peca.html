@@ -186,5 +186,95 @@
             </div>
           </section>
 
+          <!-- ===== Loja, entrega e conversa ===== -->
+          <section class="detalhe-caixa detalhe-loja" aria-labelledby="titulo-loja">
+            <h2 id="titulo-loja" class="detalhe-loja__nome"><a :href="linkLoja" x-text="peca.loja?.nomeLoja"></a></h2>
+            <p class="detalhe-loja__nota" x-text="textoAvaliacao"></p>
+            <p class="detalhe-loja__local" x-text="textoLocalLoja"></p>
+
+            <h3 class="detalhe-loja__subtitulo">Entrega e retirada</h3>
+            <p class="detalhe-loja__texto" x-text="textoRecebimento"></p>
+
+            <form @submit.prevent="consultarEntrega()" novalidate>
+              <label class="form-label" for="cep-referencia">CEP para referência</label>
+              <input id="cep-referencia" class="form-control" inputmode="numeric" autocomplete="postal-code" placeholder="00000-000"
+                     x-ref="campoCep" x-model="cep" @input="aoDigitarCep()" maxlength="9"
+                     :class="{ 'is-invalid': erroCep }" aria-describedby="erro-cep ajuda-cep">
+              <div id="erro-cep" class="invalid-feedback" x-text="erroCep"></div>
+              <button type="submit" class="btn btn--contorno w-100 detalhe-botao" :disabled="consultandoCep">
+                <span class="spinner-border spinner-border-sm" x-show="consultandoCep" aria-hidden="true"></span>
+                Consultar entrega
+              </button>
+            </form>
+            <p class="detalhe-loja__resultado" x-show="resultadoCep" x-cloak role="status">
+              <template x-if="resultadoCep?.distancia">
+                <span>A loja fica a <strong x-text="resultadoCep.distancia"></strong> do CEP <span x-text="resultadoCep.cep"></span>. </span>
+              </template>
+              Frete e prazo a combinar com o vendedor.
+            </p>
+            <p id="ajuda-cep" class="detalhe-loja__ajuda">Estimativa de referência. Confirme prazo e valor diretamente com o vendedor.</p>
+
+            <!-- BP1-28 -->
+            <button type="button" class="btn btn--verde w-100 detalhe-botao" @click="conversar()">
+              <i class="bi bi-chat-dots" aria-hidden="true"></i> Conversar com vendedor
+            </button>
+          </section>
+
+          <!-- ===== Compatibilidade ===== -->
+          <section class="detalhe-caixa detalhe-compatibilidade" aria-labelledby="titulo-compatibilidade">
+            <h2 id="titulo-compatibilidade" class="detalhe-caixa__titulo">Compatibilidade informada pela loja</h2>
+            <div class="table-responsive" x-show="(peca.aplicacoes || []).length">
+              <table class="table detalhe-tabela mb-3">
+                <thead>
+                  <tr><th scope="col">Marca</th><th scope="col">Modelo</th><th scope="col">Ano</th><th scope="col">Versão / observação</th></tr>
+                </thead>
+                <tbody>
+                  <template x-for="(a, i) in peca.aplicacoes" :key="i">
+                    <tr>
+                      <th scope="row" x-text="a.marca"></th>
+                      <td x-text="a.modelo"></td>
+                      <td x-text="textoAnos(a)"></td>
+                      <td x-text="a.versao || '—'"></td>
+                    </tr>
+                  </template>
+                </tbody>
+              </table>
+            </div>
+            <p class="detalhe-compatibilidade__vazia" x-show="!(peca.aplicacoes || []).length">
+              A loja não informou veículos compatíveis. Pergunte ao vendedor antes de pedir.
+            </p>
+            <p class="detalhe-alerta">
+              <i class="bi bi-exclamation-circle" aria-hidden="true"></i>
+              Antes de pedir, confira o OEM, o lado da peça e a versão do veículo. A compatibilidade foi declarada pela loja.
+            </p>
+          </section>
+        </div>
+      </div>
+    </template>
+
+    <!-- ===== Outras opções para comparar (BP1-10 e BP1-66) ===== -->
+    <section class="detalhe-outras" aria-labelledby="titulo-outras" x-show="!carregando && peca && !naoEncontrada && !erro" x-cloak>
+      <h2 id="titulo-outras" class="inicio-secao__titulo">Outras opções para comparar</h2>
+      <p class="resultados-estado" x-show="!carregandoOutras && !outras.length">Não encontramos outras opções para esta peça agora.</p>
+      <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-3" x-ref="outras" @click="aoClicarOutras($event)"></div>
+    </section>
+  </main>
+
+  <!-- Rodapé: provisório até existir js/components/rodape.js -->
+  <footer id="rodape" class="rodape mt-5">
+    <div class="container-fluid px-3 px-lg-4 py-4">
+      <p class="mb-1">Ambiente demonstrativo • lojas, preços e estoques fictícios</p>
+      <p class="mb-0">
+        <a href="../institucional/sobre.html">Busca Peça</a> •
+        <a href="mailto:contato@buscapeca.example.com">Contato</a> •
+        <a href="../institucional/termos-de-uso.html">Termos de uso</a> •
+        <a href="../institucional/termos-de-uso.html#politica-de-privacidade">Privacidade</a>
+      </p>
+    </div>
+  </footer>
+
+  <!-- O módulo da página vem ANTES do Alpine, para registrar o componente no alpine:init. -->
+  <script type="module" src="../../js/pages/busca/detalhe-peca.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js"></script>
 </body>
 </html>

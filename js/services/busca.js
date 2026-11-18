@@ -18,7 +18,7 @@ const USAR_SIMULACAO = true;
 // precoMin, precoMax e ordenar=preco_desc vêm do protótipo (A02) e ainda não estão na
 // Documentação do Back-end: combinar com o time da API antes de desligar a simulação.
 const PARAMETROS_DA_API = [
-  'q', 'codigo', 'categoria', 'veiculo', 'tags', 'condicao', 'origem', 'prontaEntrega',
+  'q', 'codigo', 'loja', 'categoria', 'veiculo', 'tags', 'condicao', 'origem', 'prontaEntrega',
   'cep', 'lat', 'lng', 'raioKm', 'freteGratis', 'retirada', 'formaPagamento', 'notaMinima',
   'precoMin', 'precoMax', 'ordenar', 'pagina', 'tamanho',
 ];
@@ -104,7 +104,7 @@ function anoCompativel(p, palavra) {
 async function simularBusca(filtros = {}, veiculo = {}) {
   await esperar(450);
   const {
-    q, categoria, condicao, origem, prontaEntrega, cep, lat, raioKm, formaPagamento, notaMinima,
+    q, loja: idLojaFiltro, categoria, condicao, origem, prontaEntrega, cep, lat, raioKm, formaPagamento, notaMinima,
     precoMin, precoMax, ordenar = 'relevancia', pagina = 1, tamanho = 12,
   } = filtros;
 
@@ -120,7 +120,7 @@ async function simularBusca(filtros = {}, veiculo = {}) {
 
   let itens = pecasSimuladas.filter((p) => {
     if (!palavras.every((palavra) => textoDaPeca(p).includes(palavra) || anoCompativel(p, palavra))) return false;
-    if (categorias && !categorias.includes(p.idCategoria)) return false;
+    if (idLojaFiltro && p.loja.idLoja !== Number(idLojaFiltro)) return false;    if (idLojaFiltro && p.loja.idLoja !== Number(idLojaFiltro)) return false;
     if (!atendeVeiculo(p, veiculo)) return false;
     if (condicao && p.condicao !== condicao) return false;
     if (origem && p.origem !== origem) return false;
@@ -135,8 +135,7 @@ async function simularBusca(filtros = {}, veiculo = {}) {
   });
 
   const ordens = {
-    relevancia: (a, b) => b.publicadoEm.localeCompare(a.publicadoEm),
-    preco: (a, b) => precoFinal(a) - precoFinal(b),
+    recentes: (a, b) => b.publicadoEm.localeCompare(a.publicadoEm),    preco: (a, b) => precoFinal(a) - precoFinal(b),
     preco_desc: (a, b) => precoFinal(b) - precoFinal(a),
     distancia: (a, b) => a.loja.distanciaKm - b.loja.distanciaKm,
     avaliacao: (a, b) => b.loja.avaliacaoMedia - a.loja.avaliacaoMedia,

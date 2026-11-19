@@ -120,7 +120,8 @@ async function simularBusca(filtros = {}, veiculo = {}) {
 
   let itens = pecasSimuladas.filter((p) => {
     if (!palavras.every((palavra) => textoDaPeca(p).includes(palavra) || anoCompativel(p, palavra))) return false;
-    if (idLojaFiltro && p.loja.idLoja !== Number(idLojaFiltro)) return false;    if (idLojaFiltro && p.loja.idLoja !== Number(idLojaFiltro)) return false;
+    if (idLojaFiltro && p.loja.idLoja !== Number(idLojaFiltro)) return false;
+    if (categorias && !categorias.includes(p.idCategoria)) return false;
     if (!atendeVeiculo(p, veiculo)) return false;
     if (condicao && p.condicao !== condicao) return false;
     if (origem && p.origem !== origem) return false;
@@ -135,7 +136,9 @@ async function simularBusca(filtros = {}, veiculo = {}) {
   });
 
   const ordens = {
-    recentes: (a, b) => b.publicadoEm.localeCompare(a.publicadoEm),    preco: (a, b) => precoFinal(a) - precoFinal(b),
+    relevancia: (a, b) => b.publicadoEm.localeCompare(a.publicadoEm),
+    recentes: (a, b) => b.publicadoEm.localeCompare(a.publicadoEm),
+    preco: (a, b) => precoFinal(a) - precoFinal(b),
     preco_desc: (a, b) => precoFinal(b) - precoFinal(a),
     distancia: (a, b) => a.loja.distanciaKm - b.loja.distanciaKm,
     avaliacao: (a, b) => b.loja.avaliacaoMedia - a.loja.avaliacaoMedia,

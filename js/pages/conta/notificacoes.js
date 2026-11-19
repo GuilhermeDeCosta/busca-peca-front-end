@@ -32,7 +32,7 @@ const FILTROS = {
 const TIPOS = {
   NOVO_PEDIDO: {
     categoria: 'Minha Loja', titulo: 'Novo pedido na sua loja',
-    acao: (id) => ({ texto: 'Ver pedido', href: `../minha-loja/pedidos.html?id=${id}` }),
+    acao: (id) => ({ texto: 'Ver pedido', href: `../minha-loja/pedido-recebido.html?id=${id}` }),
   },
   ESTOQUE_BAIXO: {
     categoria: 'Minha Loja', titulo: 'Estoque baixo',
@@ -498,6 +498,7 @@ async function aplicarUsuario() {
     atualizarFiltros();
     atualizarContadores();
   }
+  
 }
 
 // ---------- Início ----------

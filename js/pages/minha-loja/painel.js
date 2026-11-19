@@ -187,7 +187,7 @@ function paginaPainel() {
       return STATUS_PEDIDO[p.status] || p.status;
     },
     linkDetalhePedido(p) {
-      return `pedidos.html?id=${encodeURIComponent(p.idPedido)}`;
+      return `pedido-recebido.html?id=${encodeURIComponent(p.idPedido)}`;
     },
     acaoPedido(p) {
       if (p.status === 'ACEITO') return { texto: 'preparar', link: this.linkDetalhePedido(p) };

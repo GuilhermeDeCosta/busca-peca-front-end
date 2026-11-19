@@ -1082,3 +1082,44 @@ a.inicio-categoria:focus-visible { outline: 3px solid #f2b705; outline-offset: 2
     .loja-banner__botao { width: 100%; justify-content: center; }
     .loja-filtros { grid-template-columns: minmax(0, 1fr); }
 }
+
+/* =========================================================
+   FAVORITOS E BUSCAS SALVAS
+   pages/conta/favoritos.html • Fluxo A, A06 • BP1-48, BP1-11
+   Usa também .resultados__trilha, .resultados__titulo, .resultados-estado,
+   .detalhe-caixa, .detalhe-etiqueta, .detalhe-botao e o card de peça.
+   ========================================================= */
+.favoritos-atalhos { display: flex; flex-wrap: wrap; gap: 8px; list-style: none; padding: 0; margin: 0 0 20px; }
+.favoritos-atalhos a { display: inline-flex; align-items: center; min-height: 32px; }
+.favoritos-atalhos a:hover { text-decoration: underline; }
+.favoritos-atalhos a:focus-visible { outline: 3px solid #f2b705; outline-offset: 2px; }
+.favoritos-secao { scroll-margin-top: 16px; }
+.favoritos-secao + .favoritos-secao { margin-top: 40px; }
+ 
+/* Card favorito + "Remover dos favoritos" embaixo */
+.favorito { display: flex; flex-direction: column; gap: 8px; height: 100%; }
+.favorito .card-peca { flex: 1; }
+.favorito__remover { min-height: 44px; }
+ 
+/* Busca salva */
+.busca-salva { height: 100%; display: flex; flex-direction: column; }
+.busca-salva__nome { font-size: 18px; font-weight: 800; color: var(--azul-escuro); margin: 0 0 12px; }
+.busca-salva__termo { font-size: 14px; font-weight: 700; margin: 0 0 6px; }
+.busca-salva__filtros { font-size: 13px; color: var(--texto-suave); margin: 0 0 8px; }
+.busca-salva__data { font-size: 12px; color: var(--texto-suave); margin: 0 0 auto; padding-bottom: 8px; }
+.busca-salva__acoes { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 16px; margin-top: 4px; }
+.busca-salva__link {
+    min-height: 44px;
+    border: 0;
+    background: none;
+    color: var(--azul-escuro);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+}
+.busca-salva__link:hover { text-decoration: underline; }
+.busca-salva__link:focus-visible { outline: 3px solid #f2b705; outline-offset: 2px; }
+.busca-salva__edicao { margin-top: 20px; max-width: 40rem; }
+.busca-salva__edicao .form-label { font-size: 14px; font-weight: 600; margin-bottom: 6px; }
+.busca-salva__edicao .form-control { min-height: 44px; }
+ 

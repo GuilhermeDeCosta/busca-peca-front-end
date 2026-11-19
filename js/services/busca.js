@@ -180,3 +180,48 @@ async function simularSalvarBusca(nome, parametros) {
   buscasSalvasSimuladas.push(salva);
   return salva;
 }
+
+
+/**
+ * GET /api/busca/salvas — buscas salvas do usuário (BP1-11). Acesso: logado (401 sem login).
+ * @returns {Promise<{ idBuscaSalva: number, nome: string, parametros: string, criadaEm: string }[]>}
+ *   parametros: a query string da busca (a mesma que vai em resultados.html?...)
+ */
+export async function listarBuscasSalvas() {
+  if (USAR_SIMULACAO) {
+    await esperar(350);
+    return structuredClone(buscasSalvasSimuladas);
+  }
+  // return api.get('/busca/salvas');
+}
+
+/**
+ * PATCH /api/busca/salvas/{id} — muda o nome de uma busca salva (protótipo A06, "Editar nome da busca").
+ * Esta rota ainda não está na Documentação do Back-end: combinar com o time da API.
+ */
+export async function renomearBuscaSalva(idBuscaSalva, nome) {
+  if (USAR_SIMULACAO) {
+    await esperar(350);
+    const limpo = String(nome || '').trim();
+    if (!limpo) throw { status: 400, erro: 'VALIDACAO', mensagem: 'Dê um nome para a busca.', campos: [{ campo: 'nome', mensagem: 'Informe um nome.' }] };
+    if (buscasSalvasSimuladas.some((b) => b.idBuscaSalva !== idBuscaSalva && b.nome.toLowerCase() === limpo.toLowerCase())) {
+      throw { status: 409, erro: 'NOME_DUPLICADO', mensagem: 'Você já tem uma busca salva com esse nome.' };
+    }
+    const busca = buscasSalvasSimuladas.find((b) => b.idBuscaSalva === idBuscaSalva);
+    if (!busca) throw { status: 404, erro: 'NAO_ENCONTRADO', mensagem: 'Esta busca salva não existe mais.' };
+    busca.nome = limpo;
+    return structuredClone(busca);
+  }
+  // return api.patch(`/busca/salvas/${idBuscaSalva}`, { nome });
+}
+
+/** DELETE /api/busca/salvas/{id} — remove uma busca salva (BP1-11). */
+export async function removerBuscaSalva(idBuscaSalva) {
+  if (USAR_SIMULACAO) {
+    await esperar(300);
+    const i = buscasSalvasSimuladas.findIndex((b) => b.idBuscaSalva === idBuscaSalva);
+    if (i >= 0) buscasSalvasSimuladas.splice(i, 1);
+    return null;
+  }
+  // return api.delete(`/busca/salvas/${idBuscaSalva}`);
+}

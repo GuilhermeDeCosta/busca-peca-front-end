@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Favoritos e buscas salvas • Busca Peças</title>
+
+  <!-- Bibliotecas por CDN com versão fixa (ADR-014) -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+  <!-- CSS do projeto (os estilos desta tela estão em base.css, seção "FAVORITOS E BUSCAS SALVAS") -->
+  <link rel="stylesheet" href="../../css/variaveis.css">
+  <link rel="stylesheet" href="../../css/base.css">
+  <link rel="stylesheet" href="../../css/componentes.css">
+  <style>[x-cloak] { display: none !important; }</style>
+
+  <!-- Componente do cabeçalho -->
+  <script src="../../js/components/cabecalho.js" defer></script>
+</head>
+<body class="d-flex flex-column min-vh-100">
+
+  <!-- Cabeçalho: preenchido por js/components/cabecalho.js -->
+  <header id="cabecalho"></header>
+
+  <!-- Página logada • BP1-48, BP1-11 • GET /api/favoritos, GET /api/busca/salvas • Fluxo A, A06 -->
+  <main id="conteudo" class="favoritos container-fluid px-3 px-lg-4 py-4 flex-grow-1" x-data="favoritosBuscas">
+
+    <nav aria-label="Você está aqui">
+      <ol class="breadcrumb resultados__trilha">
+        <li class="breadcrumb-item"><a href="../../index.html">Início</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Favoritos e buscas salvas</li>
+      </ol>
+    </nav>
+
+    <h1 class="resultados__titulo">Favoritos e buscas salvas</h1>
+    <p class="resultados__resumo mb-3">Guarde as peças e os filtros que fazem sentido para sua oficina.</p>
+
+    <!-- Atalhos para as duas listas -->
+    <ul class="favoritos-atalhos" aria-label="Ir para">
+      <li><a class="detalhe-etiqueta detalhe-etiqueta--verde" href="#pecas-favoritas"
+             x-text="`Peças favoritas • ${carregandoFavoritos ? '…' : favoritos.length}`">Peças favoritas</a></li>
+      <li><a class="detalhe-etiqueta detalhe-etiqueta--azul" href="#buscas-salvas"
+             x-text="`Buscas salvas • ${carregandoBuscas ? '…' : buscas.length}`">Buscas salvas</a></li>
+    </ul>
+
+    <!-- ===== Peças favoritas (BP1-48) ===== -->
+    <section id="pecas-favoritas" class="favoritos-secao" aria-labelledby="titulo-favoritos">
+      <h2 id="titulo-favoritos" class="visually-hidden" tabindex="-1" x-ref="tituloFavoritos">Peças favoritas</h2>
+
+      <div class="resultados-estado" x-show="erroFavoritos" x-cloak role="alert">
+        <i class="bi bi-exclamation-circle" aria-hidden="true"></i>
+        <h3 x-text="erroFavoritos"></h3>
+        <button type="button" class="btn btn--contorno" @click="carregarFavoritos()">Tentar novamente</button>
+      </div>
+
+      <!-- Estado vazio (protótipo A06, "Estados vazios") -->
+      <div class="resultados-estado" x-show="!carregandoFavoritos && !erroFavoritos && !favoritos.length" x-cloak>
+        <i class="bi bi-heart" aria-hidden="true"></i>
+        <h3>Ainda não há favoritos</h3>
+        <p>Toque no coração de uma peça para salvar e consultar depois.</p>
+        <a class="btn btn--contorno" :href="linkResultados">Explorar peças</a>
+      </div>
+
+      <!-- Cards: montados por js/components/card-peca.js -->
+      <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-3" x-ref="listaFavoritos" @click="aoClicarFavoritos($event)"></div>
+    </section>
+
+    <!-- ===== Buscas salvas (BP1-11) ===== -->
+    <section id="buscas-salvas" class="favoritos-secao" aria-labelledby="titulo-buscas">
+      <h2 id="titulo-buscas" class="inicio-secao__titulo" tabindex="-1" x-ref="tituloBuscas">Repita uma busca em segundos</h2>
+
+      <div class="row row-cols-1 row-cols-md-2 g-3 placeholder-glow" x-show="carregandoBuscas" aria-hidden="true">
+        <div class="col"><span class="placeholder w-100 rounded" style="height:180px"></span></div>
+        <div class="col"><span class="placeholder w-100 rounded" style="height:180px"></span></div>
+      </div>
+
+      <div class="resultados-estado" x-show="erroBuscas" x-cloak role="alert">
+        <i class="bi bi-exclamation-circle" aria-hidden="true"></i>
+        <h3 x-text="erroBuscas"></h3>
+        <button type="button" class="btn btn--contorno" @click="carregarBuscas()">Tentar novamente</button>
+      </div>
+
+      <div class="resultados-estado" x-show="!carregandoBuscas && !erroBuscas && !buscas.length" x-cloak>
+        <i class="bi bi-bookmark" aria-hidden="true"></i>
+        <h3>Nenhuma busca salva</h3>
+        <p>Defina seus filtros nos resultados e use Salvar busca para repetir mais tarde.</p>
+        <a class="btn btn--contorno" :href="linkResultados">Fazer uma busca</a>
+      </div>
+
+      <ul class="row row-cols-1 row-cols-md-2 g-3 list-unstyled mb-0" x-show="!carregandoBuscas && buscas.length" x-cloak>
+        <template x-for="b in buscas" :key="b.idBuscaSalva">
+          <li class="col">
+            <article class="detalhe-caixa busca-salva" :aria-label="b.nome">
+              <h3 class="busca-salva__nome" x-text="b.nome"></h3>
+              <p class="busca-salva__termo" x-text="termo(b)"></p>
+              <p class="busca-salva__filtros" x-text="resumoFiltros(b)"></p>
+              <p class="busca-salva__data" x-text="dataSalva(b)"></p>
+              <a class="btn btn--verde w-100 detalhe-botao" :href="linkRepetir(b)">
+                <i class="bi bi-search" aria-hidden="true"></i> Repetir busca
+              </a>
+              <div class="busca-salva__acoes">
+                <button type="button" class="busca-salva__link" :data-editar="b.idBuscaSalva" @click="abrirEdicao(b)">Editar nome</button>
+                <button type="button" class="busca-salva__link" @click="pedirRemocao(b)">Remover busca salva</button>
+              </div>
+            </article>
+          </li>
+        </template>
+      </ul>
+
+      <!-- Editar nome da busca -->
+      <form class="detalhe-caixa busca-salva__edicao" x-show="edicao.id" x-cloak x-ref="painelEdicao"
+            @submit.prevent="salvarNome()" novalidate aria-labelledby="titulo-edicao">
+        <h3 id="titulo-edicao" class="busca-salva__nome">Editar nome da busca</h3>
+        <label class="form-label" for="nome-busca-salva">Nome</label>
+        <input id="nome-busca-salva" class="form-control" maxlength="80" x-ref="campoNome" x-model="edicao.nome"
+               :class="{ 'is-invalid': edicao.erro }" aria-describedby="erro-nome-busca-salva">
+        <div id="erro-nome-busca-salva" class="invalid-feedback" x-text="edicao.erro"></div>
+        <div class="d-flex flex-wrap gap-2 mt-3">
+          <button type="submit" class="btn btn--verde detalhe-botao mt-0" :disabled="edicao.salvando">
+            <span class="spinner-border spinner-border-sm" x-show="edicao.salvando" aria-hidden="true"></span>
+            <span x-text="edicao.salvando ? 'Salvando…' : 'Salvar nome'"></span>
+          </button>
+          <button type="button" class="btn btn--contorno detalhe-botao mt-0" @click="fecharEdicao()">Cancelar</button>
+        </div>
+      </form>
+    </section>
+
+    <!-- ===== Confirmação para remover busca salva ===== -->
+    <!-- O x-show fica no contêiner: o d-block do Bootstrap usa !important e venceria o x-show -->
+    <div x-show="remocao.busca" x-cloak>
+      <div class="modal-backdrop fade show"></div>
+      <div class="modal d-block" tabindex="-1" role="alertdialog" aria-modal="true" aria-labelledby="titulo-remocao"
+           aria-describedby="texto-remocao" @click.self="fecharRemocao()">
+        <div class="modal-dialog modal-dialog-centered">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h2 class="modal-title fs-5" id="titulo-remocao">Remover esta busca salva?</h2>
+              <button type="button" class="btn-close" aria-label="Fechar" @click="fecharRemocao()"></button>
+            </div>
+            <div class="modal-body">
+              <p id="texto-remocao" class="mb-0">
+                “<span x-text="remocao.busca?.nome"></span>” sai da sua lista. As peças e as lojas não mudam.
+              </p>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn--contorno" x-ref="cancelarRemocao" @click="fecharRemocao()">Manter busca</button>
+              <button type="button" class="btn btn-danger" @click="confirmarRemocao()" :disabled="remocao.removendo">
+                <span class="spinner-border spinner-border-sm me-1" x-show="remocao.removendo" aria-hidden="true"></span>
+                Remover
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Rodapé: provisório até existir js/components/rodape.js -->
+  <footer id="rodape" class="rodape mt-5">
+    <div class="container-fluid px-3 px-lg-4 py-4">
+      <p class="mb-1">Ambiente demonstrativo • lojas, preços e estoques fictícios</p>
+      <p class="mb-0">
+        <a href="../institucional/sobre.html">Busca Peça</a> •
+        <a href="mailto:contato@buscapeca.example.com">Contato</a> •
+        <a href="../institucional/termos-de-uso.html">Termos de uso</a> •
+        <a href="../institucional/termos-de-uso.html#politica-de-privacidade">Privacidade</a>
+      </p>
+    </div>
+  </footer>
+
+  <!-- O módulo da página vem ANTES do Alpine, para registrar o componente no alpine:init. -->
+  <script type="module" src="../../js/pages/conta/favoritos.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js"></script>
+</body>
+</html>

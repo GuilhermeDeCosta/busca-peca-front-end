@@ -1,5 +1,5 @@
 // Serviço da área administrativa: uma função por rota de /api/admin
-// (Documentação do Back-end v2, seção 5.12 • casos de uso BP1-49, BP1-54 e BP1-56 • ADR-006, 013).
+// (Documentação do Back-end v2, seção 5.12 • casos de uso BP1-49, BP1-51, BP1-54 e BP1-56 • ADR-006, 013).
 //
 // QUANDO A API ESTIVER PRONTA: troque USAR_SIMULACAO para false e apague o
 // bloco "SIMULAÇÃO" do fim do arquivo.
@@ -207,6 +207,100 @@ export async function excluirRascunhoTermo(idTermo) {
 export async function publicarTermo(idTermo) {
   if (USAR_SIMULACAO) return simularPublicarTermo(idTermo);
   return api.patch(`/admin/termos/${encodeURIComponent(idTermo)}/publicar`);
+}
+
+// ---------------------------------------------------------------------------
+// Notificações gerais — /api/admin/notificacoes (BP1-51) • permissão ENVIAR_NOTIFICACOES
+//
+// Um "aviso" é o envio feito pela administração. Ao enviar, a API cria uma
+// linha em notificacao (tipo AVISO_ADMIN, id_admin_origem) para cada pessoa
+// do público e por canal. Título, público, categoria, link, agendamento e
+// status do aviso ainda não têm tabela: precisam de uma nova (ex.: aviso_admin).
+//
+// Formato esperado de cada aviso (AvisoAdminResponse):
+//   {
+//     idAviso, titulo, mensagem, link: 'pages/institucional/termos-de-uso.html' | null, textoAcao: 'Ler termos' | null,
+//     publico: 'TODOS' | 'VENDEDORES' | 'COMPRADORES' | 'VENDEDORES_SEM_ANUNCIOS',
+//     categoria: 'ATUALIZACAO' | 'MANUTENCAO' | 'DICA' | 'SEGURANCA',
+//     canais: ['SISTEMA', 'EMAIL'],
+//     status: 'RASCUNHO' | 'AGENDADO' | 'ENVIADO' | 'CANCELADO',
+//     enviarEm: '2026-11-25T09:00:00-03:00' | null,   // null = enviar agora
+//     dataEnvio: null,                                  // quando foi enviado de fato
+//     alcance: 214                                      // pessoas que receberam (ou vão receber)
+//   }
+// ---------------------------------------------------------------------------
+
+/** GET /api/admin/notificacoes — ROTA NOVA: avisos enviados, agendados e rascunhos (mais recentes primeiro). */
+export async function listarAvisos() {
+  if (USAR_SIMULACAO) {
+    await esperar(400);
+    return structuredClone(avisosSimulados);
+  }
+  const dados = await api.get('/admin/notificacoes?pagina=0&tamanho=50');
+  return Array.isArray(dados) ? dados : (dados?.itens || []);
+}
+
+/** GET /api/admin/notificacoes/alcance?publico= — ROTA NOVA: quantas contas o público alcança. Devolve { total }. */
+export async function obterAlcance(publico) {
+  if (USAR_SIMULACAO) {
+    await esperar(200);
+    return { total: ALCANCE_SIMULADO[publico] ?? 0 };
+  }
+  return api.get(`/admin/notificacoes/alcance?publico=${encodeURIComponent(publico)}`);
+}
+
+/**
+ * POST /api/admin/notificacoes — cria o aviso (BP1-51).
+ * Corpo: { titulo, mensagem, link, textoAcao, publico, categoria, canais, enviarEm, rascunho }
+ *   rascunho: true  → só salva (status RASCUNHO)
+ *   enviarEm: null  → envia agora (status ENVIADO)
+ *   enviarEm: data  → agenda (status AGENDADO); a API envia na hora marcada
+ * Devolve o aviso com status e alcance.
+ */
+export async function criarAviso(dados) {
+  if (USAR_SIMULACAO) return simularSalvarAviso(null, dados);
+  return api.post('/admin/notificacoes', dados);
+}
+
+/** PUT /api/admin/notificacoes/{id} — ROTA NOVA: altera um rascunho ou um aviso agendado (mesmo corpo do POST). */
+export async function atualizarAviso(idAviso, dados) {
+  if (USAR_SIMULACAO) return simularSalvarAviso(idAviso, dados);
+  return api.put(`/admin/notificacoes/${encodeURIComponent(idAviso)}`, dados);
+}
+
+/** DELETE /api/admin/notificacoes/{id} — ROTA NOVA: exclui um rascunho ou cancela um agendado (409 se já foi enviado). */
+export async function excluirAviso(idAviso) {
+  if (USAR_SIMULACAO) {
+    await esperar(400);
+    const aviso = avisoSimulado(idAviso);
+    if (aviso.status === 'ENVIADO') throw { status: 409, erro: 'STATUS_INVALIDO', mensagem: 'Este aviso já foi enviado e não pode ser cancelado.' };
+    if (aviso.status === 'AGENDADO') aviso.status = 'CANCELADO';
+    else avisosSimulados.splice(avisosSimulados.indexOf(aviso), 1);
+    return;
+  }
+  await api.delete(`/admin/notificacoes/${encodeURIComponent(idAviso)}`);
+}
+
+/**
+ * GET /api/admin/notificacoes/alertas — ROTA NOVA: alertas automáticos ligados ou desligados.
+ * { STATUS_PEDIDO: true, NOVA_MENSAGEM: true, ESTOQUE_BAIXO: true, PROMOCOES_FAVORITAS: false }
+ */
+export async function obterAlertasAutomaticos() {
+  if (USAR_SIMULACAO) {
+    await esperar(250);
+    return { ...alertasSimulados };
+  }
+  return api.get('/admin/notificacoes/alertas');
+}
+
+/** PUT /api/admin/notificacoes/alertas — ROTA NOVA: mesmo formato do GET. Devolve o que ficou salvo. */
+export async function salvarAlertasAutomaticos(alertas) {
+  if (USAR_SIMULACAO) {
+    await esperar(450);
+    Object.assign(alertasSimulados, alertas);
+    return { ...alertasSimulados };
+  }
+  return api.put('/admin/notificacoes/alertas', alertas);
 }
 
 // =========================================================================
@@ -423,4 +517,59 @@ async function simularPublicarTermo(idTermo) {
     termo.status = 'AGENDADA';
   }
   return { ...structuredClone(termo), contasAfetadas: termo.exigeNovoAceite ? (termo.tipo === 'TERMOS_VENDEDOR' ? 214 : 1248) : 0 };
+}
+
+// ---------- Simulação: notificações gerais ----------
+
+const ALCANCE_SIMULADO = { TODOS: 1231, VENDEDORES: 214, COMPRADORES: 1017, VENDEDORES_SEM_ANUNCIOS: 38 };
+
+// Datas relativas a hoje: o agendado fica sempre no futuro
+function diaRelativo(dias, hora, minuto) {
+  const d = new Date();
+  d.setDate(d.getDate() + dias);
+  d.setHours(hora, minuto, 0, 0);
+  return d.toISOString();
+}
+
+const avisosSimulados = [
+  { idAviso: 3, titulo: 'Nova versão dos Termos de uso em 01/12', categoria: 'ATUALIZACAO', publico: 'VENDEDORES', canais: ['SISTEMA'],
+    mensagem: 'A versão 1.3 traz ajustes na seção de pagamento e entrega. Você precisará aceitar os novos termos no próximo acesso.',
+    link: 'pages/institucional/termos-de-uso.html', textoAcao: 'Ler termos', status: 'AGENDADO', enviarEm: diaRelativo(5, 9, 0), dataEnvio: null, alcance: 214 },
+  { idAviso: 2, titulo: 'Manutenção programada no domingo', categoria: 'MANUTENCAO', publico: 'TODOS', canais: ['SISTEMA', 'EMAIL'],
+    mensagem: 'O Busca Peça ficará fora do ar no domingo, das 2h às 4h, para manutenção.',
+    link: null, textoAcao: null, status: 'ENVIADO', enviarEm: diaRelativo(-2, 8, 0), dataEnvio: diaRelativo(-2, 8, 0), alcance: 1231 },
+  { idAviso: 1, titulo: 'Dica: cadastre peças pelo código OEM', categoria: 'DICA', publico: 'VENDEDORES_SEM_ANUNCIOS', canais: ['SISTEMA'],
+    mensagem: 'Com o código OEM, EAN ou SKU, os dados da peça são preenchidos para você revisar. Leva menos de um minuto.',
+    link: 'pages/minha-loja/form-peca.html', textoAcao: 'Cadastrar peça', status: 'ENVIADO', enviarEm: diaRelativo(-10, 14, 0), dataEnvio: diaRelativo(-10, 14, 0), alcance: 38 },
+];
+
+const alertasSimulados = { STATUS_PEDIDO: true, NOVA_MENSAGEM: true, ESTOQUE_BAIXO: true, PROMOCOES_FAVORITAS: false };
+
+function avisoSimulado(id) {
+  const a = avisosSimulados.find((x) => x.idAviso === Number(id));
+  if (!a) throw { status: 404, erro: 'NAO_ENCONTRADO', mensagem: 'Aviso não encontrado.' };
+  return a;
+}
+
+async function simularSalvarAviso(idAviso, dados) {
+  await esperar(650);
+  let aviso = idAviso ? avisoSimulado(idAviso) : null;
+  if (aviso && !['RASCUNHO', 'AGENDADO'].includes(aviso.status)) {
+    throw { status: 409, erro: 'STATUS_INVALIDO', mensagem: 'Este aviso já foi enviado e não pode ser alterado.' };
+  }
+  if (dados.enviarEm && new Date(dados.enviarEm) <= new Date()) {
+    throw { status: 400, erro: 'DADOS_INVALIDOS', mensagem: 'Verifique os campos destacados.', campos: [{ campo: 'enviarEm', mensagem: 'Escolha um horário no futuro.' }] };
+  }
+  if (!aviso) {
+    aviso = { idAviso: Math.max(0, ...avisosSimulados.map((a) => a.idAviso)) + 1 };
+    avisosSimulados.unshift(aviso);
+  }
+  const status = dados.rascunho ? 'RASCUNHO' : dados.enviarEm ? 'AGENDADO' : 'ENVIADO';
+  Object.assign(aviso, {
+    titulo: dados.titulo, mensagem: dados.mensagem, link: dados.link, textoAcao: dados.textoAcao,
+    publico: dados.publico, categoria: dados.categoria, canais: [...dados.canais],
+    status, enviarEm: dados.enviarEm, dataEnvio: status === 'ENVIADO' ? new Date().toISOString() : null,
+    alcance: ALCANCE_SIMULADO[dados.publico] ?? 0,
+  });
+  return structuredClone(aviso);
 }

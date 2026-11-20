@@ -121,7 +121,7 @@ export const pecasSimuladas = [
 
 // Favoritos, carrinho e buscas salvas em memória: somem ao recarregar a página
 export const favoritosSimulados = new Set();
-export const carrinhoSimulado = new Map(); // idPeca → quantidade
+export const carrinhoSimulado = new Map([[201, 1], [202, 2]]); // idPeca → quantidade (carrinho do protótipo A07)
 export const buscasSalvasSimuladas = [];
 
 

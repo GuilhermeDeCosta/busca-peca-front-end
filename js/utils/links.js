@@ -15,6 +15,7 @@ export const PAGINAS = {
   buscasSalvas: 'pages/conta/favoritos.html#buscas-salvas',
   conversas: 'pages/conta/conversas.html',
   carrinho: 'pages/compra/carrinho.html',
+  checkout: 'pages/compra/checkout.html',
   criarLoja: 'pages/minha-loja/criar-loja.html',
   painelLoja: 'pages/minha-loja/painel.html',
   novaPeca: 'pages/minha-loja/form-peca.html',

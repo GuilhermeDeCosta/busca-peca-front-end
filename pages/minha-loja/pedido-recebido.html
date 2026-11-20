@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Pedido recebido • Busca Peças</title>
+  <meta name="description" content="Detalhe de um pedido recebido pela sua loja: aceite, recusa, preparação, retirada e conversa com o comprador.">
+
+  <!-- Bibliotecas por CDN com versão fixa (ADR-014) -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+  <!-- CSS do projeto -->
+  <link rel="stylesheet" href="../../css/variaveis.css">
+  <link rel="stylesheet" href="../../css/base.css">
+  <link rel="stylesheet" href="../../css/componentes.css">
+
+  <!-- Componente do cabeçalho (vem antes do script da página, que usa window.Cabecalho) -->
+  <script src="../../js/components/cabecalho.js" defer></script>
+
+  <!-- Estilos só desta tela (valores depois da vírgula em var() são o fallback) -->
+  <style>
+    :root {
+      --bp-azul: var(--azul-escuro, #0f3d68);
+      --bp-verde: var(--verde, #1f7a3a);
+      --bp-verde-hover: var(--verde-hover, #186130);
+      --bp-fundo: var(--cinza-fundo, #f3f5f8);
+      --bp-borda: var(--cinza-borda, #dfe4ea);
+      --bp-texto: var(--texto, #1d2733);
+      --bp-texto-suave: var(--texto-suave, #5b6878);
+      --bp-vermelho: #b42318;
+      --bp-ambar: #8a5a00;
+    }
+
+    body { background: var(--bp-fundo); }
+
+    .pedido .breadcrumb { font-size: .8125rem; }
+    .pedido .breadcrumb a { color: var(--bp-texto-suave); text-decoration: none; }
+    .pedido .breadcrumb a:hover { color: var(--bp-azul); text-decoration: underline; }
+    .pedido .breadcrumb-item.active { color: var(--bp-texto-suave); }
+
+    .pedido__titulo { color: var(--bp-azul); font-weight: 700; font-size: 2rem; }
+    .texto-suave { color: var(--bp-texto-suave); }
+    .texto-destaque { color: var(--bp-azul); font-weight: 500; }
+    .texto-alerta { color: var(--bp-ambar); }
+    .texto-erro { color: var(--bp-vermelho); }
+
+    /* Etiquetas de status */
+    .etiqueta { display: inline-block; border-radius: .375rem; padding: .3rem .6rem; font-size: .75rem; font-weight: 600; }
+    .etiqueta--alerta { background: #fdf1d6; color: var(--bp-ambar); }
+    .etiqueta--info { background: #e8f0fb; color: #1f4f7f; }
+    .etiqueta--sucesso { background: #e6f4ea; color: #17633a; }
+    .etiqueta--erro { background: #fdecea; color: var(--bp-vermelho); }
+    .etiqueta--neutra { background: #eef1f5; color: var(--bp-texto-suave); }
+
+    /* Cartões */
+    .cartao { background: #fff; border: 1px solid var(--bp-borda); border-radius: .75rem; padding: 1.25rem; }
+    @media (min-width: 768px) { .cartao { padding: 1.5rem; } }
+    .cartao + .cartao { margin-top: 1.5rem; }
+    .cartao__titulo { color: var(--bp-azul); font-weight: 700; font-size: 1.25rem; margin-bottom: 1rem; }
+    .cartao__subtitulo { color: var(--bp-azul); font-weight: 600; font-size: 1rem; margin-bottom: .75rem; }
+    .cartao__texto { color: var(--bp-texto-suave); font-size: .8125rem; margin-bottom: 1rem; }
+
+    /* Linhas "rótulo  valor" */
+    .lista-dados { margin: 0; font-size: .875rem; }
+    .lista-dados--separada { border-top: 1px solid var(--bp-borda); margin-top: .5rem; padding-top: .5rem; }
+    .linha-dado { display: grid; grid-template-columns: 1fr; padding: .375rem 0; }
+    @media (min-width: 576px) { .linha-dado { grid-template-columns: 11.25rem 1fr; column-gap: 1rem; padding: .5rem 0; } }
+    .linha-dado dt { color: var(--bp-texto-suave); font-weight: 400; }
+    .linha-dado dd { margin: 0; color: var(--bp-texto); overflow-wrap: anywhere; }
+    .linha-dado dd.texto-destaque { color: var(--bp-azul); }
+    .linha-dado dd.texto-alerta { color: var(--bp-ambar); }
+    .linha-dado dd a { color: inherit; }
+
+    /* Botões */
+    .pedido .btn { font-weight: 600; font-size: .875rem; padding: .5rem 1rem; min-height: 2.5rem; border-radius: .375rem; }
+    .btn-verde {
+      --bs-btn-color: #fff; --bs-btn-bg: var(--bp-verde); --bs-btn-border-color: var(--bp-verde);
+      --bs-btn-hover-color: #fff; --bs-btn-hover-bg: var(--bp-verde-hover); --bs-btn-hover-border-color: var(--bp-verde-hover);
+      --bs-btn-active-color: #fff; --bs-btn-active-bg: var(--bp-verde-hover); --bs-btn-active-border-color: var(--bp-verde-hover);
+      --bs-btn-disabled-color: #fff; --bs-btn-disabled-bg: #8fb99c; --bs-btn-disabled-border-color: #8fb99c;
+      border-color: var(--bs-btn-border-color);
+    }
+    .btn-azul {
+      --bs-btn-color: #fff; --bs-btn-bg: var(--bp-azul); --bs-btn-border-color: var(--bp-azul);
+      --bs-btn-hover-color: #fff; --bs-btn-hover-bg: #0b2f50; --bs-btn-hover-border-color: #0b2f50;
+      --bs-btn-active-color: #fff; --bs-btn-active-bg: #0b2f50; --bs-btn-active-border-color: #0b2f50;
+      --bs-btn-disabled-color: #fff; --bs-btn-disabled-bg: #7d98b3; --bs-btn-disabled-border-color: #7d98b3;
+      border-color: var(--bs-btn-border-color);
+    }
+    .btn-contorno-azul {
+      --bs-btn-color: var(--bp-azul); --bs-btn-bg: #fff; --bs-btn-border-color: var(--bp-borda);
+      --bs-btn-hover-color: var(--bp-azul); --bs-btn-hover-bg: #f4f7fb; --bs-btn-hover-border-color: #c9d3df;
+      --bs-btn-active-color: var(--bp-azul); --bs-btn-active-bg: #eef3f9; --bs-btn-active-border-color: #c9d3df;
+      --bs-btn-disabled-color: var(--bp-texto-suave); --bs-btn-disabled-bg: #fff; --bs-btn-disabled-border-color: var(--bp-borda);
+      border-color: var(--bs-btn-border-color);
+    }
+    .btn-contorno-vermelho {
+      --bs-btn-color: var(--bp-vermelho); --bs-btn-bg: #fff; --bs-btn-border-color: var(--bp-vermelho);
+      --bs-btn-hover-color: var(--bp-vermelho); --bs-btn-hover-bg: #fdf3f2; --bs-btn-hover-border-color: var(--bp-vermelho);
+      --bs-btn-active-color: var(--bp-vermelho); --bs-btn-active-bg: #fbe4e1; --bs-btn-active-border-color: var(--bp-vermelho);
+      --bs-btn-disabled-color: #d98880; --bs-btn-disabled-bg: #fff; --bs-btn-disabled-border-color: #e8b4ae;
+      border-color: var(--bs-btn-border-color);
+    }
+    .pedido .btn:focus-visible, .pedido .form-control:focus-visible, .pedido .form-select:focus-visible,
+    .aviso-estado:focus-visible { outline: 3px solid #f2b705; outline-offset: 2px; }
+
+    /* Formulários */
+    .pedido .form-label { font-size: .8125rem; font-weight: 600; color: var(--bp-texto); margin-bottom: .375rem; }
+    .pedido .form-control, .pedido .form-select { font-size: .875rem; border-color: var(--bp-borda); padding: .625rem .75rem; }
+    .pedido .form-text { font-size: .75rem; color: var(--bp-texto-suave); }
+    .erro-campo { font-size: .75rem; color: var(--bp-vermelho); margin-top: .25rem; }
+    .pedido hr { border-color: var(--bp-borda); opacity: 1; margin: 1.25rem 0; }
+
+    /* Linha do tempo (Acompanhamento) */
+    .linha-tempo { list-style: none; margin: 0; padding: 0; font-size: .875rem; }
+    .etapa { display: grid; grid-template-columns: 1.125rem 1fr auto; column-gap: .5rem; align-items: center; padding: .5rem 0; }
+    .etapa__marcador { width: .625rem; height: .625rem; border-radius: 50%; border: 1.5px solid #7d8a99; background: #fff; }
+    .etapa__rotulo { color: var(--bp-texto-suave); }
+    .etapa__info { color: var(--bp-texto-suave); font-size: .75rem; text-align: right; min-width: 6.5rem; }
+    @media (min-width: 992px) { .etapa__info { text-align: left; min-width: 10rem; } }
+    .etapa--feita .etapa__marcador { background: var(--bp-azul); border-color: var(--bp-azul); }
+    .etapa--feita .etapa__rotulo { color: var(--bp-azul); font-weight: 600; }
+    .etapa--encerrada .etapa__marcador { background: var(--bp-vermelho); border-color: var(--bp-vermelho); }
+    .etapa--encerrada .etapa__rotulo { color: var(--bp-vermelho); }
+
+    /* Conversa */
+    .mensagens { display: flex; flex-direction: column; gap: .75rem; max-height: 22rem; overflow-y: auto; margin-bottom: 1.25rem; }
+    .balao { background: #e9edf2; border-radius: .5rem; padding: .625rem .875rem; max-width: 85%; align-self: flex-start; }
+    .balao--minha { background: #e8f0fb; align-self: flex-end; }
+    .balao__texto { font-size: .8125rem; color: var(--bp-texto); margin: 0 0 .25rem; white-space: pre-wrap; overflow-wrap: anywhere; }
+    .balao__meta { font-size: .6875rem; color: var(--bp-texto-suave); margin: 0; }
+
+    /* Resultado das ações (os "estados demonstrativos" do protótipo) */
+    .aviso-estado { border-radius: .5rem; padding: 1rem 1.125rem; font-size: .8125rem; }
+    .aviso-estado__titulo { font-weight: 700; font-size: .875rem; margin-bottom: .25rem; }
+    .aviso-estado--sucesso { background: #e6f4ea; color: #17633a; }
+    .aviso-estado--alerta { background: #fdf1d6; color: var(--bp-ambar); }
+    .aviso-estado--erro { background: #fdecea; color: var(--bp-vermelho); }
+    .aviso-estado--info { background: #e8f0fb; color: #1f4f7f; }
+
+    .aviso-rodape { background: #e8f0fb; color: #1f4f7f; border-radius: .5rem; padding: 1rem 1.125rem; font-size: .8125rem; }
+  </style>
+</head>
+<body class="d-flex flex-column min-vh-100">
+
+  <!-- Cabeçalho: preenchido por js/components/cabecalho.js ("Minha Loja" fica marcado pela pasta) -->
+  <header id="cabecalho"></header>
+
+  <!-- Página do vendedor • Fluxo C, etapas 03 a 09 • BP1-26, 27, 28, 29, 33 • /api/pedidos/{id} -->
+  <main id="conteudo" class="pedido flex-grow-1 py-4">
+    <div class="container-fluid px-3 px-lg-4">
+
+      <nav aria-label="Você está em">
+        <ol class="breadcrumb mb-4">
+          <li class="breadcrumb-item"><a href="../busca/main.html">Início</a></li>
+          <li class="breadcrumb-item"><a href="painel.html">Minha Loja</a></li>
+          <li class="breadcrumb-item"><a href="pedidos.html">Pedidos recebidos</a></li>
+          <li class="breadcrumb-item active" aria-current="page" id="migalha-codigo">Pedido</li>
+        </ol>
+      </nav>
+
+      <h1 class="pedido__titulo mb-1" id="titulo-pedido">Pedido</h1>
+      <p class="texto-suave mb-2" id="subtitulo-pedido"></p>
+      <div class="d-flex flex-wrap gap-2 mb-4">
+        <span id="etiqueta-status" class="etiqueta etiqueta--neutra" hidden></span>
+      </div>
+
+      <!-- Resultado da última ação (aceito, recusado, retirada confirmada…) -->
+      <div id="aviso-acao" class="aviso-estado mb-4" role="status" aria-live="polite" tabindex="-1" hidden></div>
+
+      <!-- Carregando, não encontrado ou erro -->
+      <div id="estado-pagina" class="mb-4" hidden></div>
+
+      <div id="conteudo-pedido" class="row g-4" hidden>
+
+        <!-- Coluna principal -->
+        <div class="col-lg-8">
+
+          <section class="cartao" aria-labelledby="titulo-item">
+            <h2 class="cartao__titulo" id="titulo-item">Item solicitado</h2>
+            <div id="itens-pedido"></div>
+          </section>
+
+          <section class="cartao" aria-labelledby="titulo-comprador">
+            <h2 class="cartao__titulo" id="titulo-comprador">Comprador e recebimento</h2>
+            <dl class="lista-dados" id="dados-comprador"></dl>
+          </section>
+
+          <!-- Aguardando aceite -->
+          <section class="cartao" id="cartao-responder" aria-labelledby="titulo-responder" hidden>
+            <h2 class="cartao__titulo" id="titulo-responder">Responder ao pedido</h2>
+            <p class="cartao__texto">Confira o estoque físico antes de aceitar. O comprador é avisado da sua decisão.</p>
+            <div class="d-flex flex-wrap gap-2">
+              <button type="button" class="btn btn-verde" id="botao-aceitar" data-acao-pedido>Aceitar pedido</button>
+              <button type="button" class="btn btn-contorno-vermelho" id="botao-recusar" data-acao-pedido aria-controls="cartao-recusar">Recusar pedido</button>
+            </div>
+          </section>
+
+          <!-- Aberto ao clicar em "Recusar pedido" -->
+          <section class="cartao" id="cartao-recusar" aria-labelledby="titulo-recusar" hidden>
+            <h2 class="cartao__titulo" id="titulo-recusar">Recusar pedido</h2>
+            <p class="cartao__texto">O comprador recebe o motivo e a quantidade volta ao seu estoque.</p>
+            <form id="form-recusa" novalidate>
+              <div class="mb-3">
+                <label class="form-label" for="motivo-recusa">Motivo da recusa</label>
+                <select class="form-select" id="motivo-recusa" required aria-describedby="erro-motivo">
+                  <option value="Peça sem estoque físico" selected>Peça sem estoque físico</option>
+                  <option value="Peça com defeito ou avariada">Peça com defeito ou avariada</option>
+                  <option value="Dados do anúncio incorretos">Dados do anúncio incorretos (preço, código ou aplicação)</option>
+                  <option value="Não atendemos a modalidade escolhida">Não atendemos a modalidade escolhida</option>
+                  <option value="Outro motivo">Outro motivo</option>
+                </select>
+                <p class="erro-campo" id="erro-motivo" hidden>Escolha o motivo da recusa.</p>
+              </div>
+              <div class="mb-3">
+                <label class="form-label" for="mensagem-recusa">Mensagem ao comprador <span class="fw-normal texto-suave">(obrigatória em “Outro motivo”)</span></label>
+                <textarea class="form-control" id="mensagem-recusa" rows="3" maxlength="255"
+                  placeholder="Ex.: O alternador que tínhamos foi vendido no balcão. Podemos avisar quando chegar outro."
+                  aria-describedby="erro-mensagem-recusa contador-recusa"></textarea>
+                <div class="d-flex justify-content-between">
+                  <p class="erro-campo mb-0" id="erro-mensagem-recusa" hidden>Explique o motivo ao comprador.</p>
+                  <span class="form-text ms-auto" id="contador-recusa" aria-live="polite"></span>
+                </div>
+              </div>
+              <div class="d-flex flex-wrap gap-2">
+                <button type="submit" class="btn btn-contorno-vermelho" id="botao-confirmar-recusa" data-acao-pedido>Confirmar recusa</button>
+                <button type="button" class="btn btn-contorno-azul" id="botao-voltar-recusa" data-acao-pedido>Voltar</button>
+              </div>
+            </form>
+          </section>
+
+          <!-- Aceito, em preparação, pronto ou em entrega -->
+          <section class="cartao" id="cartao-apos-aceite" aria-labelledby="titulo-apos-aceite" hidden>
+            <h2 class="cartao__titulo" id="titulo-apos-aceite">Após o aceite</h2>
+            <p class="cartao__texto" id="texto-apos-aceite">Avance o pedido conforme o atendimento.</p>
+
+            <div class="d-flex flex-wrap gap-2" id="grupo-avancar">
+              <button type="button" class="btn btn-contorno-azul" id="botao-em-preparacao" data-acao-pedido>Marcar em preparação</button>
+              <button type="button" class="btn btn-contorno-azul" id="botao-pronto-retirada" data-acao-pedido>Marcar pronto para retirada</button>
+            </div>
+
+            <!-- Só para ENTREGA: registrar o envio -->
+            <form id="form-envio" class="mt-3" novalidate hidden>
+              <h3 class="cartao__subtitulo">Registrar envio</h3>
+              <div class="row g-3 mb-3">
+                <div class="col-sm-4">
+                  <label class="form-label" for="modalidade-envio">Como vai entregar</label>
+                  <select class="form-select" id="modalidade-envio">
+                    <option value="PROPRIA">Entrega própria</option>
+                    <option value="MOTOBOY">Motoboy</option>
+                    <option value="TRANSPORTADORA">Transportadora</option>
+                  </select>
+                </div>
+                <div class="col-sm-4" id="grupo-transportadora" hidden>
+                  <label class="form-label" for="transportadora">Transportadora</label>
+                  <input type="text" class="form-control" id="transportadora" maxlength="80" aria-describedby="erro-transportadora">
+                  <p class="erro-campo" id="erro-transportadora" hidden>Informe a transportadora.</p>
+                </div>
+                <div class="col-sm-4">
+                  <label class="form-label" for="codigo-rastreio">Código de rastreio <span class="fw-normal texto-suave">(se houver)</span></label>
+                  <input type="text" class="form-control" id="codigo-rastreio" maxlength="50" autocomplete="off">
+                </div>
+              </div>
+              <button type="submit" class="btn btn-azul" id="botao-enviar-pedido" data-acao-pedido>Marcar como enviado</button>
+            </form>
+
+            <!-- Só para ENTREGA já enviada -->
+            <div id="bloco-concluir-entrega" class="mt-1" hidden>
+              <button type="button" class="btn btn-verde" id="botao-concluir-entrega" data-acao-pedido>Confirmar entrega e concluir</button>
+            </div>
+
+            <!-- Só para RETIRADA -->
+            <hr id="separador-retirada">
+            <div id="bloco-retirada">
+              <h3 class="cartao__subtitulo">Confirmar retirada no balcão</h3>
+              <form id="form-retirada" novalidate>
+                <label class="form-label" for="codigo-retirada">Código informado pelo comprador</label>
+                <input type="text" class="form-control" id="codigo-retirada" maxlength="12" autocomplete="off"
+                  autocapitalize="characters" spellcheck="false" placeholder="Ex.: HP-3318"
+                  aria-describedby="dica-retirada erro-codigo">
+                <p class="form-text mt-1 mb-3" id="dica-retirada">Peça o código somente no momento da entrega da peça.</p>
+                <div id="erro-codigo" class="aviso-estado aviso-estado--erro mb-3" role="alert" hidden></div>
+                <button type="submit" class="btn btn-verde" id="botao-confirmar-retirada" data-acao-pedido>Confirmar retirada e concluir</button>
+              </form>
+            </div>
+          </section>
+
+          <!-- Concluído, recusado ou cancelado -->
+          <section class="cartao" id="cartao-situacao" aria-labelledby="situacao-titulo" hidden>
+            <h2 class="cartao__titulo" id="situacao-titulo">Situação</h2>
+            <p class="cartao__texto mb-0" id="situacao-texto"></p>
+          </section>
+        </div>
+
+        <!-- Coluna lateral -->
+        <div class="col-lg-4">
+          <section class="cartao" aria-labelledby="titulo-acompanhamento">
+            <h2 class="cartao__titulo" id="titulo-acompanhamento">Acompanhamento</h2>
+            <ol class="linha-tempo" id="linha-do-tempo"></ol>
+            <p class="small texto-erro mt-2 mb-0" id="motivo-encerramento" hidden></p>
+          </section>
+
+          <section class="cartao" aria-labelledby="titulo-conversa">
+            <div class="d-flex justify-content-between align-items-baseline gap-2">
+              <h2 class="cartao__titulo" id="titulo-conversa">Conversa com o comprador</h2>
+              <a class="small fw-semibold text-decoration-none text-nowrap" id="link-conversa-completa" href="../conta/conversas.html" style="color: var(--bp-azul);" hidden>Abrir conversa</a>
+            </div>
+            <div class="mensagens" id="mensagens" role="log" aria-live="polite" aria-label="Mensagens com o comprador" tabindex="0"></div>
+            <form id="form-mensagem" novalidate>
+              <label class="form-label" for="campo-mensagem">Sua mensagem</label>
+              <input type="text" class="form-control mb-1" id="campo-mensagem" maxlength="2000" autocomplete="off"
+                placeholder="Escreva para o comprador" aria-describedby="erro-mensagem">
+              <div class="d-flex justify-content-between mb-2">
+                <p class="erro-campo mb-0" id="erro-mensagem" hidden></p>
+                <span class="form-text ms-auto" id="contador-mensagem" aria-live="polite"></span>
+              </div>
+              <button type="submit" class="btn btn-azul" id="botao-enviar-mensagem">Enviar mensagem</button>
+            </form>
+          </section>
+        </div>
+      </div>
+
+      <p class="aviso-rodape mt-4 mb-0">Pagamento e frete são combinados diretamente com o comprador, fora da plataforma.</p>
+    </div>
+  </main>
+
+  <!-- Rodapé (conteúdo provisório, igual às outras telas) -->
+  <footer id="rodape" class="rodape py-4 mt-4">
+    <div class="container-fluid px-3 px-lg-4">
+      <p class="mb-2">Ambiente demonstrativo • lojas, preços e estoques fictícios</p>
+      <p class="mb-0">
+        <a href="../institucional/sobre.html">Busca Peça</a> •
+        <a href="../institucional/sobre.html#contato">Contato</a> •
+        <a href="../institucional/termos-de-uso.html">Termos de uso</a> •
+        <a href="../institucional/termos-de-uso.html#politica-de-privacidade">Privacidade</a>
+      </p>
+    </div>
+  </footer>
+
+  <script type="module" src="../../js/pages/minha-loja/pedido-recebido.js"></script>
+</body>
+</html>

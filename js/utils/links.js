@@ -12,7 +12,7 @@ export const PAGINAS = {
   comparar: 'pages/busca/comparar.html',
   login: 'pages/conta/login.html',
   favoritos: 'pages/conta/favoritos.html',
-  buscasSalvas: 'pages/conta/buscas-salvas.html',
+  buscasSalvas: 'pages/conta/favoritos.html#buscas-salvas',
   conversas: 'pages/conta/conversas.html',
   carrinho: 'pages/compra/carrinho.html',
   criarLoja: 'pages/minha-loja/criar-loja.html',

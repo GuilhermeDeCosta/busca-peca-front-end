@@ -1,5 +1,5 @@
 // Serviço da área administrativa: uma função por rota de /api/admin
-// (Documentação do Back-end v2, seção 5.12 • casos de uso BP1-49 e BP1-56 • ADR-006, 013).
+// (Documentação do Back-end v2, seção 5.12 • casos de uso BP1-49, BP1-54 e BP1-56 • ADR-006, 013).
 //
 // QUANDO A API ESTIVER PRONTA: troque USAR_SIMULACAO para false e apague o
 // bloco "SIMULAÇÃO" do fim do arquivo.
@@ -120,6 +120,95 @@ export async function alterarPermissoesPapel(idPapel, { permissoes, justificativ
   return api.put(`/admin/papeis/${encodeURIComponent(idPapel)}/permissoes`, { permissoes, justificativa });
 }
 
+// ---------------------------------------------------------------------------
+// Termos e políticas — /api/admin/termos (BP1-54, ADR-013) • permissão PUBLICAR_TERMOS
+//
+// Tipos: TERMOS_USO, POLITICA_PRIVACIDADE e TERMOS_VENDEDOR (este último ainda
+// não está no CHECK da tabela termo_uso).
+// Status: RASCUNHO → AGENDADA (vigência no futuro) ou VIGENTE → ARQUIVADA
+// (quando outra versão do mesmo documento entra em vigor). Hoje a tabela só
+// tem a coluna "vigente"; os demais status e campos abaixo são novos.
+//
+// Formato esperado de cada versão (TermoAdminResponse):
+//   {
+//     idTermo, tipo, versao: '1.3', status: 'RASCUNHO',
+//     dataVigencia: '2026-12-01',          // data em que entra (ou entrou) em vigor
+//     dataPublicacao: '2026-11-20T10:00:00', // null enquanto for rascunho
+//     totalAceites: 1198,                  // contagem de aceite_termo
+//     resumoMudancas, exigeNovoAceite: true, avisarUsuarios: true,
+//     nomeArquivo: 'termos-v1.3.md', tamanhoArquivo: 18432, arquivoUrl: null,
+//     conteudo: '## 1. ...'                // só no detalhe (GET /admin/termos/{id})
+//   }
+// ---------------------------------------------------------------------------
+
+/** GET /api/admin/termos — versões de todos os documentos (sem o conteúdo). */
+export async function listarTermos() {
+  if (USAR_SIMULACAO) {
+    await esperar(450);
+    return termosSimulados.map(({ conteudo, ...resto }) => structuredClone(resto));
+  }
+  const dados = await api.get('/admin/termos');
+  return Array.isArray(dados) ? dados : (dados?.itens || []);
+}
+
+/** GET /api/admin/termos/{id} — ROTA NOVA: uma versão com o conteúdo (prévia, comparação e download). */
+export async function obterTermo(idTermo) {
+  if (USAR_SIMULACAO) {
+    await esperar(300);
+    return structuredClone(termoSimulado(idTermo));
+  }
+  return api.get(`/admin/termos/${encodeURIComponent(idTermo)}`);
+}
+
+// Monta o corpo multipart: parte "dados" (JSON) + parte "arquivo" (PDF ou Markdown, opcional).
+// No Spring: @RequestPart("dados") TermoRequest dados, @RequestPart(value = "arquivo", required = false) MultipartFile arquivo
+function corpoTermo(dados, arquivo) {
+  const corpo = new FormData();
+  corpo.append('dados', new Blob([JSON.stringify(dados)], { type: 'application/json' }));
+  if (arquivo) corpo.append('arquivo', arquivo, arquivo.name);
+  return corpo;
+}
+
+/**
+ * POST /api/admin/termos — cria uma versão em rascunho (multipart).
+ * dados: { tipo, versao, dataVigencia: 'AAAA-MM-DD', resumoMudancas, exigeNovoAceite, avisarUsuarios, conteudo? }
+ * "conteudo" vai junto quando o arquivo é Markdown (o front já leu o texto).
+ * 409 VERSAO_EM_USO quando tipo + versão já existem (uk_termo_uso_tipo_versao).
+ */
+export async function criarRascunhoTermo(dados, arquivo = null) {
+  if (USAR_SIMULACAO) return simularSalvarTermo(null, dados, arquivo);
+  return api.post('/admin/termos', corpoTermo(dados, arquivo));
+}
+
+/** PUT /api/admin/termos/{id} — ROTA NOVA: altera um rascunho (multipart, mesmo corpo do POST). */
+export async function atualizarRascunhoTermo(idTermo, dados, arquivo = null) {
+  if (USAR_SIMULACAO) return simularSalvarTermo(idTermo, dados, arquivo);
+  return api.put(`/admin/termos/${encodeURIComponent(idTermo)}`, corpoTermo(dados, arquivo));
+}
+
+/** DELETE /api/admin/termos/{id} — ROTA NOVA: exclui um rascunho (409 se já foi publicado). */
+export async function excluirRascunhoTermo(idTermo) {
+  if (USAR_SIMULACAO) {
+    await esperar(400);
+    const t = termoSimulado(idTermo);
+    if (t.status !== 'RASCUNHO') throw { status: 409, erro: 'STATUS_INVALIDO', mensagem: 'Só rascunhos podem ser excluídos.' };
+    termosSimulados.splice(termosSimulados.indexOf(t), 1);
+    return;
+  }
+  await api.delete(`/admin/termos/${encodeURIComponent(idTermo)}`);
+}
+
+/**
+ * PATCH /api/admin/termos/{id}/publicar — publica o rascunho (BP1-54).
+ * Vigência hoje → VIGENTE (a anterior vira ARQUIVADA); no futuro → AGENDADA.
+ * Com exigeNovoAceite, todos precisam aceitar de novo no próximo acesso.
+ * Devolve a versão atualizada + contasAfetadas (quantas contas vão precisar aceitar).
+ */
+export async function publicarTermo(idTermo) {
+  if (USAR_SIMULACAO) return simularPublicarTermo(idTermo);
+  return api.patch(`/admin/termos/${encodeURIComponent(idTermo)}/publicar`);
+}
+
 // =========================================================================
 // SIMULAÇÃO — apagar este bloco quando a API estiver pronta.
 // Contas do protótipo (Fluxo E • Usuários). O admin logado da simulação é a
@@ -223,4 +312,115 @@ async function simularPapeis(id, papeis, justificativa) {
   u.papeis = [...papeis];
   (historicoSimulado[u.idUsuario] ??= []).push({ acao: 'ALTERAR_PAPEIS', data: new Date().toISOString(), responsavel: 'Equipe Busca Peça', justificativa });
   return structuredClone(u);
+}
+
+// ---------- Simulação: termos e políticas ----------
+
+const TERMOS_USO_12 = `## 1. Sobre o Busca Peça
+O Busca Peça conecta oficinas e lojas de autopeças para comprar e vender peças, inclusive o estoque parado das oficinas.
+
+## 2. Cadastro e conta
+Cada pessoa ou empresa tem uma conta com CPF ou CNPJ. A mesma conta compra e, ao criar uma loja, também vende.
+
+## 3. Anúncios
+A loja é responsável pelas informações do anúncio: código da peça, condição, aplicação, preço e estoque.
+
+## 4. Pagamento e entrega
+Pagamento, frete e retirada são combinados diretamente entre as partes, fora da plataforma.
+
+## 5. Pedidos
+Cada pedido é aceito ou recusado pela loja. Recusas e cancelamentos devolvem a quantidade ao estoque.
+
+## 6. Avaliações
+Depois de concluir um pedido, o comprador pode avaliar a loja com uma nota de 1 a 5.
+
+## 7. Suspensão de contas
+Contas que descumprirem estes termos podem ser suspensas pela moderação.`;
+
+const TERMOS_USO_13 = `## 1. Sobre o Busca Peça
+O Busca Peça conecta oficinas e lojas de autopeças para comprar e vender peças, inclusive o estoque parado das oficinas.
+
+## 2. Cadastro e conta
+Cada pessoa ou empresa tem uma conta com CPF ou CNPJ. A mesma conta compra e, ao criar uma loja, também vende.
+
+## 3. Anúncios
+A loja é responsável pelas informações do anúncio: código da peça, condição, aplicação, preço e estoque.
+
+## 4. Pagamento e entrega
+Nesta fase, pagamento, frete e retirada são combinados diretamente entre as partes, fora da plataforma. Quando o pagamento integrado for lançado, esta seção será atualizada e um novo aceite será solicitado.
+
+## 5. Pedidos
+Cada pedido é aceito ou recusado pela loja. Recusas e cancelamentos devolvem a quantidade ao estoque.
+
+## 6. Avaliações
+Depois de concluir um pedido, o comprador pode avaliar a loja com uma nota de 1 a 5.
+
+- A avaliação deve tratar da peça e do atendimento.
+- Avaliações técnicas (aplicação, compatibilidade, defeito) precisam informar o veículo.
+- Avaliações com ofensas ou dados pessoais são removidas pela moderação.
+
+## 7. Suspensão de contas
+Contas que descumprirem estes termos podem ser suspensas pela moderação, sempre com justificativa registrada e direito de resposta pelo suporte.`;
+
+const termosSimulados = [
+  { idTermo: 5, tipo: 'TERMOS_USO', versao: '1.2', status: 'VIGENTE', dataVigencia: '2026-10-01', dataPublicacao: '2026-09-24T10:00:00-03:00',
+    totalAceites: 1198, resumoMudancas: 'Regras de pedidos e devolução ao estoque.', exigeNovoAceite: true, avisarUsuarios: true,
+    nomeArquivo: 'termos-v1.2.md', tamanhoArquivo: 16896, arquivoUrl: null, conteudo: TERMOS_USO_12 },
+  { idTermo: 6, tipo: 'POLITICA_PRIVACIDADE', versao: '1.2', status: 'VIGENTE', dataVigencia: '2026-10-01', dataPublicacao: '2026-09-24T10:05:00-03:00',
+    totalAceites: 1198, resumoMudancas: 'Prazo de guarda dos registros de auditoria.', exigeNovoAceite: true, avisarUsuarios: true,
+    nomeArquivo: 'privacidade-v1.2.md', tamanhoArquivo: 12288, arquivoUrl: null,
+    conteudo: '## 1. Dados coletados\nNome, documento, contato, endereço e histórico de pedidos.\n\n## 2. Uso dos dados\nOs dados servem para operar a conta, os pedidos e a segurança da plataforma.\n\n## 3. Guarda\nRegistros de auditoria ficam guardados por 5 anos, sem dados pessoais desnecessários.' },
+  { idTermo: 3, tipo: 'TERMOS_USO', versao: '1.1', status: 'ARQUIVADA', dataVigencia: '2026-06-15', dataPublicacao: '2026-06-08T10:00:00-03:00',
+    totalAceites: 842, resumoMudancas: 'Inclusão das regras de anúncios.', exigeNovoAceite: true, avisarUsuarios: false,
+    nomeArquivo: 'termos-v1.1.md', tamanhoArquivo: 14336, arquivoUrl: null,
+    conteudo: '## 1. Sobre o Busca Peça\nO Busca Peça conecta oficinas e lojas de autopeças.\n\n## 2. Anúncios\nA loja é responsável pelas informações do anúncio.' },
+  { idTermo: 4, tipo: 'TERMOS_VENDEDOR', versao: '1.0', status: 'VIGENTE', dataVigencia: '2026-06-01', dataPublicacao: '2026-05-25T10:00:00-03:00',
+    totalAceites: 214, resumoMudancas: 'Primeira versão.', exigeNovoAceite: true, avisarUsuarios: false,
+    nomeArquivo: 'termos-vendedor-v1.0.pdf', tamanhoArquivo: 98304, arquivoUrl: null,
+    conteudo: '## 1. Obrigações da loja\nManter estoque e preços atualizados e responder aos pedidos.\n\n## 2. Sem comissões\nNenhuma taxa ou comissão é cobrada nesta fase.' },
+  { idTermo: 7, tipo: 'TERMOS_USO', versao: '1.3', status: 'RASCUNHO', dataVigencia: '2026-12-01', dataPublicacao: null,
+    totalAceites: 0, resumoMudancas: 'Ajuste na seção de pagamento e entrega; inclusão de regras para avaliações técnicas.',
+    exigeNovoAceite: true, avisarUsuarios: true, nomeArquivo: 'termos-v1.3.md', tamanhoArquivo: 18432, arquivoUrl: null, conteudo: TERMOS_USO_13 },
+];
+
+function termoSimulado(id) {
+  const t = termosSimulados.find((x) => x.idTermo === Number(id));
+  if (!t) throw { status: 404, erro: 'NAO_ENCONTRADO', mensagem: 'Versão não encontrada.' };
+  return t;
+}
+
+async function simularSalvarTermo(idTermo, dados, arquivo) {
+  await esperar(600);
+  const repetida = termosSimulados.find((t) => t.tipo === dados.tipo && t.versao === dados.versao && t.idTermo !== Number(idTermo));
+  if (repetida) {
+    throw { status: 409, erro: 'VERSAO_EM_USO', mensagem: `Já existe uma versão ${dados.versao} ${repetida.status === 'RASCUNHO' ? 'em rascunho' : 'publicada'} para este documento.` };
+  }
+  let termo = idTermo ? termoSimulado(idTermo) : null;
+  if (termo && termo.status !== 'RASCUNHO') throw { status: 409, erro: 'STATUS_INVALIDO', mensagem: 'Só rascunhos podem ser alterados.' };
+  if (!termo) {
+    termo = { idTermo: Math.max(...termosSimulados.map((t) => t.idTermo)) + 1, status: 'RASCUNHO', dataPublicacao: null, totalAceites: 0, arquivoUrl: null, conteudo: '' };
+    termosSimulados.push(termo);
+  }
+  Object.assign(termo, {
+    tipo: dados.tipo, versao: dados.versao, dataVigencia: dados.dataVigencia, resumoMudancas: dados.resumoMudancas,
+    exigeNovoAceite: dados.exigeNovoAceite, avisarUsuarios: dados.avisarUsuarios,
+  });
+  if (arquivo) Object.assign(termo, { nomeArquivo: arquivo.name, tamanhoArquivo: arquivo.size, conteudo: dados.conteudo || '' });
+  return structuredClone(termo);
+}
+
+async function simularPublicarTermo(idTermo) {
+  await esperar(700);
+  const termo = termoSimulado(idTermo);
+  if (termo.status !== 'RASCUNHO') throw { status: 409, erro: 'STATUS_INVALIDO', mensagem: 'Esta versão já foi publicada.' };
+  if (!termo.nomeArquivo) throw { status: 400, erro: 'DADOS_INVALIDOS', mensagem: 'Envie o texto completo antes de publicar.' };
+  const hoje = new Date().toISOString().slice(0, 10);
+  termo.dataPublicacao = new Date().toISOString();
+  if (termo.dataVigencia <= hoje) {
+    termosSimulados.filter((t) => t.tipo === termo.tipo && t.status === 'VIGENTE').forEach((t) => { t.status = 'ARQUIVADA'; });
+    termo.status = 'VIGENTE';
+  } else {
+    termo.status = 'AGENDADA';
+  }
+  return { ...structuredClone(termo), contasAfetadas: termo.exigeNovoAceite ? (termo.tipo === 'TERMOS_VENDEDOR' ? 214 : 1248) : 0 };
 }

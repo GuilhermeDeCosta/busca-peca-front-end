@@ -114,7 +114,7 @@ const notificacoesSimuladas = [
     mensagem: 'Oficina Rumo Certo pediu 1 Alternador Bosch 90A (BP-2081). Responda para não perder a venda.',
   },
   {
-    idNotificacao: 7, tipo: 'NOVA_MENSAGEM', lida: false, dataEnvio: horario(0, 10, 5), idReferencia: 503,
+    idNotificacao: 7, tipo: 'NOVA_MENSAGEM', lida: false, dataEnvio: horario(0, 10, 5), idReferencia: 504,
     titulo: 'Nova mensagem de Autopeças Avenida',
     mensagem: '“Conferido: conector original de 3 pinos…” sobre o pedido BP-1042.',
   },

@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Disputas • Administração • Busca Peças</title>
+  <meta name="robots" content="noindex, nofollow">
+
+  <!-- Bibliotecas por CDN com versão fixa (ADR-014) -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+  <!-- CSS do projeto -->
+  <link rel="stylesheet" href="../../css/variaveis.css">
+  <link rel="stylesheet" href="../../css/base.css">
+  <link rel="stylesheet" href="../../css/componentes.css">
+
+  <!-- Cabeçalho da área administrativa (vem antes do script da página, que usa window.Cabecalho) -->
+  <script src="../../js/components/cabecalho-admin.js" defer></script>
+
+  <!-- Estilos só desta tela (valores depois da vírgula em var() são o fallback) -->
+  <style>
+    :root {
+      --bp-azul: var(--azul-escuro, #0f3d68);
+      --bp-verde: var(--verde, #1f7a3a);
+      --bp-verde-hover: var(--verde-hover, #186130);
+      --bp-fundo: var(--cinza-fundo, #f3f5f8);
+      --bp-borda: var(--cinza-borda, #dfe4ea);
+      --bp-texto: var(--texto, #1d2733);
+      --bp-texto-suave: var(--texto-suave, #5b6878);
+      --bp-vermelho: #b42318;
+      --bp-ambar: #8a5a00;
+      --bp-cabecalho-tabela: #e8eef6;
+    }
+
+    body { background: var(--bp-fundo); }
+    .admin [hidden] { display: none !important; }
+
+    .admin .breadcrumb { font-size: .8125rem; }
+    .admin .breadcrumb a { color: var(--bp-texto-suave); text-decoration: none; }
+    .admin .breadcrumb a:hover { color: var(--bp-azul); text-decoration: underline; }
+    .admin .breadcrumb-item.active { color: var(--bp-texto-suave); }
+
+    .admin__titulo { color: var(--bp-azul); font-weight: 700; font-size: 2rem; }
+    .texto-suave { color: var(--bp-texto-suave); }
+    .texto-erro { color: var(--bp-vermelho); }
+
+    .cartao { background: #fff; border: 1px solid var(--bp-borda); border-radius: .75rem; padding: 1.25rem; }
+    @media (min-width: 768px) { .cartao { padding: 1.5rem; } }
+    .cartao__titulo { color: var(--bp-azul); font-weight: 700; font-size: 1.25rem; margin-bottom: 1rem; }
+    .cartao__titulo:focus-visible { outline: 3px solid #f2b705; outline-offset: 2px; }
+
+    /* Números */
+    .numero { background: #fff; border: 1px solid var(--bp-borda); border-radius: .75rem; padding: 1.25rem; height: 100%; }
+    .numero__rotulo { color: var(--bp-texto-suave); font-size: .8125rem; margin-bottom: .25rem; }
+    .numero__valor { color: var(--bp-azul); font-weight: 700; font-size: 1.75rem; line-height: 1.2; margin-bottom: .375rem; }
+    .numero__info { font-size: .75rem; margin: 0; min-height: 1.1em; color: var(--bp-texto-suave); }
+    .numero__info--verde { color: var(--bp-verde); }
+
+    /* Fila */
+    .tabela { font-size: .8125rem; margin: 0; min-width: 48rem; }
+    .tabela thead th { background: var(--bp-cabecalho-tabela); color: var(--bp-texto-suave); font-weight: 500; border: 0; padding: .875rem .75rem; white-space: nowrap; }
+    .tabela td { padding: .9rem .75rem; vertical-align: middle; border-color: var(--bp-borda); color: var(--bp-texto); }
+    .tabela td:nth-child(-n+2) { white-space: nowrap; }
+    .linha-disputa { cursor: pointer; }
+    .linha-disputa:hover td { background: #f7f9fc; }
+    .tabela tr.linha--selecionada td { background: #eaf2fc; }
+    .link-acao { border: 0; background: none; padding: 0; color: var(--bp-texto); font-size: .8125rem; }
+    .link-acao:hover { color: var(--bp-azul); text-decoration: underline; }
+    .filtro-fila { max-width: 13rem; }
+
+    .etiqueta { display: inline-block; border-radius: .375rem; padding: .25rem .55rem; font-size: .75rem; font-weight: 600; white-space: nowrap; }
+    .etiqueta--sucesso { background: #e6f4ea; color: #17633a; }
+    .etiqueta--alerta { background: #fdf1d6; color: var(--bp-ambar); }
+    .etiqueta--erro { background: #fdecea; color: var(--bp-vermelho); }
+    .etiqueta--info { background: #e8f0fb; color: #1f4f7f; }
+
+    /* Detalhe */
+    .lista-dados { margin: 0; font-size: .8125rem; }
+    .linha-dado { display: grid; grid-template-columns: 1fr; padding: .4rem 0; }
+    @media (min-width: 576px) { .linha-dado { grid-template-columns: 9.5rem 1fr; column-gap: 1rem; } }
+    .linha-dado dt { color: var(--bp-texto-suave); font-weight: 400; }
+    .linha-dado dd { margin: 0; font-weight: 500; overflow-wrap: anywhere; }
+    .subtitulo { font-size: .8125rem; font-weight: 700; color: var(--bp-texto); margin-bottom: .5rem; }
+
+    .evidencias { display: grid; grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr)); gap: .5rem; }
+    .evidencia {
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .125rem;
+      background: #e8eef6; border-radius: .5rem; padding: 1rem .5rem; text-align: center; text-decoration: none; min-height: 5rem;
+    }
+    a.evidencia:hover { background: #dbe5f2; }
+    a.evidencia:focus-visible { outline: 3px solid #f2b705; outline-offset: 2px; }
+    .evidencia__icone { color: #7d8fa6; font-size: 1.1rem; }
+    .evidencia__rotulo { color: var(--bp-texto-suave); font-size: .6875rem; }
+    .evidencia__nome { color: var(--bp-azul); font-weight: 600; font-size: .75rem; overflow-wrap: anywhere; }
+    .evidencia--sem-link { cursor: default; }
+
+    .solicitacoes { list-style: none; padding: 0; margin: 0; font-size: .8125rem; }
+    .solicitacoes li { border-left: 3px solid #c9d9ef; padding-left: .75rem; margin-bottom: .5rem; }
+
+    .mensagens-historico { list-style: none; padding: 0; margin: 0; }
+    .mensagem-historico + .mensagem-historico { margin-top: 1rem; }
+    .mensagem-historico__meta { color: var(--bp-texto-suave); font-size: .75rem; margin: 0 0 .375rem; }
+    .mensagem-historico__texto { font-size: .8125rem; margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+
+    /* Decisão */
+    .admin .form-label, .admin legend.form-label { font-size: .8125rem; font-weight: 600; color: var(--bp-texto); margin-bottom: .375rem; }
+    .admin .form-control { font-size: .875rem; border-color: var(--bp-borda); padding: .625rem .75rem; }
+    .admin .form-check-label { font-size: .8125rem; }
+    .admin .form-check-input:checked + .form-check-label { font-weight: 600; }
+    .erro-campo { font-size: .75rem; color: var(--bp-vermelho); margin: .25rem 0 0; }
+
+    .admin .btn { font-weight: 600; font-size: .875rem; padding: .5rem 1rem; min-height: 2.5rem; border-radius: .375rem; }
+    .btn-verde {
+      --bs-btn-color: #fff; --bs-btn-bg: var(--bp-verde); --bs-btn-border-color: var(--bp-verde);
+      --bs-btn-hover-color: #fff; --bs-btn-hover-bg: var(--bp-verde-hover); --bs-btn-hover-border-color: var(--bp-verde-hover);
+      --bs-btn-active-color: #fff; --bs-btn-active-bg: var(--bp-verde-hover); --bs-btn-active-border-color: var(--bp-verde-hover);
+      --bs-btn-disabled-color: #fff; --bs-btn-disabled-bg: #8fb99c; --bs-btn-disabled-border-color: #8fb99c;
+      border-color: var(--bs-btn-border-color);
+    }
+    .btn-contorno-azul {
+      --bs-btn-color: var(--bp-azul); --bs-btn-bg: #fff; --bs-btn-border-color: var(--bp-borda);
+      --bs-btn-hover-color: var(--bp-azul); --bs-btn-hover-bg: #f4f7fb; --bs-btn-hover-border-color: #c9d3df;
+      --bs-btn-active-color: var(--bp-azul); --bs-btn-active-bg: #eef3f9; --bs-btn-active-border-color: #c9d3df;
+      --bs-btn-disabled-color: var(--bp-texto-suave); --bs-btn-disabled-bg: #fff; --bs-btn-disabled-border-color: var(--bp-borda);
+      border-color: var(--bs-btn-border-color);
+    }
+    .link-acao:focus-visible, .admin .btn:focus-visible, .admin .form-control:focus-visible, .admin .form-select:focus-visible,
+    .admin .form-check-input:focus-visible { outline: 3px solid #f2b705; outline-offset: 2px; }
+
+    .aviso { border-radius: .5rem; padding: .875rem 1rem; font-size: .8125rem; }
+    .aviso--alerta { background: #fdf1d6; color: var(--bp-ambar); }
+    .aviso--erro { background: #fdecea; color: var(--bp-vermelho); }
+    .aviso--info { background: #e8f0fb; color: #1f4f7f; }
+
+    .aviso-estado { border-radius: .5rem; padding: 1rem 1.125rem; font-size: .8125rem; }
+    .aviso-estado__titulo { font-weight: 700; font-size: .875rem; margin-bottom: .25rem; }
+    .aviso-estado--sucesso { background: #e6f4ea; color: #17633a; }
+    .aviso-estado--erro { background: #fdecea; color: var(--bp-vermelho); }
+    .aviso-estado--confirmar { background: #f4f7fb; border: 1px solid var(--bp-borda); color: var(--bp-texto); }
+  </style>
+</head>
+<body class="d-flex flex-column min-vh-100">
+
+  <!-- Cabeçalho: preenchido por js/components/cabecalho-admin.js ("Disputas" fica marcado pela página) -->
+  <header id="cabecalho"></header>
+
+  <!-- Área administrativa • Fluxo E • BP1-35 • /api/admin/disputas -->
+  <main id="conteudo" class="admin flex-grow-1 py-4">
+    <div class="container-fluid px-3 px-lg-4">
+
+      <nav aria-label="Você está em">
+        <ol class="breadcrumb mb-4">
+          <li class="breadcrumb-item"><a href="usuarios.html">Administração</a></li>
+          <li class="breadcrumb-item active" aria-current="page">Disputas</li>
+        </ol>
+      </nav>
+
+      <h1 class="admin__titulo mb-1">Disputas</h1>
+      <p class="texto-suave mb-4">Medie desacordos entre comprador e loja quando não houver acordo pela conversa.</p>
+
+      <!-- Sem login de admin ou sem permissão -->
+      <div id="acesso-restrito" class="aviso aviso--alerta" role="alert" hidden>
+        <p class="mb-2 fw-semibold">Acesso restrito</p>
+        <p class="mb-0"></p>
+      </div>
+
+      <div id="conteudo-admin">
+
+        <!-- Números -->
+        <section class="row g-3 mb-4" aria-label="Resumo das disputas">
+          <div class="col-md-4">
+            <div class="numero">
+              <p class="numero__rotulo">Abertas</p>
+              <p class="numero__valor" id="resumo-abertas">…</p>
+              <p class="numero__info" id="resumo-abertas-info"></p>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="numero">
+              <p class="numero__rotulo">Em análise</p>
+              <p class="numero__valor" id="resumo-analise">…</p>
+              <p class="numero__info">—</p>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="numero">
+              <p class="numero__rotulo">Resolvidas no mês</p>
+              <p class="numero__valor" id="resumo-resolvidas">…</p>
+              <p class="numero__info numero__info--verde" id="resumo-resolvidas-info"></p>
+            </div>
+          </div>
+        </section>
+
+        <!-- Fila -->
+        <section class="cartao mb-4" id="cartao-fila" aria-labelledby="titulo-fila" aria-busy="true">
+          <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+            <h2 class="cartao__titulo mb-0" id="titulo-fila">Fila de disputas</h2>
+            <div class="d-flex align-items-center gap-2">
+              <label class="small texto-suave text-nowrap" for="filtro-status">Mostrar</label>
+              <select class="form-select form-select-sm filtro-fila" id="filtro-status">
+                <option value="">Todas</option>
+                <option value="ABERTA">Abertas</option>
+                <option value="EM_MEDIACAO">Em análise</option>
+                <option value="ENCERRADA">Resolvidas</option>
+              </select>
+            </div>
+          </div>
+          <div class="aviso aviso--erro mb-3" id="erro-fila" role="alert" hidden>
+            <span id="erro-fila-texto"></span>
+            <button type="button" class="btn btn-link btn-sm p-0 ms-1 align-baseline fw-semibold texto-erro" id="botao-tentar-fila" style="min-height: 0;">Tentar de novo</button>
+          </div>
+          <div class="table-responsive">
+            <table class="table tabela">
+              <caption class="visually-hidden">Disputas com pedido, partes, motivo, data de abertura e status. Clique em uma linha para abrir.</caption>
+              <thead>
+                <tr><th scope="col">Disputa</th><th scope="col">Pedido</th><th scope="col">Partes</th><th scope="col">Motivo</th><th scope="col">Aberta em</th><th scope="col">Status</th></tr>
+              </thead>
+              <tbody id="corpo-disputas"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <div class="row g-4">
+
+          <!-- Detalhe e conversa -->
+          <div class="col-lg-7 d-flex flex-column gap-4">
+            <section class="cartao" id="cartao-detalhe" aria-labelledby="titulo-detalhe">
+              <div id="detalhe-vazio">
+                <p class="small texto-suave mb-0">Escolha uma disputa na fila para ver os detalhes e registrar a decisão.</p>
+              </div>
+              <div id="detalhe" hidden>
+                <h2 class="cartao__titulo mb-1" id="titulo-detalhe" tabindex="-1">Disputa</h2>
+                <p class="small texto-suave mb-3" id="sub-detalhe"></p>
+                <dl class="lista-dados mb-3" id="dados-detalhe"></dl>
+
+                <div id="bloco-solicitacoes" class="mb-3" hidden>
+                  <p class="subtitulo">Pedidos de informação</p>
+                  <ul class="solicitacoes" id="lista-solicitacoes"></ul>
+                </div>
+
+                <div id="bloco-evidencias" hidden>
+                  <p class="subtitulo">Evidências</p>
+                  <div class="evidencias" id="lista-evidencias"></div>
+                </div>
+              </div>
+            </section>
+
+            <section class="cartao" id="cartao-conversa" aria-labelledby="titulo-conversa" hidden>
+              <h2 class="cartao__titulo mb-1" id="titulo-conversa">Histórico da conversa</h2>
+              <p class="small texto-suave mb-3">Últimas mensagens do pedido, somente leitura.</p>
+              <ul class="mensagens-historico" id="lista-mensagens"></ul>
+            </section>
+          </div>
+
+          <!-- Decisão -->
+          <div class="col-lg-5">
+            <section class="cartao" id="cartao-decisao" aria-labelledby="titulo-decisao" hidden>
+              <h2 class="cartao__titulo" id="titulo-decisao">Decisão da mediação</h2>
+
+              <div id="decisao-conteudo" hidden>
+                <!-- Disputa encerrada: só leitura -->
+                <div id="decisao-registrada" hidden></div>
+
+                <form id="form-decisao" novalidate>
+                  <fieldset class="mb-3" aria-describedby="erro-resultado">
+                    <legend class="visually-hidden">Resultado da mediação</legend>
+                    <div class="form-check mb-2">
+                      <input class="form-check-input" type="radio" name="resultado" id="resultado-comprador" value="FAVORAVEL_COMPRADOR">
+                      <label class="form-check-label" for="resultado-comprador">Favorável ao comprador • devolução e reembolso combinados</label>
+                    </div>
+                    <div class="form-check mb-2">
+                      <input class="form-check-input" type="radio" name="resultado" id="resultado-loja" value="FAVORAVEL_LOJA">
+                      <label class="form-check-label" for="resultado-loja">Favorável à loja • encerrar sem devolução</label>
+                    </div>
+                    <div class="form-check">
+                      <input class="form-check-input" type="radio" name="resultado" id="resultado-acordo" value="ACORDO_PARCIAL">
+                      <label class="form-check-label" for="resultado-acordo">Acordo parcial • troca da peça</label>
+                    </div>
+                    <p class="erro-campo" id="erro-resultado" hidden>Escolha o resultado da mediação.</p>
+                  </fieldset>
+
+                  <div class="mb-3">
+                    <label class="form-label" for="justificativa">Justificativa (enviada às duas partes)</label>
+                    <textarea class="form-control" id="justificativa" rows="4" maxlength="2000"
+                      placeholder="Explique a decisão com base no relato, na resposta da loja e nas evidências." aria-describedby="contador-justificativa"></textarea>
+                    <p class="small texto-suave text-end mt-1 mb-0" id="contador-justificativa" aria-live="polite"></p>
+                  </div>
+
+                  <div class="mb-3" id="grupo-prazo" hidden>
+                    <label class="form-label" for="prazo-devolucao" id="rotulo-prazo">Prazo para devolução</label>
+                    <input type="date" class="form-control" id="prazo-devolucao" style="max-width: 12rem;" aria-describedby="erro-prazo">
+                    <p class="erro-campo" id="erro-prazo" hidden>Escolha uma data a partir de hoje.</p>
+                  </div>
+
+                  <div class="form-check mb-3" id="grupo-pausar" hidden>
+                    <input class="form-check-input" type="checkbox" id="pausar-anuncio">
+                    <label class="form-check-label" for="pausar-anuncio" id="rotulo-pausar">Pausar o anúncio até a correção da descrição</label>
+                  </div>
+
+                  <div class="d-flex flex-wrap gap-2" id="botoes-decisao">
+                    <button type="submit" class="btn btn-verde" id="botao-registrar">Registrar decisão</button>
+                    <button type="button" class="btn btn-contorno-azul" id="botao-pedir-info">Pedir mais informações</button>
+                  </div>
+
+                  <!-- Confirmação: a decisão encerra a disputa e notifica as partes -->
+                  <div class="aviso-estado aviso-estado--confirmar" id="confirmacao-decisao" role="alertdialog"
+                    aria-labelledby="titulo-confirmar-decisao" aria-describedby="texto-decisao" hidden>
+                    <p class="aviso-estado__titulo" id="titulo-confirmar-decisao">Confirmar decisão</p>
+                    <p class="mb-3" id="texto-decisao"></p>
+                    <div class="d-flex flex-wrap gap-2">
+                      <button type="button" class="btn btn-verde" id="botao-confirmar-decisao">Confirmar decisão</button>
+                      <button type="button" class="btn btn-contorno-azul" id="botao-voltar-decisao">Voltar</button>
+                    </div>
+                  </div>
+                </form>
+
+                <!-- Pedir mais informações -->
+                <form id="form-informacoes" novalidate hidden>
+                  <fieldset class="mb-3" aria-describedby="erro-destinatarios">
+                    <legend class="form-label">Pedir informações a</legend>
+                    <div class="form-check form-check-inline">
+                      <input class="form-check-input" type="checkbox" name="destinatario" id="destinatario-comprador" value="COMPRADOR" checked>
+                      <label class="form-check-label" for="destinatario-comprador">Comprador</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                      <input class="form-check-input" type="checkbox" name="destinatario" id="destinatario-loja" value="LOJA" checked>
+                      <label class="form-check-label" for="destinatario-loja">Loja</label>
+                    </div>
+                    <p class="erro-campo" id="erro-destinatarios" hidden>Escolha para quem enviar.</p>
+                  </fieldset>
+                  <div class="mb-3">
+                    <label class="form-label" for="mensagem-info">O que você precisa saber</label>
+                    <textarea class="form-control" id="mensagem-info" rows="3" maxlength="1000"
+                      placeholder="Ex.: envie uma foto da etiqueta da peça e a nota da compra." aria-describedby="erro-info"></textarea>
+                    <p class="erro-campo" id="erro-info" hidden>Escreva o pedido com pelo menos 10 caracteres.</p>
+                  </div>
+                  <p class="small texto-suave">A disputa passa para “Em análise” e as partes recebem uma notificação.</p>
+                  <div class="d-flex flex-wrap gap-2">
+                    <button type="submit" class="btn btn-verde" id="botao-enviar-info">Enviar pedido</button>
+                    <button type="button" class="btn btn-contorno-azul" id="botao-voltar-info">Voltar</button>
+                  </div>
+                </form>
+
+                <!-- Resultado: decisão registrada, justificativa obrigatória… -->
+                <div id="resultado-decisao" class="aviso-estado mt-3" role="status" aria-live="polite" hidden></div>
+              </div>
+            </section>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Rodapé (conteúdo provisório, igual às outras telas) -->
+  <footer id="rodape" class="rodape py-4 mt-4">
+    <div class="container-fluid px-3 px-lg-4">
+      <p class="mb-2">Ambiente demonstrativo • lojas, preços e estoques fictícios</p>
+      <p class="mb-0">
+        <a href="../institucional/sobre.html">Busca Peça</a> •
+        <a href="../institucional/sobre.html#contato">Contato</a> •
+        <a href="../institucional/termos-de-uso.html">Termos de uso</a> •
+        <a href="../institucional/termos-de-uso.html#politica-de-privacidade">Privacidade</a>
+      </p>
+    </div>
+  </footer>
+
+  <script type="module" src="../../js/pages/admin/disputas.js"></script>
+</body>
+</html>

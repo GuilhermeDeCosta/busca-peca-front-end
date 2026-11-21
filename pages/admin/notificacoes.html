@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Notificações gerais • Administração • Busca Peças</title>
+  <meta name="robots" content="noindex, nofollow">
+
+  <!-- Bibliotecas por CDN com versão fixa (ADR-014) -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+  <!-- CSS do projeto -->
+  <link rel="stylesheet" href="../../css/variaveis.css">
+  <link rel="stylesheet" href="../../css/base.css">
+  <link rel="stylesheet" href="../../css/componentes.css">
+
+  <!-- Cabeçalho da área administrativa (vem antes do script da página, que usa window.Cabecalho) -->
+  <script src="../../js/components/cabecalho-admin.js" defer></script>
+
+  <!-- Estilos só desta tela (valores depois da vírgula em var() são o fallback) -->
+  <style>
+    :root {
+      --bp-azul: var(--azul-escuro, #0f3d68);
+      --bp-verde: var(--verde, #1f7a3a);
+      --bp-verde-hover: var(--verde-hover, #186130);
+      --bp-fundo: var(--cinza-fundo, #f3f5f8);
+      --bp-borda: var(--cinza-borda, #dfe4ea);
+      --bp-texto: var(--texto, #1d2733);
+      --bp-texto-suave: var(--texto-suave, #5b6878);
+      --bp-vermelho: #b42318;
+      --bp-ambar: #8a5a00;
+      --bp-cabecalho-tabela: #e8eef6;
+    }
+
+    body { background: var(--bp-fundo); }
+    .admin [hidden] { display: none !important; }
+
+    .admin .breadcrumb { font-size: .8125rem; }
+    .admin .breadcrumb a { color: var(--bp-texto-suave); text-decoration: none; }
+    .admin .breadcrumb a:hover { color: var(--bp-azul); text-decoration: underline; }
+    .admin .breadcrumb-item.active { color: var(--bp-texto-suave); }
+
+    .admin__titulo { color: var(--bp-azul); font-weight: 700; font-size: 2rem; }
+    .texto-suave { color: var(--bp-texto-suave); }
+    .texto-erro { color: var(--bp-vermelho); }
+
+    .cartao { background: #fff; border: 1px solid var(--bp-borda); border-radius: .75rem; padding: 1.25rem; }
+    @media (min-width: 768px) { .cartao { padding: 1.5rem; } }
+    .cartao__titulo { color: var(--bp-azul); font-weight: 700; font-size: 1.25rem; margin-bottom: 1rem; }
+    .cartao__titulo:focus-visible { outline: 3px solid #f2b705; outline-offset: 2px; }
+
+    /* Formulário */
+    .admin .form-label, .admin legend.form-label { font-size: .8125rem; font-weight: 600; color: var(--bp-texto); margin-bottom: .375rem; }
+    .admin .form-control, .admin .form-select { font-size: .875rem; border-color: var(--bp-borda); padding: .625rem .75rem; }
+    .admin .form-check-label { font-size: .875rem; }
+    .admin .form-text { font-size: .75rem; color: var(--bp-texto-suave); }
+    .erro-campo { font-size: .75rem; color: var(--bp-vermelho); margin: .25rem 0 0; }
+    .grupo-agendamento { max-width: 22rem; }
+
+    /* Prévia do aviso (igual a uma notificação não lida no sino do usuário) */
+    .previa-notificacao {
+      display: grid; grid-template-columns: 1rem 1fr; column-gap: .5rem; align-items: center;
+      background: #eaf2fc; border-radius: .5rem; padding: .875rem 1rem;
+    }
+    .previa-notificacao__marcador { width: .5625rem; height: .5625rem; border-radius: 50%; background: var(--bp-verde); }
+    .previa-notificacao__titulo { color: var(--bp-azul); font-weight: 700; font-size: .875rem; margin: 0 0 .25rem; overflow-wrap: anywhere; }
+    .previa-notificacao__mensagem { font-size: .8125rem; margin: 0 0 .25rem; overflow-wrap: anywhere; }
+    .previa-notificacao__meta { color: var(--bp-texto-suave); font-size: .75rem; margin: 0; }
+    .previa--vazia { opacity: .55; font-style: italic; }
+    .previa-botao { display: inline-block; margin-top: .5rem; border: 1px solid var(--bp-borda); background: #fff; color: var(--bp-azul);
+      border-radius: .375rem; padding: .25rem .625rem; font-size: .75rem; font-weight: 600; }
+    .previa-email { border: 1px dashed var(--bp-borda); border-radius: .5rem; padding: .75rem 1rem; font-size: .8125rem; }
+
+    /* Tabela */
+    .tabela { font-size: .8125rem; margin: 0; min-width: 52rem; }
+    .tabela thead th { background: var(--bp-cabecalho-tabela); color: var(--bp-texto-suave); font-weight: 500; border: 0; padding: .875rem .75rem; white-space: nowrap; }
+    .tabela td { padding: .9rem .75rem; vertical-align: middle; border-color: var(--bp-borda); color: var(--bp-texto); }
+    .tabela .celula-titulo { max-width: 15rem; }
+    .tabela tr.linha--selecionada td { background: #eaf2fc; }
+    .link-acao { border: 0; background: none; padding: 0; color: var(--bp-texto); font-size: .8125rem; }
+    .link-acao:hover { color: var(--bp-azul); text-decoration: underline; }
+
+    .etiqueta { display: inline-block; border-radius: .375rem; padding: .25rem .55rem; font-size: .75rem; font-weight: 600; }
+    .etiqueta--sucesso { background: #e6f4ea; color: #17633a; }
+    .etiqueta--alerta { background: #fdf1d6; color: var(--bp-ambar); }
+    .etiqueta--erro { background: #fdecea; color: var(--bp-vermelho); }
+    .etiqueta--neutra { background: #eef1f5; color: var(--bp-texto-suave); }
+
+    /* Botões */
+    .admin .btn { font-weight: 600; font-size: .875rem; padding: .5rem 1rem; min-height: 2.5rem; border-radius: .375rem; }
+    .btn-verde {
+      --bs-btn-color: #fff; --bs-btn-bg: var(--bp-verde); --bs-btn-border-color: var(--bp-verde);
+      --bs-btn-hover-color: #fff; --bs-btn-hover-bg: var(--bp-verde-hover); --bs-btn-hover-border-color: var(--bp-verde-hover);
+      --bs-btn-active-color: #fff; --bs-btn-active-bg: var(--bp-verde-hover); --bs-btn-active-border-color: var(--bp-verde-hover);
+      --bs-btn-disabled-color: #fff; --bs-btn-disabled-bg: #8fb99c; --bs-btn-disabled-border-color: #8fb99c;
+      border-color: var(--bs-btn-border-color);
+    }
+    .btn-contorno-azul {
+      --bs-btn-color: var(--bp-azul); --bs-btn-bg: #fff; --bs-btn-border-color: var(--bp-borda);
+      --bs-btn-hover-color: var(--bp-azul); --bs-btn-hover-bg: #f4f7fb; --bs-btn-hover-border-color: #c9d3df;
+      --bs-btn-active-color: var(--bp-azul); --bs-btn-active-bg: #eef3f9; --bs-btn-active-border-color: #c9d3df;
+      --bs-btn-disabled-color: var(--bp-texto-suave); --bs-btn-disabled-bg: #fff; --bs-btn-disabled-border-color: var(--bp-borda);
+      border-color: var(--bs-btn-border-color);
+    }
+    .link-acao:focus-visible, .admin .btn:focus-visible, .admin .form-control:focus-visible, .admin .form-select:focus-visible,
+    .admin .form-check-input:focus-visible { outline: 3px solid #f2b705; outline-offset: 2px; }
+
+    .aviso { border-radius: .5rem; padding: .875rem 1rem; font-size: .8125rem; }
+    .aviso--sucesso { background: #e6f4ea; color: #17633a; }
+    .aviso--alerta { background: #fdf1d6; color: var(--bp-ambar); }
+    .aviso--erro { background: #fdecea; color: var(--bp-vermelho); }
+
+    .aviso-estado { border-radius: .5rem; padding: 1rem 1.125rem; font-size: .8125rem; }
+    .aviso-estado__titulo { font-weight: 700; font-size: .875rem; margin-bottom: .25rem; }
+    .aviso-estado--sucesso { background: #e6f4ea; color: #17633a; }
+    .aviso-estado--erro { background: #fdecea; color: var(--bp-vermelho); }
+    .aviso-estado--confirmar { background: #f4f7fb; border: 1px solid var(--bp-borda); color: var(--bp-texto); }
+  </style>
+</head>
+<body class="d-flex flex-column min-vh-100">
+
+  <!-- Cabeçalho: preenchido por js/components/cabecalho-admin.js ("Notificações gerais" fica marcado pela página) -->
+  <header id="cabecalho"></header>
+
+  <!-- Área administrativa • Fluxo E • BP1-51 • /api/admin/notificacoes -->
+  <main id="conteudo" class="admin flex-grow-1 py-4">
+    <div class="container-fluid px-3 px-lg-4">
+
+      <nav aria-label="Você está em">
+        <ol class="breadcrumb mb-4">
+          <li class="breadcrumb-item"><a href="usuarios.html">Administração</a></li>
+          <li class="breadcrumb-item active" aria-current="page">Notificações gerais</li>
+        </ol>
+      </nav>
+
+      <h1 class="admin__titulo mb-1">Notificações gerais</h1>
+      <p class="texto-suave mb-4">Envie avisos para todos os usuários ou para um grupo.</p>
+
+      <!-- Sem login de admin ou sem permissão -->
+      <div id="acesso-restrito" class="aviso aviso--alerta" role="alert" hidden>
+        <p class="mb-2 fw-semibold">Acesso restrito</p>
+        <p class="mb-0"></p>
+      </div>
+
+      <div id="conteudo-admin">
+        <div class="row g-4 mb-4">
+
+          <!-- Novo aviso -->
+          <div class="col-lg-7">
+            <section class="cartao h-100" id="cartao-form" aria-labelledby="titulo-form">
+              <div class="d-flex justify-content-between align-items-baseline gap-2">
+                <h2 class="cartao__titulo" id="titulo-form" tabindex="-1">Novo aviso</h2>
+                <button type="button" class="btn btn-link btn-sm p-0 fw-semibold text-decoration-none text-nowrap" id="botao-novo-aviso"
+                  style="color: var(--bp-azul); min-height: 0;" hidden>Começar outro aviso</button>
+              </div>
+
+              <form id="form-aviso" novalidate>
+                <div class="mb-3">
+                  <label class="form-label" for="publico">Público</label>
+                  <select class="form-select" id="publico" aria-describedby="dica-alcance">
+                    <option value="TODOS">Todos os usuários</option>
+                    <option value="VENDEDORES">Todos os vendedores</option>
+                    <option value="COMPRADORES">Compradores (contas sem loja)</option>
+                    <option value="VENDEDORES_SEM_ANUNCIOS">Vendedores sem anúncios</option>
+                  </select>
+                  <p class="form-text mt-1 mb-0" id="dica-alcance" aria-live="polite"></p>
+                </div>
+
+                <div class="mb-3">
+                  <label class="form-label" for="categoria">Tipo</label>
+                  <select class="form-select" id="categoria">
+                    <option value="ATUALIZACAO">Atualização da plataforma</option>
+                    <option value="MANUTENCAO">Manutenção programada</option>
+                    <option value="DICA">Dica de uso</option>
+                    <option value="SEGURANCA">Segurança da conta</option>
+                  </select>
+                </div>
+
+                <div class="mb-3">
+                  <label class="form-label" for="titulo">Título</label>
+                  <input type="text" class="form-control" id="titulo" maxlength="80" autocomplete="off"
+                    placeholder="Ex.: Nova versão dos Termos de uso em 01/12" aria-describedby="erro-titulo contador-titulo">
+                  <div class="d-flex justify-content-between">
+                    <p class="erro-campo" id="erro-titulo" hidden></p>
+                    <span class="form-text ms-auto mt-1" id="contador-titulo"></span>
+                  </div>
+                </div>
+
+                <div class="mb-3">
+                  <label class="form-label" for="mensagem">Mensagem</label>
+                  <textarea class="form-control" id="mensagem" rows="3" maxlength="500"
+                    placeholder="Explique o que muda e o que a pessoa precisa fazer." aria-describedby="erro-mensagem contador-mensagem"></textarea>
+                  <div class="d-flex justify-content-between">
+                    <p class="erro-campo" id="erro-mensagem" hidden></p>
+                    <span class="form-text ms-auto mt-1" id="contador-mensagem"></span>
+                  </div>
+                </div>
+
+                <div class="row g-3 mb-3">
+                  <div class="col-sm-8">
+                    <label class="form-label" for="link-acao">Link de ação (opcional)</label>
+                    <input type="text" class="form-control" id="link-acao" maxlength="200" autocomplete="off" list="sugestoes-link"
+                      placeholder="pages/institucional/termos-de-uso.html" aria-describedby="erro-link">
+                    <datalist id="sugestoes-link">
+                      <option value="pages/institucional/termos-de-uso.html">Termos de uso</option>
+                      <option value="pages/conta/perfil.html">Meu perfil</option>
+                      <option value="pages/minha-loja/painel.html">Painel da loja</option>
+                      <option value="pages/minha-loja/form-peca.html">Cadastrar peça</option>
+                      <option value="pages/conta/notificacoes.html">Notificações</option>
+                    </datalist>
+                    <p class="erro-campo" id="erro-link" hidden></p>
+                  </div>
+                  <div class="col-sm-4" id="grupo-texto-acao" hidden>
+                    <label class="form-label" for="texto-acao">Texto do botão</label>
+                    <input type="text" class="form-control" id="texto-acao" maxlength="30" placeholder="Ver detalhes" autocomplete="off">
+                  </div>
+                </div>
+
+                <fieldset class="mb-3" aria-describedby="erro-canais">
+                  <legend class="form-label">Canais</legend>
+                  <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="canal" id="canal-sistema" value="SISTEMA" checked>
+                    <label class="form-check-label" for="canal-sistema">No sistema (sino de notificações)</label>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="canal" id="canal-email" value="EMAIL">
+                    <label class="form-check-label" for="canal-email">E-mail</label>
+                  </div>
+                  <p class="erro-campo" id="erro-canais" hidden></p>
+                </fieldset>
+
+                <fieldset class="mb-3" aria-describedby="erro-envio">
+                  <legend class="form-label">Envio</legend>
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" name="envio" id="envio-agora" value="agora" checked>
+                    <label class="form-check-label" for="envio-agora">Enviar agora</label>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" name="envio" id="envio-agendado" value="agendado">
+                    <label class="form-check-label fw-semibold" for="envio-agendado" id="rotulo-agendado">Agendar para uma data e hora</label>
+                  </div>
+                  <div class="row g-2 mt-1 ms-4 grupo-agendamento" id="grupo-agendamento" hidden>
+                    <div class="col-7">
+                      <label class="visually-hidden" for="data-envio">Data do envio</label>
+                      <input type="date" class="form-control" id="data-envio">
+                    </div>
+                    <div class="col-5">
+                      <label class="visually-hidden" for="hora-envio">Hora do envio (horário de Brasília)</label>
+                      <input type="time" class="form-control" id="hora-envio" step="300">
+                    </div>
+                  </div>
+                  <p class="erro-campo" id="erro-envio" hidden></p>
+                </fieldset>
+
+                <div class="d-flex flex-wrap gap-2" id="botoes-form">
+                  <button type="submit" class="btn btn-verde" id="botao-enviar">Enviar aviso</button>
+                  <button type="button" class="btn btn-contorno-azul" id="botao-rascunho">Salvar rascunho</button>
+                </div>
+
+                <!-- Confirmação do envio imediato (não dá para desfazer) -->
+                <div class="aviso-estado aviso-estado--confirmar" id="confirmacao-envio" role="alertdialog"
+                  aria-labelledby="titulo-envio" aria-describedby="texto-envio" hidden>
+                  <p class="aviso-estado__titulo" id="titulo-envio">Confirmar envio</p>
+                  <p class="mb-3" id="texto-envio"></p>
+                  <div class="d-flex flex-wrap gap-2">
+                    <button type="button" class="btn btn-verde" id="botao-confirmar-envio">Enviar agora</button>
+                    <button type="button" class="btn btn-contorno-azul" id="botao-voltar-envio">Voltar</button>
+                  </div>
+                </div>
+              </form>
+
+              <div id="resultado" class="aviso-estado mt-3" role="status" aria-live="polite" hidden></div>
+            </section>
+          </div>
+
+          <!-- Coluna lateral -->
+          <div class="col-lg-5 d-flex flex-column gap-4">
+            <section class="cartao" aria-labelledby="titulo-previa">
+              <h2 class="cartao__titulo" id="titulo-previa">Prévia para o usuário</h2>
+              <div class="previa-notificacao" id="previa-sistema" aria-label="Como o aviso aparece no sino de notificações">
+                <span class="previa-notificacao__marcador" aria-hidden="true"></span>
+                <div style="min-width: 0;">
+                  <p class="previa-notificacao__titulo" id="previa-titulo"></p>
+                  <p class="previa-notificacao__mensagem" id="previa-mensagem"></p>
+                  <p class="previa-notificacao__meta" id="previa-meta"></p>
+                  <span class="previa-botao" id="previa-botao" hidden></span>
+                </div>
+              </div>
+              <div class="previa-email mt-3" id="previa-email" hidden>
+                <p class="mb-1 texto-suave small"><i class="bi bi-envelope me-1" aria-hidden="true"></i>Também por e-mail</p>
+                <p class="mb-0"><span class="texto-suave">Assunto:</span> <strong id="previa-email-assunto"></strong></p>
+              </div>
+              <p class="aviso aviso--alerta mb-0" id="previa-sem-canal" hidden>Escolha pelo menos um canal para o aviso chegar a alguém.</p>
+            </section>
+
+            <section class="cartao" aria-labelledby="titulo-alertas">
+              <h2 class="cartao__titulo mb-2" id="titulo-alertas">Alertas automáticos</h2>
+              <p class="small texto-suave mb-3">Disparados pelo sistema, sem ação manual.</p>
+              <fieldset>
+                <legend class="visually-hidden">Alertas automáticos ligados</legend>
+                <div class="form-check mb-2">
+                  <input class="form-check-input" type="checkbox" name="alerta" id="alerta-status" value="STATUS_PEDIDO" disabled>
+                  <label class="form-check-label" for="alerta-status">Status do pedido (aceite, preparo, retirada)</label>
+                </div>
+                <div class="form-check mb-2">
+                  <input class="form-check-input" type="checkbox" name="alerta" id="alerta-mensagem" value="NOVA_MENSAGEM" disabled>
+                  <label class="form-check-label" for="alerta-mensagem">Nova mensagem em conversa</label>
+                </div>
+                <div class="form-check mb-2">
+                  <input class="form-check-input" type="checkbox" name="alerta" id="alerta-estoque" value="ESTOQUE_BAIXO" disabled>
+                  <label class="form-check-label" for="alerta-estoque">Estoque baixo (1 unidade)</label>
+                </div>
+                <div class="form-check mb-3">
+                  <input class="form-check-input" type="checkbox" name="alerta" id="alerta-promocoes" value="PROMOCOES_FAVORITAS" disabled>
+                  <label class="form-check-label" for="alerta-promocoes">Promoções das lojas favoritas</label>
+                </div>
+              </fieldset>
+              <button type="button" class="btn btn-contorno-azul w-100" id="botao-salvar-alertas" disabled>Salvar configurações</button>
+              <p class="aviso mt-3 mb-0" id="aviso-alertas" role="status" aria-live="polite" hidden></p>
+            </section>
+          </div>
+        </div>
+
+        <!-- Enviados e agendados -->
+        <section class="cartao" id="cartao-avisos" aria-labelledby="titulo-avisos" aria-busy="true">
+          <h2 class="cartao__titulo" id="titulo-avisos">Enviados e agendados</h2>
+          <div class="aviso aviso--erro mb-3" id="erro-avisos" role="alert" hidden>
+            <span id="erro-avisos-texto"></span>
+            <button type="button" class="btn btn-link btn-sm p-0 ms-1 align-baseline fw-semibold texto-erro" id="botao-tentar-avisos" style="min-height: 0;">Tentar de novo</button>
+          </div>
+          <div class="table-responsive">
+            <table class="table tabela">
+              <caption class="visually-hidden">Avisos enviados, agendados e rascunhos</caption>
+              <thead>
+                <tr>
+                  <th scope="col">Título</th><th scope="col">Público</th><th scope="col">Canais</th><th scope="col">Data</th>
+                  <th scope="col">Alcance</th><th scope="col">Status</th><th scope="col">Ações</th>
+                </tr>
+              </thead>
+              <tbody id="corpo-avisos"></tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+    </div>
+  </main>
+
+  <!-- Rodapé (conteúdo provisório, igual às outras telas) -->
+  <footer id="rodape" class="rodape py-4 mt-4">
+    <div class="container-fluid px-3 px-lg-4">
+      <p class="mb-2">Ambiente demonstrativo • lojas, preços e estoques fictícios</p>
+      <p class="mb-0">
+        <a href="../institucional/sobre.html">Busca Peça</a> •
+        <a href="../institucional/sobre.html#contato">Contato</a> •
+        <a href="../institucional/termos-de-uso.html">Termos de uso</a> •
+        <a href="../institucional/termos-de-uso.html#politica-de-privacidade">Privacidade</a>
+      </p>
+    </div>
+  </footer>
+
+  <script type="module" src="../../js/pages/admin/notificacoes.js"></script>
+</body>
+</html>

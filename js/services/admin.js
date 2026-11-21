@@ -1,5 +1,5 @@
 // Serviço da área administrativa: uma função por rota de /api/admin
-// (Documentação do Back-end v2, seção 5.12 • casos de uso BP1-49, BP1-51, BP1-54 e BP1-56 • ADR-006, 013).
+// (Documentação do Back-end v2, seção 5.12 • casos de uso BP1-35, BP1-49, BP1-51, BP1-54 e BP1-56 • ADR-006, 013).
 //
 // QUANDO A API ESTIVER PRONTA: troque USAR_SIMULACAO para false e apague o
 // bloco "SIMULAÇÃO" do fim do arquivo.
@@ -303,6 +303,112 @@ export async function salvarAlertasAutomaticos(alertas) {
   return api.put('/admin/notificacoes/alertas', alertas);
 }
 
+// ---------------------------------------------------------------------------
+// Disputas — /api/admin/disputas (BP1-35, ADR-006, 008, 013) • permissão MODERAR_DISPUTA
+//
+// Status no banco: ABERTA → EM_MEDIACAO ("Em análise") → ENCERRADA ("Resolvida").
+// A coluna disputa.decisao é texto livre; resultado, prazo da mediação, prazo de
+// devolução e "pausar anúncio" ainda precisam de colunas novas.
+//
+// Formato esperado na lista (DisputaResumoResponse):
+//   { idDisputa, codigo: 'DP-0012', idPedido, codigoPedido: 'BP-1034',
+//     comprador: 'Oficina Horizonte', loja: 'Motor Norte Peças',
+//     tipoProblema: 'PECA_ERRADA', motivo: 'Peça diferente do anúncio',
+//     status: 'ABERTA', dataAbertura, prazoMediacao: '2026-11-21', dataFechamento }
+// ---------------------------------------------------------------------------
+
+/** GET /api/admin/disputas?status= — fila de disputas (BP1-35). status vazio = todas. */
+export async function listarDisputas({ status = '' } = {}) {
+  if (USAR_SIMULACAO) {
+    await esperar(450);
+    return disputasSimuladas.filter((d) => !status || d.status === status).map(resumoDisputa);
+  }
+  const params = new URLSearchParams({ pagina: 0, tamanho: 50 });
+  if (status) params.set('status', status);
+  const dados = await api.get(`/admin/disputas?${params}`);
+  return Array.isArray(dados) ? dados : (dados?.itens || []);
+}
+
+/**
+ * GET /api/admin/disputas/resumo — ROTA NOVA: números do topo.
+ * { abertas, vencendoHoje, emAnalise, resolvidasNoMes, tempoMedioDias }
+ */
+export async function obterResumoDisputas() {
+  if (USAR_SIMULACAO) {
+    await esperar(250);
+    const hoje = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo' }).format(new Date());
+    return {
+      abertas: disputasSimuladas.filter((d) => d.status === 'ABERTA').length,
+      vencendoHoje: disputasSimuladas.filter((d) => d.status !== 'ENCERRADA' && d.prazoMediacao === hoje).length,
+      emAnalise: disputasSimuladas.filter((d) => d.status === 'EM_MEDIACAO').length,
+      resolvidasNoMes: 10 + disputasSimuladas.filter((d) => d.status === 'ENCERRADA').length,
+      tempoMedioDias: 2.4,
+    };
+  }
+  return api.get('/admin/disputas/resumo');
+}
+
+/**
+ * GET /api/admin/disputas/{id} — ROTA NOVA: tudo o que a mediação precisa ver. Formato esperado:
+ * {
+ *   ...campos da lista,
+ *   pedido: { valorTotal, dataConclusao, itens: [{ titulo, sku }] },
+ *   compradorContato: 'Ana Martins',
+ *   relato: 'A polia veio com 5 canais…',          // problema_pedido.descricao
+ *   respostaLoja: 'A peça foi conferida…' | null,  // resposta da loja ao problema (coluna nova)
+ *   evidencias: [{ nome, url, tipo }],              // anexo_problema
+ *   mensagens: [{ autor, conteudo, dataEnvio }],    // últimas mensagens da conversa do pedido
+ *   anuncio: { idPeca, sku, status } | null,        // para "Pausar o anúncio"
+ *   solicitacoes: [{ destinatarios, mensagem, data, moderador }],
+ *   decisao: { resultado, justificativa, prazoDevolucao, pausarAnuncio, moderador, data } | null
+ * }
+ */
+export async function obterDisputa(idDisputa) {
+  if (USAR_SIMULACAO) {
+    await esperar(350);
+    return structuredClone(disputaSimulada(idDisputa));
+  }
+  return api.get(`/admin/disputas/${encodeURIComponent(idDisputa)}`);
+}
+
+/**
+ * PATCH /api/admin/disputas/{id}/decisao — registra a decisão e encerra (BP1-35).
+ * Corpo: { resultado: 'FAVORAVEL_COMPRADOR' | 'FAVORAVEL_LOJA' | 'ACORDO_PARCIAL',
+ *          justificativa, prazoDevolucao: 'AAAA-MM-DD' | null, pausarAnuncio: boolean }
+ * A API notifica as duas partes, pausa o anúncio se pedido e grava log_auditoria.
+ * Devolve a disputa atualizada (status ENCERRADA com "decisao").
+ */
+export async function registrarDecisaoDisputa(idDisputa, dados) {
+  if (USAR_SIMULACAO) {
+    await esperar(700);
+    const d = disputaSimulada(idDisputa);
+    if (d.status === 'ENCERRADA') throw { status: 409, erro: 'STATUS_INVALIDO', mensagem: 'Esta disputa já foi encerrada.' };
+    d.status = 'ENCERRADA';
+    d.dataFechamento = new Date().toISOString();
+    d.decisao = { ...dados, moderador: 'Equipe Busca Peça', data: d.dataFechamento };
+    if (dados.pausarAnuncio && d.anuncio) d.anuncio.status = 'PAUSADO';
+    return structuredClone(d);
+  }
+  return api.patch(`/admin/disputas/${encodeURIComponent(idDisputa)}/decisao`, dados);
+}
+
+/**
+ * POST /api/admin/disputas/{id}/solicitacoes — ROTA NOVA: pede mais informações às partes.
+ * Corpo: { destinatarios: ['COMPRADOR', 'LOJA'], mensagem }. A disputa passa para EM_MEDIACAO
+ * e as partes recebem notificação. Devolve a disputa atualizada.
+ */
+export async function pedirInformacoesDisputa(idDisputa, dados) {
+  if (USAR_SIMULACAO) {
+    await esperar(550);
+    const d = disputaSimulada(idDisputa);
+    if (d.status === 'ENCERRADA') throw { status: 409, erro: 'STATUS_INVALIDO', mensagem: 'Esta disputa já foi encerrada.' };
+    d.status = 'EM_MEDIACAO';
+    d.solicitacoes.push({ ...dados, data: new Date().toISOString(), moderador: 'Equipe Busca Peça' });
+    return structuredClone(d);
+  }
+  return api.post(`/admin/disputas/${encodeURIComponent(idDisputa)}/solicitacoes`, dados);
+}
+
 // =========================================================================
 // SIMULAÇÃO — apagar este bloco quando a API estiver pronta.
 // Contas do protótipo (Fluxo E • Usuários). O admin logado da simulação é a
@@ -572,4 +678,85 @@ async function simularSalvarAviso(idAviso, dados) {
     alcance: ALCANCE_SIMULADO[dados.publico] ?? 0,
   });
   return structuredClone(aviso);
+}
+
+// ---------- Simulação: disputas ----------
+
+function diasAtras(dias, hora = 10, minuto = 0) {
+  const d = new Date();
+  d.setDate(d.getDate() - dias);
+  d.setHours(hora, minuto, 0, 0);
+  return d.toISOString();
+}
+const dataDaqui = (dias) => new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo' }).format(new Date(diasAtras(-dias)));
+
+const disputasSimuladas = [
+  {
+    idDisputa: 12, codigo: 'DP-0012', idPedido: 1034, codigoPedido: 'BP-1034', comprador: 'Oficina Horizonte', compradorContato: 'Ana Martins',
+    loja: 'Motor Norte Peças', tipoProblema: 'PECA_ERRADA', motivo: 'Peça diferente do anúncio', status: 'ABERTA',
+    dataAbertura: diasAtras(5, 9, 40), prazoMediacao: dataDaqui(0), dataFechamento: null,
+    pedido: { valorTotal: 749.0, dataConclusao: diasAtras(11, 16, 0), itens: [{ titulo: 'Alternador Bosch 90A', sku: 'ALT-90GM' }] },
+    relato: 'A polia veio com 5 canais; o anúncio informava 6 canais. A loja não aceita a devolução.',
+    respostaLoja: 'A peça foi conferida no balcão e retirada sem reclamação.',
+    evidencias: [
+      { nome: 'foto-polia.jpg', url: null, tipo: 'image/jpeg' },
+      { nome: 'anuncio-print.png', url: null, tipo: 'image/png' },
+      { nome: 'nota-balcao.pdf', url: null, tipo: 'application/pdf' },
+    ],
+    mensagens: [
+      { autor: 'Ana', conteudo: 'A polia tem 5 canais, o anúncio diz 6. Posso trocar?', dataEnvio: diasAtras(6, 15, 2) },
+      { autor: 'Motor Norte', conteudo: 'Conferimos no balcão, não fazemos troca após retirada.', dataEnvio: diasAtras(6, 16, 30) },
+      { autor: 'Ana', conteudo: 'Vou abrir uma disputa com as fotos.', dataEnvio: diasAtras(5, 8, 10) },
+    ],
+    anuncio: { idPeca: 101, sku: 'ALT-90GM', status: 'ATIVO' }, solicitacoes: [], decisao: null,
+  },
+  {
+    idDisputa: 11, codigo: 'DP-0011', idPedido: 2063, codigoPedido: 'BP-2063', comprador: 'Auto Center Parque', compradorContato: 'Marcos Dias',
+    loja: 'Rota Sul Autopeças', tipoProblema: 'DEFEITO', motivo: 'Defeito após instalação', status: 'EM_MEDIACAO',
+    dataAbertura: diasAtras(6, 11, 5), prazoMediacao: dataDaqui(2), dataFechamento: null,
+    pedido: { valorTotal: 389.9, dataConclusao: diasAtras(14, 10, 0), itens: [{ titulo: 'Bomba d’água Gol 1.6', sku: 'BAG-GOL16' }] },
+    relato: 'A bomba começou a vazar dois dias depois da instalação.',
+    respostaLoja: 'Precisamos ver a peça; pode ter sido erro de instalação.',
+    evidencias: [{ nome: 'video-vazamento.mp4', url: null, tipo: 'video/mp4' }],
+    mensagens: [
+      { autor: 'Marcos', conteudo: 'A bomba está vazando pela junta.', dataEnvio: diasAtras(7, 9, 12) },
+      { autor: 'Rota Sul', conteudo: 'Traga a peça para análise, por favor.', dataEnvio: diasAtras(7, 10, 40) },
+    ],
+    anuncio: { idPeca: 210, sku: 'BAG-GOL16', status: 'ATIVO' },
+    solicitacoes: [{ destinatarios: ['LOJA'], mensagem: 'Envie a nota de garantia do fabricante.', data: diasAtras(3, 14, 0), moderador: 'Juliana Costa' }],
+    decisao: null,
+  },
+  {
+    idDisputa: 10, codigo: 'DP-0010', idPedido: 1998, codigoPedido: 'BP-1998', comprador: 'Oficina Central', compradorContato: 'Paulo Reis',
+    loja: 'Pneus Já', tipoProblema: 'OUTRO', motivo: 'Loja recusa devolução', status: 'ABERTA',
+    dataAbertura: diasAtras(8, 17, 20), prazoMediacao: dataDaqui(3), dataFechamento: null,
+    pedido: { valorTotal: 1240.0, dataConclusao: diasAtras(15, 9, 0), itens: [{ titulo: 'Jogo de pneus 175/70 R14', sku: 'PN-1757014' }] },
+    relato: 'Pedi a devolução dentro de 7 dias e a loja recusou sem explicar.',
+    respostaLoja: null,
+    evidencias: [], mensagens: [], anuncio: { idPeca: 305, sku: 'PN-1757014', status: 'PAUSADO' }, solicitacoes: [], decisao: null,
+  },
+  {
+    idDisputa: 8, codigo: 'DP-0008', idPedido: 1950, codigoPedido: 'BP-1950', comprador: 'Mecânica Boa Vista', compradorContato: 'Rita Souza',
+    loja: 'Autopeças Avenida', tipoProblema: 'NAO_ENTREGUE', motivo: 'Pedido não retirado', status: 'ENCERRADA',
+    dataAbertura: diasAtras(13, 8, 0), prazoMediacao: dataDaqui(-8), dataFechamento: diasAtras(11, 16, 0),
+    pedido: { valorTotal: 96.0, dataConclusao: null, itens: [{ titulo: 'Filtro de ar Tecfil', sku: 'FAR-6079' }] },
+    relato: 'A loja diz que separou o pedido, mas nunca recebi o código de retirada.',
+    respostaLoja: 'O código estava no pedido desde o dia do aceite.',
+    evidencias: [{ nome: 'print-pedido.png', url: null, tipo: 'image/png' }],
+    mensagens: [{ autor: 'Rita', conteudo: 'Onde vejo o código de retirada?', dataEnvio: diasAtras(14, 9, 0) }],
+    anuncio: null, solicitacoes: [],
+    decisao: { resultado: 'ACORDO_PARCIAL', justificativa: 'O código estava disponível no pedido. A loja aceitou reenviar o código e manter a reserva por mais 3 dias.',
+      prazoDevolucao: null, pausarAnuncio: false, moderador: 'Juliana Costa', data: diasAtras(11, 16, 0) },
+  },
+];
+
+function disputaSimulada(id) {
+  const d = disputasSimuladas.find((x) => x.idDisputa === Number(id));
+  if (!d) throw { status: 404, erro: 'NAO_ENCONTRADO', mensagem: 'Disputa não encontrada.' };
+  return d;
+}
+
+function resumoDisputa(d) {
+  const { idDisputa, codigo, idPedido, codigoPedido, comprador, loja, tipoProblema, motivo, status, dataAbertura, prazoMediacao, dataFechamento } = d;
+  return structuredClone({ idDisputa, codigo, idPedido, codigoPedido, comprador, loja, tipoProblema, motivo, status, dataAbertura, prazoMediacao, dataFechamento });
 }

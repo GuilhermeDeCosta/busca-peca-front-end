@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Detalhe do pedido • Busca Peças</title>
+
+  <!-- Bibliotecas por CDN com versão fixa (ADR-014) -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+  <!-- CSS do projeto (os estilos desta tela estão em base.css, seção "DETALHE DO PEDIDO") -->
+  <link rel="stylesheet" href="../../css/variaveis.css">
+  <link rel="stylesheet" href="../../css/base.css">
+  <link rel="stylesheet" href="../../css/componentes.css">
+  <style>[x-cloak] { display: none !important; }</style>
+
+  <!-- Componente do cabeçalho -->
+  <script src="../../js/components/cabecalho.js" defer></script>
+</head>
+<body class="d-flex flex-column min-vh-100">
+
+  <!-- Cabeçalho: preenchido por js/components/cabecalho.js -->
+  <header id="cabecalho"></header>
+
+  <!-- Página logada • BP1-27, 28, 29, 30, 33, 36, 61, 15 • GET /api/pedidos/{id} • Fluxo A, A11 (etapa 10) -->
+  <main id="conteudo" class="pedido container-fluid px-3 px-lg-4 py-4 flex-grow-1" x-data="detalhePedido"
+        @keydown.escape.window="modal && fecharModal()">
+
+    <nav aria-label="Você está aqui">
+      <ol class="breadcrumb resultados__trilha">
+        <li class="breadcrumb-item"><a href="../../index.html">Início</a></li>
+        <li class="breadcrumb-item"><a :href="linkMeusPedidos">Meus pedidos</a></li>
+        <li class="breadcrumb-item active" aria-current="page" x-text="pedido ? `Pedido ${pedido.codigo}` : 'Pedido'">Pedido</li>
+      </ol>
+    </nav>
+
+    <!-- Carregando -->
+    <div class="placeholder-glow" x-show="carregando" aria-hidden="true">
+      <span class="placeholder col-4 mb-2" style="height:40px"></span>
+      <span class="placeholder col-6 d-block mb-4"></span>
+      <div class="pedido-grade">
+        <span class="placeholder w-100 rounded" style="height:420px"></span>
+        <span class="placeholder w-100 rounded" style="height:420px"></span>
+      </div>
+    </div>
+
+    <!-- Erro da API -->
+    <div class="resultados-estado" x-show="!carregando && erro" x-cloak role="alert">
+      <i class="bi bi-exclamation-circle" aria-hidden="true"></i>
+      <h1 class="h3" x-text="erro"></h1>
+      <button type="button" class="btn btn--contorno" @click="carregar()">Tentar novamente</button>
+    </div>
+
+    <!-- Pedido não encontrado (sem ?id=, id errado ou pedido de outra conta) -->
+    <div class="resultados-estado" x-show="!carregando && naoEncontrado" x-cloak>
+      <i class="bi bi-receipt" aria-hidden="true"></i>
+      <h1 class="h3">Não encontramos este pedido</h1>
+      <p>Confira seus pedidos em Meus pedidos.</p>
+      <a class="btn btn--verde" :href="linkMeusPedidos">Ver meus pedidos</a>
+    </div>
+
+    <template x-if="pedido && !carregando">
+      <div>
+        <h1 id="titulo-pedido" class="resultados__titulo" tabindex="-1" x-text="`Pedido ${pedido.codigo}`"></h1>
+        <p class="resultados__resumo mb-3" x-text="subtitulo"></p>
+        <p class="pedido-situacao">
+          <span :class="classeStatus(pedido.status)" x-text="rotuloStatus(pedido.status)"></span>
+          <span x-text="textoAtualizacao"></span>
+        </p>
+
+        <div class="pedido-grade">
+          <div class="pedido-coluna">
+
+            <!-- ===== Acompanhamento (BP1-27) ===== -->
+            <section class="detalhe-caixa" aria-labelledby="titulo-acompanhamento">
+              <h2 id="titulo-acompanhamento" class="carrinho-loja__nome">Acompanhamento</h2>
+              <ol class="pedido-etapas" x-show="!encerradoSemConcluir">
+                <template x-for="etapa in etapas" :key="etapa.status">
+                  <li class="pedido-etapas__item" :class="{ 'pedido-etapas__item--feita': etapa.feita, 'pedido-etapas__item--atual': etapa.atual }"
+                      :aria-current="etapa.atual ? 'step' : null">
+                    <span class="pedido-etapas__nome">
+                      <span class="pedido-etapas__marca" aria-hidden="true"></span>
+                      <span x-text="etapa.texto"></span>
+                      <span class="visually-hidden" x-text="etapa.feita ? '(feito)' : '(pendente)'"></span>
+                    </span>
+                    <span class="pedido-etapas__detalhe" x-text="etapa.detalhe"></span>
+                  </li>
+                </template>
+              </ol>
+              <div class="carrinho-aviso carrinho-aviso--vermelho mb-0" x-show="encerradoSemConcluir">
+                <i class="bi bi-x-circle" aria-hidden="true"></i>
+                <div>
+                  <p class="fw-bold mb-1" x-text="avisoEncerrado.titulo"></p>
+                  <p class="mb-1" x-show="avisoEncerrado.texto" x-text="avisoEncerrado.texto"></p>
+                  <p class="mb-0" x-text="avisoEncerrado.fim"></p>
+                </div>
+              </div>
+            </section>
+
+            <!-- ===== Itens ===== -->
+            <section class="detalhe-caixa" aria-labelledby="titulo-itens">
+              <h2 id="titulo-itens" class="carrinho-loja__nome" x-text="tituloItens"></h2>
+              <template x-for="item in pedido.itens" :key="item.idPeca ?? item.titulo">
+                <div class="pedido-item">
+                  <img class="pedido-item__foto" :src="foto(item)" :alt="item.titulo" width="180" height="150" loading="lazy" @error="usarImagemPadrao($event)">
+                  <div>
+                    <p class="pedido-item__titulo">
+                      <a x-show="linkPeca(item)" :href="linkPeca(item)" x-text="tituloItem(item)"></a>
+                      <span x-show="!linkPeca(item)" x-text="tituloItem(item)"></span>
+                    </p>
+                    <p class="pedido-item__codigos" x-text="linhaCodigos(item)"></p>
+                    <p class="pedido-item__quantidade" x-text="linhaQuantidade(item)"></p>
+                    <p class="pedido-item__valor" x-text="moeda(item.quantidade * item.precoUnitario)"></p>
+                  </div>
+                </div>
+              </template>
+              <p class="pedido-total" x-show="mostraTotal">
+                <span>Total dos itens</span><strong x-text="moeda(pedido.valorItens)"></strong>
+              </p>
+              <p class="pedido-observacao" x-show="pedido.observacao">
+                <span class="fw-bold">Sua observação para a loja:</span> <span x-text="pedido.observacao"></span>
+              </p>
+              <p class="carrinho-aviso carrinho-aviso--amarelo mb-0">
+                <i class="bi bi-info-circle" aria-hidden="true"></i>
+                <span>Combine o pagamento diretamente com a loja, fora da plataforma.</span>
+              </p>
+            </section>
+
+            <!-- ===== Retirada na loja (BP1-29) ===== -->
+            <section class="detalhe-caixa" aria-labelledby="titulo-recebimento" x-show="ehRetirada">
+              <h2 id="titulo-recebimento" class="carrinho-loja__nome">Retirada na loja</h2>
+              <p class="fw-bold mb-2" x-text="linhaLoja"></p>
+              <p class="mb-3" x-show="pedido.loja?.enderecoRetirada" x-text="pedido.loja?.enderecoRetirada"></p>
+              <p class="mb-0" x-show="textoRetirada" x-text="textoRetirada"></p>
+
+              <div class="pedido-codigo" x-show="mostraCodigoRetirada">
+                <p class="pedido-codigo__rotulo">Código de retirada</p>
+                <p class="pedido-codigo__valor" :class="{ 'pedido-codigo__valor--usado': codigoUsado }" x-text="pedido.codigoRetirada"></p>
+                <p class="pedido-codigo__ajuda" x-text="codigoUsado
+                  ? 'Código já usado no balcão.'
+                  : 'Apresente o código somente no momento da retirada. Entrega alternativa e frete podem ser combinados pela conversa.'"></p>
+              </div>
+            </section>
+
+            <!-- ===== Entrega a combinar (BP1-33) ===== -->
+            <section class="detalhe-caixa" aria-labelledby="titulo-entrega" x-show="!ehRetirada">
+              <h2 id="titulo-entrega" class="carrinho-loja__nome">Entrega a combinar</h2>
+              <p class="fw-bold mb-2" x-text="linhaLoja"></p>
+              <p class="mb-3" x-show="pedido.enderecoEntrega">
+                Entregar em <span x-text="pedido.enderecoEntrega"></span>
+              </p>
+              <p class="mb-0" x-show="textoEntrega" x-text="textoEntrega"></p>
+
+              <div class="pedido-codigo" x-show="pedido.entrega?.codigoRastreio">
+                <p class="pedido-codigo__rotulo" x-text="`Rastreio${pedido.entrega?.transportadora ? ` • ${pedido.entrega.transportadora}` : ''}`"></p>
+                <p class="pedido-codigo__valor pedido-codigo__valor--rastreio" x-text="pedido.entrega?.codigoRastreio"></p>
+                <button type="button" class="btn btn--contorno detalhe-botao" @click="verRastreio()" :disabled="buscandoRastreio">
+                  <span class="spinner-border spinner-border-sm" x-show="buscandoRastreio" aria-hidden="true"></span>
+                  <span>Rastrear encomenda</span>
+                </button>
+                <p class="pedido-codigo__ajuda mt-2" x-show="rastreio" x-text="textoRastreio" aria-live="polite"></p>
+              </div>
+            </section>
+          </div>
+
+          <aside class="pedido-coluna">
+            <!-- ===== Conversa com a loja (BP1-28) ===== -->
+            <section class="detalhe-caixa" aria-labelledby="titulo-conversa">
+              <h2 id="titulo-conversa" class="carrinho-loja__nome">Conversa com a loja</h2>
+              <span class="pedido-chat__loja" x-text="pedido.loja?.nomeLoja"></span>
+
+              <div class="placeholder-glow mt-3" x-show="carregandoConversa" aria-hidden="true">
+                <span class="placeholder w-100 rounded mb-2" style="height:70px"></span>
+                <span class="placeholder w-100 rounded" style="height:70px"></span>
+              </div>
+              <p class="detalhe-erro" x-show="erroConversa" x-text="erroConversa"></p>
+              <p class="pedido-chat__vazio" x-show="!carregandoConversa && !erroConversa && !mensagens.length">
+                Ainda não há mensagens. Pergunte sobre a peça, o horário de retirada ou a entrega.
+              </p>
+              <ul class="pedido-chat__mensagens" x-show="mensagens.length" aria-live="polite" aria-label="Últimas mensagens">
+                <template x-for="m in mensagens" :key="m.idMensagem">
+                  <li class="pedido-chat__mensagem" :class="{ 'pedido-chat__mensagem--propria': m.propria }">
+                    <p class="mb-2" x-text="m.conteudo"></p>
+                    <small x-text="autorMensagem(m)"></small>
+                  </li>
+                </template>
+              </ul>
+              <a class="pedido-chat__completa" x-show="linkConversa" :href="linkConversa">Abrir conversa completa</a>
+
+              <form class="mt-3" @submit.prevent="enviar()" novalidate>
+                <label class="form-label fw-bold" for="nova-mensagem">Sua mensagem</label>
+                <textarea id="nova-mensagem" class="form-control" rows="2" placeholder="Escreva para a loja" x-ref="campoMensagem"
+                          :maxlength="MENSAGEM_MAXIMO" x-model="novaMensagem" :class="{ 'is-invalid': erroMensagem }"
+                          :aria-invalid="erroMensagem ? 'true' : null" aria-describedby="erro-mensagem"></textarea>
+                <div id="erro-mensagem" class="invalid-feedback" x-text="erroMensagem"></div>
+                <button type="submit" class="btn btn--verde w-100 detalhe-botao" :disabled="enviandoMensagem">
+                  <span class="spinner-border spinner-border-sm" x-show="enviandoMensagem" aria-hidden="true"></span>
+                  <span x-text="enviandoMensagem ? 'Enviando…' : 'Enviar mensagem'"></span>
+                </button>
+              </form>
+              <p class="pedido-chat__nota" x-show="CONVERSA_SIMULADA">Conversa apenas demonstrativa, sem envio real.</p>
+            </section>
+
+            <!-- ===== Precisa de ajuda? (BP1-30, 61, 36, 27, 15) ===== -->
+            <section class="detalhe-caixa pedido-ajuda" aria-labelledby="titulo-ajuda">
+              <h2 id="titulo-ajuda" class="carrinho-loja__nome">Precisa de ajuda?</h2>
+
+              <button type="button" class="btn btn--verde w-100 detalhe-botao" x-show="podeConfirmarRecebimento"
+                      @click="confirmarRecebido()" :disabled="confirmandoRecebimento">
+                <span class="spinner-border spinner-border-sm" x-show="confirmandoRecebimento" aria-hidden="true"></span>
+                <span>Confirmar recebimento</span>
+              </button>
+
+              <button type="button" class="btn btn--contorno w-100 detalhe-botao" x-show="podeRelatarProblema"
+                      @click="abrirModal('problema', $event)">Relatar um problema</button>
+              <p class="pedido-ajuda__nota" x-show="textoProblema" x-text="textoProblema"></p>
+
+              <button type="button" class="btn pedido-ajuda__cancelar w-100 detalhe-botao" x-show="podeCancelar"
+                      @click="abrirModal('cancelar', $event)">Cancelar pedido</button>
+              <p class="pedido-ajuda__nota" x-show="textoCancelar" x-text="textoCancelar"></p>
+
+              <button type="button" class="btn btn--contorno w-100 detalhe-botao" x-show="temRecibo" @click="baixarRecibo()">
+                <i class="bi bi-file-earmark-pdf" aria-hidden="true"></i> Baixar recibo (PDF)
+              </button>
+
+              <button type="button" class="btn pedido-ajuda__avaliar w-100 detalhe-botao" :class="{ 'pedido-ajuda__avaliar--ativo': podeAvaliar }"
+                      x-show="!encerradoSemConcluir" :disabled="!podeAvaliar" @click="abrirModal('avaliar', $event)"
+                      x-text="textoBotaoAvaliar"></button>
+            </section>
+          </aside>
+        </div>
+
+        <!-- ================= MODAIS ("00 • Referência", Estados e modais) ================= -->
+
+        <!-- Cancelar pedido (BP1-30) -->
+        <div class="pedido-modal" x-show="modal === 'cancelar'" x-cloak @click.self="fecharModal()">
+          <div id="modal-cancelar" class="pedido-modal__caixa" role="dialog" aria-modal="true" aria-labelledby="titulo-modal-cancelar"
+               @keydown.tab="prenderFoco($event)">
+            <div class="pedido-modal__topo">
+              <h2 id="titulo-modal-cancelar" x-text="`Cancelar pedido ${pedido.codigo}`"></h2>
+              <button type="button" class="pedido-modal__fechar" aria-label="Fechar" @click="fecharModal()"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
+            </div>
+            <p class="pedido-modal__texto">Você pode cancelar enquanto o pedido aguarda o aceite da loja.</p>
+            <form @submit.prevent="enviarCancelamento()" novalidate>
+              <label class="form-label fw-bold" for="cancelar-motivo">Motivo</label>
+              <select id="cancelar-motivo" class="form-select" data-foco-inicial x-model="cancelamento.motivo"
+                      :class="{ 'is-invalid': errosModal.motivo }" :aria-invalid="errosModal.motivo ? 'true' : null" aria-describedby="erro-cancelar-motivo">
+                <option value="">Escolha o motivo</option>
+                <template x-for="m in MOTIVOS_CANCELAMENTO" :key="m"><option :value="m" x-text="m"></option></template>
+              </select>
+              <div id="erro-cancelar-motivo" class="invalid-feedback" x-text="errosModal.motivo"></div>
+
+              <label class="form-label fw-bold mt-3" for="cancelar-mensagem">Comentário para a loja <span class="fw-normal">(opcional)</span></label>
+              <textarea id="cancelar-mensagem" class="form-control" rows="3" :maxlength="COMENTARIO_MAXIMO" x-model="cancelamento.mensagem"
+                        placeholder="Ex.: Obrigada pelo atendimento."></textarea>
+
+              <p class="carrinho-aviso carrinho-aviso--amarelo mt-3" x-text="`A ${pedido.loja?.nomeLoja || 'loja'} será avisada. Esta ação não pode ser desfeita.`"></p>
+              <p class="carrinho-aviso carrinho-aviso--vermelho" x-show="erroModal" role="alert" x-text="erroModal"></p>
+              <div class="pedido-modal__botoes">
+                <button type="button" class="btn btn--contorno" @click="fecharModal()" :disabled="enviando">Manter pedido</button>
+                <button type="submit" class="btn pedido-modal__perigo" :disabled="enviando">
+                  <span class="spinner-border spinner-border-sm" x-show="enviando" aria-hidden="true"></span>
+                  <span x-text="enviando ? 'Cancelando…' : 'Cancelar pedido'"></span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <!-- Relatar um problema (BP1-61) -->
+        <div class="pedido-modal" x-show="modal === 'problema'" x-cloak @click.self="fecharModal()">
+          <div id="modal-problema" class="pedido-modal__caixa" role="dialog" aria-modal="true" aria-labelledby="titulo-modal-problema"
+               @keydown.tab="prenderFoco($event)">
+            <div class="pedido-modal__topo">
+              <h2 id="titulo-modal-problema">Relatar um problema</h2>
+              <button type="button" class="pedido-modal__fechar" aria-label="Fechar" @click="fecharModal()"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
+            </div>
+            <p class="pedido-modal__texto" x-text="resumoPedidoProblema"></p>
+            <form @submit.prevent="enviarProblema()" novalidate>
+              <label class="form-label fw-bold" for="problema-tipo">Tipo de problema</label>
+              <select id="problema-tipo" class="form-select" data-foco-inicial x-model="problema.tipoProblema"
+                      :class="{ 'is-invalid': errosModal.tipoProblema }" :aria-invalid="errosModal.tipoProblema ? 'true' : null" aria-describedby="erro-problema-tipo">
+                <option value="">Escolha o tipo</option>
+                <template x-for="t in TIPOS_PROBLEMA" :key="t.valor"><option :value="t.valor" x-text="t.texto"></option></template>
+              </select>
+              <div id="erro-problema-tipo" class="invalid-feedback" x-text="errosModal.tipoProblema"></div>
+
+              <label class="form-label fw-bold mt-3" for="problema-descricao">Descreva o que aconteceu</label>
+              <textarea id="problema-descricao" class="form-control" rows="3" :maxlength="DESCRICAO_MAXIMO" x-model="problema.descricao"
+                        placeholder="Ex.: A polia veio com 5 canais, o anúncio informava 6 canais."
+                        :class="{ 'is-invalid': errosModal.descricao }" :aria-invalid="errosModal.descricao ? 'true' : null" aria-describedby="erro-problema-descricao"></textarea>
+              <div id="erro-problema-descricao" class="invalid-feedback" x-text="errosModal.descricao"></div>
+
+              <div class="pedido-anexo mt-3">
+                <input id="problema-arquivos" type="file" class="visually-hidden" multiple accept=".jpg,.jpeg,.png,.pdf,image/jpeg,image/png,application/pdf"
+                       @change="escolherArquivos($event)" aria-describedby="ajuda-anexo erro-anexo">
+                <label for="problema-arquivos" class="pedido-anexo__botao" x-ref="botaoAnexo" tabindex="0"
+                       @keydown.enter.prevent="$el.click()" @keydown.space.prevent="$el.click()">
+                  <span class="fw-bold">+ Adicionar fotos ou documentos</span>
+                  <small id="ajuda-anexo">JPG, PNG ou PDF • até 5 MB • até 5 arquivos</small>
+                </label>
+              </div>
+              <ul class="pedido-anexo__lista" x-show="problema.arquivos.length">
+                <template x-for="(arquivo, i) in problema.arquivos" :key="arquivo.name + i">
+                  <li>
+                    <span x-text="`${arquivo.name} (${tamanhoArquivo(arquivo)})`"></span>
+                    <button type="button" class="btn btn-link btn-sm p-0" @click="removerArquivo(i)" :aria-label="`Remover ${arquivo.name}`">Remover</button>
+                  </li>
+                </template>
+              </ul>
+              <p id="erro-anexo" class="detalhe-erro" x-show="errosModal.arquivos" x-text="errosModal.arquivos"></p>
+
+              <div class="form-check mt-3">
+                <input class="form-check-input" type="checkbox" id="problema-devolucao" x-model="problema.querDevolucao">
+                <label class="form-check-label" for="problema-devolucao">Quero solicitar devolução ou troca</label>
+              </div>
+              <p class="carrinho-aviso carrinho-aviso--vermelho mt-3" x-show="erroModal" role="alert" x-text="erroModal"></p>
+              <div class="pedido-modal__botoes">
+                <button type="submit" class="btn btn--verde" :disabled="enviando">
+                  <span class="spinner-border spinner-border-sm" x-show="enviando" aria-hidden="true"></span>
+                  <span x-text="enviando ? 'Enviando…' : 'Enviar relato'"></span>
+                </button>
+                <button type="button" class="btn btn--contorno" @click="fecharModal()" :disabled="enviando">Voltar</button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <!-- Avaliar a loja (BP1-15) -->
+        <div class="pedido-modal" x-show="modal === 'avaliar'" x-cloak @click.self="fecharModal()">
+          <div id="modal-avaliar" class="pedido-modal__caixa" role="dialog" aria-modal="true" aria-labelledby="titulo-modal-avaliar"
+               @keydown.tab="prenderFoco($event)">
+            <div class="pedido-modal__topo">
+              <h2 id="titulo-modal-avaliar" x-text="`Avaliar ${pedido.loja?.nomeLoja || 'a loja'}`"></h2>
+              <button type="button" class="pedido-modal__fechar" aria-label="Fechar" @click="fecharModal()"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
+            </div>
+            <p class="pedido-modal__texto" x-text="textoConclusao"></p>
+            <form @submit.prevent="enviarAvaliacao()" novalidate>
+              <fieldset class="pedido-estrelas" :aria-invalid="errosModal.nota ? 'true' : null" aria-describedby="erro-nota">
+                <legend class="visually-hidden">Nota para a loja</legend>
+                <template x-for="n in 5" :key="n">
+                  <label class="pedido-estrelas__opcao" :class="{ 'pedido-estrelas__opcao--cheia': n <= avaliacao.nota }">
+                    <input type="radio" name="nota" class="visually-hidden" :value="n" x-model.number="avaliacao.nota" :data-foco-inicial="n === 1 ? '' : null">
+                    <span aria-hidden="true" x-text="n <= avaliacao.nota ? '★' : '☆'"></span>
+                    <span class="visually-hidden" x-text="rotuloNota(n)"></span>
+                  </label>
+                </template>
+              </fieldset>
+              <p id="erro-nota" class="detalhe-erro" x-show="errosModal.nota" x-text="errosModal.nota"></p>
+
+              <fieldset class="mt-3">
+                <legend class="form-label fw-bold fs-6">Como foi a compra?</legend>
+                <template x-for="a in ASPECTOS_AVALIACAO" :key="a.valor">
+                  <div class="form-check">
+                    <input class="form-check-input" type="checkbox" :id="`aspecto-${a.valor}`" :value="a.valor" x-model="avaliacao.aspectos">
+                    <label class="form-check-label" :for="`aspecto-${a.valor}`" x-text="a.texto"></label>
+                  </div>
+                </template>
+              </fieldset>
+
+              <label class="form-label fw-bold mt-3" for="avaliacao-comentario">Comentário técnico <span class="fw-normal">(opcional)</span></label>
+              <textarea id="avaliacao-comentario" class="form-control" rows="3" :maxlength="AVALIACAO_MAXIMO" x-model="avaliacao.comentario"
+                        placeholder="Ex.: Filtro original, embalagem lacrada."></textarea>
+
+              <p class="carrinho-aviso carrinho-aviso--vermelho mt-3" x-show="erroModal" role="alert" x-text="erroModal"></p>
+              <div class="pedido-modal__botoes">
+                <button type="submit" class="btn btn--verde" :disabled="enviando">
+                  <span class="spinner-border spinner-border-sm" x-show="enviando" aria-hidden="true"></span>
+                  <span x-text="enviando ? 'Enviando…' : 'Enviar avaliação'"></span>
+                </button>
+                <button type="button" class="btn btn--contorno" @click="fecharModal()" :disabled="enviando">Agora não</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </template>
+  </main>
+
+  <!-- Rodapé: provisório até existir js/components/rodape.js -->
+  <footer id="rodape" class="rodape mt-5">
+    <div class="container-fluid px-3 px-lg-4 py-4">
+      <p class="mb-1">Ambiente demonstrativo • lojas, preços e estoques fictícios</p>
+      <p class="mb-0">
+        <a href="../institucional/sobre.html">Busca Peça</a> •
+        <a href="mailto:contato@buscapeca.example.com">Contato</a> •
+        <a href="../institucional/termos-de-uso.html">Termos de uso</a> •
+        <a href="../institucional/termos-de-uso.html#politica-de-privacidade">Privacidade</a>
+      </p>
+    </div>
+  </footer>
+
+  <!-- O módulo da página vem ANTES do Alpine, para registrar o componente no alpine:init. -->
+  <script type="module" src="../../js/pages/compra/detalhe-pedido.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js"></script>
+</body>
+</html>

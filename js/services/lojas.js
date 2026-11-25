@@ -251,3 +251,43 @@ async function simularDesempenho({ de }) {
     itens,
   };
 }
+
+/**
+ * GET /api/lojas/{id} — página pública da loja (BP1-15, BP1-55). Já existe na API (LojaPublicaResponse).
+ * @returns {Promise<{ idLoja, nomeLoja, descricao, logoUrl, bannerUrl, avaliacaoMedia, vendedorVerificado,
+ *   cidade, estado, retiradaBalcao, horarioRetirada, entregaCombinar, motoboyProprio, entregaRapida,
+ *   freteGratisRaioKm, pedidoMinimoFreteGratis, aceitaFaturamentoCnpj, metodosPagamento: string[] }>}
+ * Rejeita com 404 quando a loja não existe ou está pausada.
+ */
+export async function obterLojaPublica(idLoja) {
+  if (USAR_SIMULACAO) {
+    const { lojasPublicasSimuladas } = await import('./simulacao-busca.js');
+    await esperarSimulacao(300);
+    const loja = lojasPublicasSimuladas.find((l) => l.idLoja === Number(idLoja));
+    if (!loja) throw { status: 404, erro: 'NAO_ENCONTRADO', mensagem: 'Loja não encontrada.' };
+    return structuredClone(loja);
+  }
+  // return api.get(`/lojas/${idLoja}`);
+}
+
+/**
+ * GET /api/lojas/{id}/avaliacoes?pagina=&tamanho= — avaliações técnicas da loja, paginadas (BP1-15).
+ * @returns {Promise<{ itens: { idAvaliacao, autor, nota, comentario, dataAvaliacao }[],
+ *   pagina, tamanho, totalRegistros, totalPaginas }>}
+ */
+export async function listarAvaliacoesLoja(idLoja, { pagina = 1, tamanho = 3 } = {}) {
+  if (USAR_SIMULACAO) {
+    const { avaliacoesSimuladas } = await import('./simulacao-busca.js');
+    await esperarSimulacao(300);
+    const todas = avaliacoesSimuladas(idLoja);
+    const inicio = (pagina - 1) * tamanho;
+    return {
+      itens: todas.slice(inicio, inicio + tamanho),
+      pagina,
+      tamanho,
+      totalRegistros: todas.length,
+      totalPaginas: Math.max(1, Math.ceil(todas.length / tamanho)),
+    };
+  }
+  // return api.get(`/lojas/${idLoja}/avaliacoes?pagina=${pagina}&tamanho=${tamanho}`);
+}

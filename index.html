@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Busca Peças • Encontre a peça certa para sua oficina</title>
+  <meta name="description" content="Encontre peças por nome, código OEM, EAN ou SKU em lojas e oficinas próximas. Compre e venda com a mesma conta.">
+
+  <!-- Bibliotecas por CDN com versão fixa (ADR-014) -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+  <!-- CSS do projeto (os estilos desta tela estão em base.css, seção "PÁGINA INICIAL") -->
+  <link rel="stylesheet" href="css/variaveis.css">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/componentes.css">
+
+  <!-- Componente do cabeçalho (o script desta página está no fim do <body>, como módulo) -->
+  <script src="js/components/cabecalho.js" defer></script>
+</head>
+<body class="d-flex flex-column min-vh-100">
+
+  <!-- Cabeçalho: preenchido por js/components/cabecalho.js -->
+  <header id="cabecalho"></header>
+
+  <!-- Página pública • BP1-4, BP1-6 • GET /api/categorias, GET /api/busca • Fluxo A, etapa 01 -->
+  <main id="conteudo" class="inicio flex-grow-1">
+
+    <!-- ===== Destaque: busca ===== -->
+    <section class="inicio-hero" aria-labelledby="inicio-titulo">
+      <div class="container-fluid px-3 px-lg-4">
+        <div class="row g-4 g-xl-5 align-items-center">
+
+          <div class="col-lg-7">
+            <p class="inicio-selo">De oficina para oficina. De loja para loja.</p>
+            <h1 id="inicio-titulo" class="inicio-hero__titulo">Encontre a peça certa para sua oficina</h1>
+            <p class="inicio-hero__texto">
+              Compre de lojas próximas e transforme seu estoque parado em novas oportunidades.
+              Uma conta, dois caminhos para o seu negócio.
+            </p>
+
+            <form id="form-busca-inicio" class="inicio-busca" role="search" action="pages/busca/resultados.html" novalidate>
+              <label for="busca-inicio" class="visually-hidden">Buscar peças por nome ou código OEM, EAN ou SKU</label>
+              <div class="inicio-busca__campo">
+                <i class="bi bi-search" aria-hidden="true"></i>
+                <input id="busca-inicio" type="search" name="q" maxlength="120" autocomplete="off"
+                       placeholder="Farol Onix 2020, OEM, EAN ou SKU" aria-describedby="busca-inicio-erro">
+              </div>
+              <p id="busca-inicio-erro" class="inicio-busca__erro" aria-live="polite"></p>
+              <button type="submit" class="btn btn--verde inicio-busca__botao">
+                <i class="bi bi-arrow-right" aria-hidden="true"></i> Buscar peças
+              </button>
+            </form>
+
+            <p class="inicio-hero__local">
+              <i class="bi bi-geo-alt" aria-hidden="true"></i>
+              <span id="inicio-local">Localização não informada</span> •
+              <button type="button" id="inicio-alterar-local" class="inicio-hero__link">
+                altere sua localização ou informe o CEP manualmente
+              </button>
+            </p>
+          </div>
+
+          <!-- Imagem ilustrativa (some no celular e no tablet).
+               Para usar uma foto: salve em assets/img/ e troque o <div class="inicio-hero__foto">
+               por <img class="inicio-hero__foto" src="assets/img/SUA-FOTO.jpg" alt=""> -->
+          <div class="col-lg-5 d-none d-lg-block">
+            <div class="inicio-hero__imagem">
+              <div class="inicio-hero__foto" aria-hidden="true">
+                <i class="bi bi-lightbulb inicio-hero__icone inicio-hero__icone--1"></i>
+                <i class="bi bi-gear-wide-connected inicio-hero__icone inicio-hero__icone--2"></i>
+                <i class="bi bi-tools inicio-hero__icone inicio-hero__icone--3"></i>
+              </div>
+              <p class="inicio-hero__legenda">
+                <i class="bi bi-box-seam" aria-hidden="true"></i> Estoque disponível. Negócio direto.
+              </p>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <div class="container-fluid px-3 px-lg-4">
+
+      <!-- ===== Categorias (BP1-6) ===== -->
+      <section class="inicio-secao" aria-labelledby="titulo-categorias">
+        <h2 id="titulo-categorias" class="inicio-secao__titulo">O que sua oficina precisa hoje?</h2>
+        <ul id="inicio-categorias" class="list-unstyled row row-cols-2 row-cols-sm-3 row-cols-lg-6 g-3 mb-0"></ul>
+      </section>
+
+      <!-- ===== Peças em destaque ===== -->
+      <section class="inicio-secao" aria-labelledby="titulo-destaque">
+        <div class="inicio-secao__topo">
+          <h2 id="titulo-destaque" class="inicio-secao__titulo mb-0">Peças em destaque</h2>
+          <a class="btn btn--contorno" href="pages/busca/resultados.html">Ver todas as peças</a>
+        </div>
+        <div id="lista-destaque" class="row row-cols-1 row-cols-sm-2 row-cols-lg-4 g-3 g-lg-4"></div>
+      </section>
+
+      <!-- ===== Pronta entrega perto do usuário ===== -->
+      <section class="inicio-secao" aria-labelledby="titulo-revisao">
+        <h2 id="titulo-revisao" class="inicio-secao__titulo">Disponíveis para sua próxima revisão</h2>
+        <p class="inicio-secao__sub">
+          Pronta entrega em lojas da região. Confirme retirada ou entrega diretamente com o vendedor.
+        </p>
+        <div id="lista-revisao" class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-3 g-lg-4"></div>
+      </section>
+
+      <!-- ===== Como funciona: comprar e vender ===== -->
+      <section id="como-funciona" class="inicio-secao" aria-label="Como funciona">
+        <div class="row g-3 g-lg-4">
+          <div class="col-lg-6">
+            <div class="inicio-caixa">
+              <h2 class="inicio-caixa__titulo">Comprar sem complicar</h2>
+              <p class="inicio-etiqueta inicio-etiqueta--azul">Para quem precisa da peça</p>
+              <ol class="inicio-passos">
+                <li>Encontre por nome ou código e confira a compatibilidade.</li>
+                <li>Compare lojas, estoque e condições declaradas.</li>
+                <li>Envie seu pedido e combine pagamento e entrega com a loja.</li>
+              </ol>
+              <a class="btn btn--contorno" href="pages/busca/resultados.html">Encontrar peças</a>
+            </div>
+          </div>
+          <div class="col-lg-6">
+            <div class="inicio-caixa">
+              <h2 class="inicio-caixa__titulo">Seu estoque pode ir mais longe</h2>
+              <p class="inicio-etiqueta inicio-etiqueta--verde">Para quem quer vender</p>
+              <ol class="inicio-passos">
+                <li>Crie sua loja com a mesma conta que você já usa.</li>
+                <li>Cadastre fotos, códigos, preço e estoque com clareza.</li>
+                <li>Receba pedidos e converse diretamente com compradores.</li>
+              </ol>
+              <a class="btn btn--contorno" id="link-criar-loja" href="pages/minha-loja/criar-loja.html">Criar minha loja</a>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== Chamada para vender ===== -->
+      <section class="inicio-cta" aria-labelledby="titulo-cta">
+        <div>
+          <h2 id="titulo-cta" class="inicio-cta__titulo">Anuncie suas peças</h2>
+          <p class="inicio-cta__texto">A próxima oficina pode estar procurando exatamente o que está na sua prateleira.</p>
+        </div>
+        <a class="btn btn--verde inicio-cta__botao" id="link-comecar-vender" href="pages/minha-loja/criar-loja.html">
+          <i class="bi bi-arrow-right" aria-hidden="true"></i> <span data-texto>Começar a vender</span>
+        </a>
+      </section>
+
+    </div>
+  </main>
+
+  <!-- Rodapé: provisório até existir js/components/rodape.js -->
+  <footer id="rodape" class="rodape rodape--completo">
+    <div class="container-fluid px-3 px-lg-4">
+      <div class="row g-4">
+        <div class="col-md-5 col-lg-4">
+          <a href="index.html" class="rodape__marca" aria-label="Busca Peças, página inicial">
+            <img src="assets/img/icone_cor.png" alt="" width="58" height="36">
+            <span>BUSCA <span class="rodape__marca-destaque">PEÇAS</span></span>
+          </a>
+          <p class="rodape__frase">Conectamos quem tem a peça a quem precisa dela.</p>
+          <p class="rodape__aviso">Ambiente demonstrativo • lojas, preços e estoques fictícios</p>
+        </div>
+        <div class="col-sm-6 col-md-3 col-lg-4">
+          <h2 class="rodape__titulo">Institucional</h2>
+          <ul class="rodape__lista">
+            <li><a href="pages/institucional/sobre.html">Sobre o Busca Peça</a> • <a href="#como-funciona">Como funciona</a></li>
+            <li><a href="pages/institucional/termos-de-uso.html">Termos de uso</a> •
+                <a href="pages/institucional/termos-de-uso.html#politica-de-privacidade">Privacidade</a></li>
+          </ul>
+        </div>
+        <div class="col-sm-6 col-md-4">
+          <h2 class="rodape__titulo">Conte com a gente</h2>
+          <ul class="rodape__lista">
+            <li><a href="mailto:contato@buscapeca.example.com">contato@buscapeca.example.com</a></li>
+            <li>Segunda a sexta, das 8h às 18h</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script type="module" src="js/pages/index.js"></script>
+</body>
+</html>

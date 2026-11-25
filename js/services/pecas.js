@@ -284,3 +284,132 @@ async function simularSalvar({ idPeca, dados, aplicacoes, fotos, status }) {
   anunciosSimulados.unshift({ idPeca: novoId, ...registro });
   return { idPeca: novoId, salvoEm };
 }
+
+/**
+ * GET /api/pecas/{id}?cep=&lat=&lng= — detalhe público de um anúncio (BP1-4, BP1-10).
+ * Usado em Comparar opções e no Detalhe da peça. Com cep ou lat/lng, a API devolve a distância.
+ * Mesma rota do formulário de peça: fotos e aplicacoes têm os mesmos nomes de obterPecaParaEdicao().
+ * @param {number} idPeca
+ * @param {{ cep?: string, lat?: string, lng?: string }} [local]
+ * @returns {Promise<{ idPeca, titulo, descricao, caracteristicas, codigoOem, codigoSku, codigoEan, marcaPeca,
+ *   preco, precoPromocional, condicao, origem, quantidadeEstoque, prontaEntrega, prazoExpedicaoDias,
+ *   categoria: { idCategoria, nome, pai: { idCategoria, nome } | null },
+ *   fotos: { idFoto, url }[], aplicacoes: { marca, modelo, anoInicial, anoFinal, versao }[],
+ *   favorito, avisoDisponibilidade, distanciaKm,
+ *   loja: { idLoja, nomeLoja, avaliacaoMedia, totalAvaliacoes, cidade, estado,
+ *     retiradaBalcao, motoboyProprio, entregaCombinar, formasPagamento: string[] } }>}
+ * Rejeita com 404 quando o anúncio não existe ou não está ATIVO.
+ */
+export async function obterPeca(idPeca, local = {}) {
+  if (USAR_SIMULACAO) return simularObterPecaPublica(idPeca, local);
+  // return api.get(`/pecas/${idPeca}${parametrosDeLocal(local)}`);
+}
+
+/**
+ * GET /api/pecas/{id}/ofertas — a mesma peça (mesmo OEM, EAN ou SKU) em outras lojas, com preço e distância (BP1-10).
+ * @returns {Promise<object[]>} itens no formato de GET /api/busca (servem para o card de peça)
+ */
+export async function listarOfertas(idPeca, local = {}) {
+  if (USAR_SIMULACAO) return simularOfertas(idPeca, local);
+  // return api.get(`/pecas/${idPeca}/ofertas${parametrosDeLocal(local)}`);
+}
+
+/**
+ * GET /api/pecas/{id}/alternativas — peças equivalentes para substituição (BP1-66).
+ * @returns {Promise<object[]>} itens no formato de GET /api/busca
+ */
+export async function listarAlternativas(idPeca, local = {}) {
+  if (USAR_SIMULACAO) return simularAlternativas(idPeca, local);
+  // return api.get(`/pecas/${idPeca}/alternativas${parametrosDeLocal(local)}`);
+}
+
+/**
+ * POST /api/pecas/{id}/aviso-disponibilidade — avisa o comprador quando a peça voltar ao estoque (BP1-52).
+ * DELETE na mesma rota cancela o aviso. Acesso: logado.
+ */
+export async function pedirAvisoDisponibilidade(idPeca) {
+  if (USAR_SIMULACAO) { await esperar(300); return null; }
+  // return api.post(`/pecas/${idPeca}/aviso-disponibilidade`, {});
+}
+
+// "?cep=13010110" ou "?lat=..&lng=.." (só o que estiver preenchido)
+function parametrosDeLocal(local = {}) {
+  const params = new URLSearchParams();
+  ['cep', 'lat', 'lng'].forEach((chave) => { if (local[chave]) params.set(chave, local[chave]); });
+  return params.toString() ? `?${params}` : '';
+}
+
+// ---------------------------------------------------------------------------
+// Simulação do detalhe público (apagar junto com simulacao-busca.js)
+// ---------------------------------------------------------------------------
+
+async function simularObterPecaPublica(idPeca, local) {
+  const { pecasSimuladas, detalhesSimulados } = await import('./simulacao-busca.js');
+  const { categoriasSimuladas } = await import('./simulacao.js');
+  await esperar(350);
+  const peca = pecasSimuladas.find((p) => p.idPeca === Number(idPeca));
+  if (!peca) throw { status: 404, erro: 'NAO_ENCONTRADO', mensagem: 'Este anúncio não está mais disponível.' };
+
+  const pai = categoriasSimuladas.find((c) => c.idCategoria === peca.idCategoria
+    || c.subcategorias.some((s) => s.idCategoria === peca.idCategoria));
+  const sub = pai?.subcategorias.find((s) => s.idCategoria === peca.idCategoria);
+  const extra = detalhesSimulados?.[peca.idPeca] || {};
+  const { distanciaKm, ...loja } = peca.loja;
+  const { compatibilidade, publicadoEm, fotoUrl, idCategoria, ...dados } = peca;
+
+  return {
+    ...structuredClone(dados),
+    descricao: extra.descricao || `${peca.titulo}. Peça ${peca.condicao === 'NOVA' ? 'nova' : peca.condicao.toLowerCase()} de origem ${peca.origem === 'NACIONAL' ? 'nacional' : 'importada'}. Confira código e aplicação com o vendedor.`,
+    caracteristicas: extra.caracteristicas || '',
+    categoria: sub ? { idCategoria: sub.idCategoria, nome: sub.nome, pai: { idCategoria: pai.idCategoria, nome: pai.nome } }
+      : { idCategoria: pai?.idCategoria, nome: pai?.nome, pai: null },
+    fotos: fotoUrl ? [{ idFoto: 1, url: fotoUrl }] : [],
+    aplicacoes: (compatibilidade || []).map((v) => ({
+      marca: v.marca, modelo: v.modelo, anoInicial: v.anoInicio, anoFinal: v.anoFim, versao: v.versao || '',
+    })),
+    loja: structuredClone(loja),
+    distanciaKm: local.cep || local.lat ? distanciaKm : null,
+    favorito: false,
+    avisoDisponibilidade: false,
+  };
+}
+
+// Converte a peça simulada para o formato de GET /api/busca (o mesmo do card de peça)
+function paraItemDeBusca(p, local) {
+  const { idLoja, nomeLoja, avaliacaoMedia, cidade, estado, distanciaKm } = p.loja;
+  const { compatibilidade, publicadoEm, ...dados } = p;
+  return {
+    ...structuredClone(dados),
+    loja: { idLoja, nomeLoja, avaliacaoMedia, cidade, estado },
+    distanciaKm: local.cep || local.lat ? distanciaKm : null,
+    favorito: false,
+  };
+}
+
+async function simularOfertas(idPeca, local) {
+  const { pecasSimuladas } = await import('./simulacao-busca.js');
+  await esperar(300);
+  const peca = pecasSimuladas.find((p) => p.idPeca === Number(idPeca));
+  if (!peca) return [];
+  const mesmoCodigo = (p) => (peca.codigoOem && p.codigoOem === peca.codigoOem)
+    || (peca.codigoEan && p.codigoEan === peca.codigoEan);
+  return pecasSimuladas
+    .filter((p) => p.idPeca !== peca.idPeca && p.loja.idLoja !== peca.loja.idLoja && mesmoCodigo(p) && p.quantidadeEstoque > 0)
+    .sort((a, b) => (a.precoPromocional ?? a.preco) - (b.precoPromocional ?? b.preco))
+    .map((p) => paraItemDeBusca(p, local));
+}
+
+async function simularAlternativas(idPeca, local) {
+  const { pecasSimuladas } = await import('./simulacao-busca.js');
+  await esperar(300);
+  const peca = pecasSimuladas.find((p) => p.idPeca === Number(idPeca));
+  if (!peca) return [];
+  // Simulação: mesma categoria ou mesmo veículo, sem repetir o mesmo código
+  const modelos = new Set((peca.compatibilidade || []).map((v) => `${v.marca} ${v.modelo}`));
+  return pecasSimuladas
+    .filter((p) => p.idPeca !== peca.idPeca && p.quantidadeEstoque > 0
+      && !(peca.codigoOem && p.codigoOem === peca.codigoOem)
+      && (p.idCategoria === peca.idCategoria || (p.compatibilidade || []).some((v) => modelos.has(`${v.marca} ${v.modelo}`))))
+    .slice(0, 6)
+    .map((p) => paraItemDeBusca(p, local));
+}

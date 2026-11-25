@@ -17,3 +17,13 @@ export function formatarData(isoOuDate) {
 export function pluralizarDiasUteis(dias) {
   return dias === 1 ? '1 dia útil' : `${dias} dias úteis`;
 }
+
+// Nota ou distância com uma casa decimal: 4.8 → "4,8"
+export function formatarDecimal(valor) {
+  return (Number(valor) || 0).toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+}
+
+// Protege textos vindos da API antes de colocar no HTML
+export function escaparHtml(texto) {
+  return String(texto ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}

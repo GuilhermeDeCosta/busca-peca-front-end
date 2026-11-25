@@ -58,3 +58,25 @@ export async function listarModelos(marca) {
 export async function listarMarcasPeca() {
   return [...MARCAS_PECA]; // trocar pela rota quando ela existir
 }
+
+/**
+ * GET /api/veiculos?marca=&modelo= — veículos (modelos, versões e anos) de uma marca.
+ * O modelo é opcional: sem ele, vêm todos os veículos da marca.
+ * Usado no filtro de Ano da busca e para montar o parâmetro "veiculo" de GET /api/busca.
+ * @returns {Promise<{ idVeiculo: number, marca: string, modelo: string, ano: number, versao: string }[]>}
+ */
+export async function listarVeiculos(marca, modelo) {
+  if (!marca) return [];
+  if (USAR_SIMULACAO) {
+    await esperar(200);
+    const modelos = (veiculosSimulados[marca] || []).filter((m) => !modelo || m === modelo);
+    // Simulação: um veículo por modelo e ano, de 2010 a 2024, com id inventado
+    return modelos.flatMap((m) => {
+      const base = (Object.keys(veiculosSimulados).indexOf(marca) + 1) * 1000 + veiculosSimulados[marca].indexOf(m) * 100;
+      return Array.from({ length: 15 }, (_, i) => ({ idVeiculo: base + i + 1, marca, modelo: m, ano: 2010 + i, versao: '' }));
+    });
+  }
+  // const params = new URLSearchParams({ marca });
+  // if (modelo) params.set('modelo', modelo);
+  // return api.get(`/veiculos?${params}`);
+}

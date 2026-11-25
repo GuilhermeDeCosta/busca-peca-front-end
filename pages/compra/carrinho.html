@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Meu carrinho • Busca Peças</title>
+
+  <!-- Bibliotecas por CDN com versão fixa (ADR-014) -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+  <!-- CSS do projeto (os estilos desta tela estão em base.css, seção "MEU CARRINHO") -->
+  <link rel="stylesheet" href="../../css/variaveis.css">
+  <link rel="stylesheet" href="../../css/base.css">
+  <link rel="stylesheet" href="../../css/componentes.css">
+  <style>[x-cloak] { display: none !important; }</style>
+
+  <!-- Componente do cabeçalho -->
+  <script src="../../js/components/cabecalho.js" defer></script>
+</head>
+<body class="d-flex flex-column min-vh-100">
+
+  <!-- Cabeçalho: preenchido por js/components/cabecalho.js -->
+  <header id="cabecalho"></header>
+
+  <!-- Página logada • BP1-22, BP1-23 • GET /api/carrinho • Fluxo A, A07 (etapa 06) -->
+  <main id="conteudo" class="carrinho container-fluid px-3 px-lg-4 py-4 flex-grow-1" x-data="meuCarrinho">
+
+    <nav aria-label="Você está aqui">
+      <ol class="breadcrumb resultados__trilha">
+        <li class="breadcrumb-item"><a href="../../index.html">Início</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Meu carrinho</li>
+      </ol>
+    </nav>
+
+    <h1 class="resultados__titulo" tabindex="-1" x-ref="titulo">Meu carrinho</h1>
+    <p class="resultados__resumo mb-2">
+      <span x-show="!carregando && !vazio" x-text="resumo"></span>
+      <span x-show="carregando" class="placeholder-glow"><span class="placeholder col-4 rounded"></span></span>
+    </p>
+
+    <!-- Etapas da compra (ADR-009: carrinho → revisão por loja → confirmação) -->
+    <ol class="etapas-compra" aria-label="Etapas da compra">
+      <li class="etapas-compra__item etapas-compra__item--atual" aria-current="step">1. Carrinho</li>
+      <li class="etapas-compra__item">2. Revisão</li>
+      <li class="etapas-compra__item">3. Confirmação</li>
+    </ol>
+
+    <!-- Carregando -->
+    <div class="row g-4 placeholder-glow" x-show="carregando" aria-hidden="true">
+      <div class="col-lg-8"><span class="placeholder w-100 rounded" style="height:220px"></span></div>
+      <div class="col-lg-4"><span class="placeholder w-100 rounded" style="height:220px"></span></div>
+    </div>
+
+    <!-- Erro da API -->
+    <div class="resultados-estado" x-show="!carregando && erro" x-cloak role="alert">
+      <i class="bi bi-exclamation-circle" aria-hidden="true"></i>
+      <h2 class="h3" x-text="erro"></h2>
+      <button type="button" class="btn btn--contorno" @click="carregar()">Tentar novamente</button>
+    </div>
+
+    <!-- Carrinho vazio -->
+    <div class="resultados-estado" x-show="vazio" x-cloak>
+      <i class="bi bi-cart3" aria-hidden="true"></i>
+      <h2 class="h3">Seu carrinho está vazio</h2>
+      <p>Busque pelo nome da peça ou pelo código OEM, EAN ou SKU e adicione ao carrinho.</p>
+      <a class="btn btn--verde" :href="linkContinuar">Buscar peças</a>
+    </div>
+
+    <div class="row g-4" x-show="!carregando && !erro && !vazio" x-cloak>
+
+      <!-- ===== Uma caixa por loja (cada uma vira um pedido) ===== -->
+      <div class="col-lg-8 d-flex flex-column gap-4">
+        <template x-for="grupo in carrinho.lojas" :key="grupo.loja.idLoja">
+          <section class="detalhe-caixa carrinho-loja" :aria-label="`Itens da ${grupo.loja.nomeLoja}`">
+            <h2 class="carrinho-loja__nome" x-text="grupo.loja.nomeLoja"></h2>
+
+            <ul class="carrinho-itens">
+              <template x-for="item in grupo.itens" :key="item.idItem">
+                <li class="carrinho-item" :class="{ 'carrinho-item--atualizando': atualizando[item.idItem] }">
+                  <img class="carrinho-item__foto" :src="foto(item)" :alt="item.peca.titulo" width="112" height="84" loading="lazy">
+                  <div class="carrinho-item__dados">
+                    <h3 class="carrinho-item__titulo"><a :href="linkDetalhe(item)" x-text="item.peca.titulo"></a></h3>
+                    <p class="carrinho-item__codigo" x-text="codigo(item)"></p>
+                    <p class="carrinho-item__preco" x-text="`${moeda(item.precoUnitario)} por unidade`"></p>
+
+                    <label class="form-label" :for="`qtd-${item.idItem}`">Quantidade</label>
+                    <div class="detalhe-quantidade carrinho-item__quantidade" :class="{ 'detalhe-quantidade--erro': erros[item.idItem] }">
+                      <button type="button" @click="mudarQuantidade(item, -1)" :disabled="quantidades[item.idItem] <= 1"
+                              :aria-label="`Diminuir quantidade de ${item.peca.titulo}`">−</button>
+                      <input :id="`qtd-${item.idItem}`" type="number" inputmode="numeric" min="1"
+                             x-model.number="quantidades[item.idItem]" @change="aoDigitarQuantidade(item)"
+                             :aria-describedby="`erro-qtd-${item.idItem}`" :aria-invalid="erros[item.idItem] ? 'true' : null">
+                      <button type="button" @click="mudarQuantidade(item, 1)"
+                              :aria-label="`Aumentar quantidade de ${item.peca.titulo}`">+</button>
+                    </div>
+                    <p class="detalhe-erro" :id="`erro-qtd-${item.idItem}`" aria-live="polite" x-text="erros[item.idItem]"></p>
+                    <p class="detalhe-erro" x-show="item.estoqueSuficiente === false && !erros[item.idItem]"
+                       x-text="`Quantidade indisponível no estoque no momento. A loja tem ${item.peca.quantidadeEstoque}.`"></p>
+
+                    <div class="carrinho-item__rodape">
+                      <button type="button" class="busca-salva__link" @click="remover(item)" :disabled="Boolean(atualizando[item.idItem])">Remover item</button>
+                      <span class="carrinho-item__subtotal" x-show="grupo.itens.length > 1" x-text="moeda(item.subtotal)"></span>
+                    </div>
+                  </div>
+                </li>
+              </template>
+            </ul>
+
+            <div class="carrinho-loja__subtotal">
+              <div>
+                <p class="mb-1"><strong>Subtotal desta loja</strong></p>
+                <span class="detalhe-etiqueta" :class="`detalhe-etiqueta--${etiquetaEstoque(grupo).tipo}`" x-text="etiquetaEstoque(grupo).texto"></span>
+              </div>
+              <p class="carrinho-loja__valor" x-text="moeda(grupo.subtotal)"></p>
+            </div>
+          </section>
+        </template>
+
+        <!-- ===== Entrega ou retirada (BP1-23) ===== -->
+        <section class="detalhe-caixa" aria-labelledby="titulo-entrega">
+          <h2 id="titulo-entrega" class="carrinho-loja__nome">Entrega ou retirada</h2>
+          <form class="carrinho-cep" @submit.prevent="estimarEntrega()" novalidate>
+            <div class="flex-grow-1">
+              <label class="form-label" for="cep-carrinho">CEP de referência</label>
+              <input id="cep-carrinho" class="form-control" inputmode="numeric" autocomplete="postal-code" placeholder="00000-000"
+                     maxlength="9" x-ref="campoCep" x-model="cep" @input="aoDigitarCep()"
+                     :class="{ 'is-invalid': erroCep }" aria-describedby="erro-cep-carrinho">
+              <div id="erro-cep-carrinho" class="invalid-feedback" x-text="erroCep"></div>
+            </div>
+            <button type="submit" class="btn btn--contorno carrinho-cep__botao" :disabled="consultandoCep">
+              <span class="spinner-border spinner-border-sm" x-show="consultandoCep" aria-hidden="true"></span>
+              Estimar entrega
+            </button>
+          </form>
+
+          <div aria-live="polite">
+            <template x-if="frete && !frete.falhou">
+              <p class="carrinho-aviso carrinho-aviso--verde">
+                <i class="bi bi-check-circle" aria-hidden="true"></i>
+                <span><strong>Região identificada</strong><br><span x-text="textoRegiao"></span></span>
+              </p>
+            </template>
+            <template x-for="l in lojasComOpcoes" :key="l.idLoja">
+              <div class="carrinho-opcoes">
+                <p class="mb-1"><strong x-text="l.nomeLoja"></strong></p>
+                <ul><template x-for="o in l.opcoes" :key="o.tipo"><li x-text="textoOpcao(o)"></li></template></ul>
+              </div>
+            </template>
+            <template x-if="freteIndisponivel">
+              <p class="carrinho-aviso carrinho-aviso--vermelho">
+                <i class="bi bi-exclamation-circle" aria-hidden="true"></i>
+                <span><strong>Estimativa de frete indisponível</strong><br>
+                  Você pode continuar e combinar a entrega ou a retirada diretamente com cada loja.</span>
+              </p>
+            </template>
+          </div>
+          <p class="detalhe-loja__ajuda">A estimativa é só uma referência. A forma de recebimento é escolhida na revisão, loja por loja.</p>
+        </section>
+      </div>
+
+      <!-- ===== Resumo por loja ===== -->
+      <aside class="col-lg-4">
+        <div class="carrinho-resumo">
+          <section class="detalhe-caixa" aria-labelledby="titulo-resumo">
+            <h2 id="titulo-resumo" class="carrinho-loja__nome">Resumo por loja</h2>
+            <dl class="carrinho-resumo__lista">
+              <template x-for="grupo in carrinho.lojas" :key="grupo.loja.idLoja">
+                <div><dt x-text="grupo.loja.nomeLoja"></dt><dd x-text="moeda(grupo.subtotal)"></dd></div>
+              </template>
+            </dl>
+            <div class="carrinho-resumo__total">
+              <span>Total dos itens</span>
+              <strong x-text="moeda(carrinho.total)"></strong>
+            </div>
+            <p class="carrinho-resumo__frete">Frete a combinar com cada loja.</p>
+            <p class="carrinho-aviso carrinho-aviso--amarelo">
+              <i class="bi bi-info-circle" aria-hidden="true"></i>
+              <span>Combine o pagamento diretamente com a loja, fora da plataforma.</span>
+            </p>
+            <p class="carrinho-resumo__divisao" x-text="avisoDivisao"></p>
+            <a class="btn btn--verde w-100 detalhe-botao" :href="podeRevisar ? linkRevisar : null"
+               :class="{ disabled: !podeRevisar }" :aria-disabled="!podeRevisar">Revisar pedidos</a>
+            <p class="detalhe-erro mt-2" x-show="!podeRevisar && !Object.values(atualizando).some(Boolean)">
+              Ajuste as quantidades marcadas antes de revisar.
+            </p>
+          </section>
+          <a class="btn btn--contorno w-100 detalhe-botao carrinho-resumo__continuar" :href="linkContinuar">Continuar buscando peças</a>
+        </div>
+      </aside>
+    </div>
+  </main>
+
+  <!-- Rodapé: provisório até existir js/components/rodape.js -->
+  <footer id="rodape" class="rodape mt-5">
+    <div class="container-fluid px-3 px-lg-4 py-4">
+      <p class="mb-1">Ambiente demonstrativo • lojas, preços e estoques fictícios</p>
+      <p class="mb-0">
+        <a href="../institucional/sobre.html">Busca Peça</a> •
+        <a href="mailto:contato@buscapeca.example.com">Contato</a> •
+        <a href="../institucional/termos-de-uso.html">Termos de uso</a> •
+        <a href="../institucional/termos-de-uso.html#politica-de-privacidade">Privacidade</a>
+      </p>
+    </div>
+  </footer>
+
+  <!-- O módulo da página vem ANTES do Alpine, para registrar o componente no alpine:init. -->
+  <script type="module" src="../../js/pages/compra/carrinho.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js"></script>
+</body>
+</html>

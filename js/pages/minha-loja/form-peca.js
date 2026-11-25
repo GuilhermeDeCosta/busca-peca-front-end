@@ -1,13 +1,16 @@
 // Tela: minha-loja/form-peca.html — Cadastrar peça manualmente (4 etapas)
 // Também edita: form-peca.html?id=123 (link "Editar" do painel).
 // Ao editar um anúncio publicado, permite pausar e reativar (BP1-46).
+// Ao editar um anúncio ou rascunho já salvo, permite excluir (com confirmação).
 // Acesso: vendedor. Casos de uso: BP1-3, 9, 45, 46, 47, 63.
+// Autopreenchimento por código: tempo limite, cancelamento e volta ao manual (BP1-9, BP1-63, ADR-002, ADR-012).
 import { obterMinhaLoja } from '../../services/lojas.js';
-import { consultarReferencia, obterPecaParaEdicao, salvarAnuncio, pausarAnuncio, reativarAnuncio } from '../../services/pecas.js';
+import { consultarReferencia, TEMPO_LIMITE_CONSULTA_MS, obterPecaParaEdicao, salvarAnuncio, pausarAnuncio, reativarAnuncio, excluirAnuncio } from '../../services/pecas.js';
 import { listarCategorias, listarMarcasVeiculo, listarModelos, listarMarcasPeca } from '../../services/catalogo.js';
 import { mascararMoeda, moedaParaNumero, numeroParaMoeda, somenteDigitos } from '../../utils/mascaras.js';
+import { validarCodigoPeca } from '../../utils/validacoes.js';
 import { formatarMoeda, pluralizarDiasUteis } from '../../utils/formatacao.js';
-import { confirmacaoStatus, mensagemSucessoStatus, avisoErroStatus } from '../../utils/status-anuncio.js';
+import { confirmacaoStatus, mensagemSucessoStatus, avisoErroStatus, confirmacaoExclusao } from '../../utils/status-anuncio.js';
 // import { exigirPapel } from '../../auth.js'; // ativar quando auth.js existir
 
 const FOTOS_MINIMAS = 5; // BP1-47: pelo menos cinco fotos
@@ -16,6 +19,16 @@ const TAMANHO_MAXIMO_FOTO = 5 * 1024 * 1024; // 5 MB
 const TIPOS_FOTO = ['image/jpeg', 'image/png'];
 const ROTULOS_FOTOS = ['Capa', 'Vista traseira', 'Conector', 'Código', 'Embalagem'];
 const ERRO_GENERICO = 'Não foi possível concluir. Tente novamente.';
+
+// Autopreenchimento por código
+const AVISO_DEMORA_MS = 2500; // depois disso, a tela lembra que dá para seguir à mão
+const CAMPOS_REFERENCIA = ['titulo', 'descricao', 'idCategoria', 'marcaPeca', 'codigoOem', 'codigoEan', 'caracteristicas', 'condicao', 'origem'];
+// Campos que, se a base não trouxer, ficam destacados e passam a ser exigidos (BP1-9, fluxo alternativo 3)
+const CAMPOS_ESSENCIAIS = ['titulo', 'idCategoria', 'descricao', 'caracteristicas', 'aplicacoes'];
+const NOMES_CAMPOS = {
+  titulo: 'título', descricao: 'descrição técnica', idCategoria: 'categoria', marcaPeca: 'marca da peça',
+  caracteristicas: 'características técnicas', aplicacoes: 'compatibilidade',
+};
 
 export const CONDICOES = [
   { valor: 'NOVA', texto: 'Novo' },
@@ -98,7 +111,11 @@ function paginaFormPeca() {
     etapaAtual: 1,
 
     // Etapa 1: consulta pelo código
-    consulta: { tipo: 'OEM', codigo: '', estado: '', resumo: '' }, // estado: buscando | encontrado | nao-encontrado | indisponivel
+    // estado: '' | buscando | encontrado | parcial | nao-encontrado | indisponivel | tempo-esgotado | cancelada
+    consulta: { tipo: 'OEM', codigo: '', estado: '', resumo: '', faltantes: [], demorando: false },
+    valoresConsulta: {}, // campo -> valor que veio da base (mostra "do catálogo" enquanto não for alterado)
+    controleConsulta: null,
+    numeroConsulta: 0,
 
     // Compatibilidade
     novaAplicacao: { marca: '', modelo: '', anoInicial: '', anoFinal: '', versao: '' },
@@ -118,6 +135,7 @@ function paginaFormPeca() {
     // Pausar e reativar (BP1-46)
     mudandoStatus: false,
     avisoStatus: null, // { tipo: 'sucesso' | 'erro', texto, link? }
+    excluindo: false,
 
     async init() {
       // Quando auth.js existir: só vendedor (sem loja vai para criar-loja.html).
@@ -205,54 +223,140 @@ function paginaFormPeca() {
       this.consulta.codigo = evento.target.value = this.normalizarCodigo(this.consulta.tipo, evento.target.value);
       delete this.erros.consulta;
     },
+    trocarTipoConsulta() {
+      this.cancelarConsulta();
+      this.consulta.codigo = '';
+      this.consulta.estado = '';
+      delete this.erros.consulta;
+    },
+    get buscando() {
+      return this.consulta.estado === 'buscando';
+    },
+    get segundosLimite() {
+      return Math.round(TEMPO_LIMITE_CONSULTA_MS / 1000);
+    },
+
     async buscarPorCodigo() {
+      if (this.buscando) return;
       const { tipo, codigo } = this.consulta;
-      if (!codigo) {
-        this.erros.consulta = 'Digite o código para buscar.';
-        document.getElementById('codigoConsulta')?.focus();
-        return;
-      }
-      if (tipo === 'EAN' && ![8, 12, 13, 14].includes(codigo.length)) {
-        this.erros.consulta = 'EAN deve ter 8, 12, 13 ou 14 números.';
+
+      // Passo 4: valida o formato antes de chamar a API
+      const erroFormato = validarCodigoPeca(tipo, codigo);
+      if (erroFormato) {
+        this.erros.consulta = erroFormato;
         document.getElementById('codigoConsulta')?.focus();
         return;
       }
       delete this.erros.consulta;
-      this.consulta.estado = 'buscando';
 
-      // O código fica no formulário em qualquer resultado (BP1-63, fluxo alternativo)
+      // O código fica no formulário em qualquer resultado (BP1-9 e BP1-63, fluxos alternativos)
       const campo = { OEM: 'codigoOem', EAN: 'codigoEan', SKU: 'codigoSku' }[tipo];
       this.form[campo] = codigo;
 
+      const numero = ++this.numeroConsulta;
+      this.controleConsulta = new AbortController();
+      this.consulta.estado = 'buscando';
+      this.consulta.faltantes = [];
+      this.consulta.demorando = false;
+      const avisoDemora = setTimeout(() => { if (numero === this.numeroConsulta) this.consulta.demorando = true; }, AVISO_DEMORA_MS);
+
       try {
-        const referencia = await consultarReferencia(tipo, codigo);
+        const referencia = await consultarReferencia(tipo, codigo, { signal: this.controleConsulta.signal });
+        if (numero !== this.numeroConsulta) return; // resposta de uma consulta antiga
         if (!referencia) {
           this.consulta.estado = 'nao-encontrado';
           return;
         }
         this.aplicarReferencia(referencia);
-        this.consulta.resumo = referencia.titulo;
-        this.consulta.estado = 'encontrado';
-      } catch {
-        this.consulta.estado = 'indisponivel';
+        this.consulta.resumo = referencia.titulo || codigo;
+        this.consulta.estado = this.consulta.faltantes.length ? 'parcial' : 'encontrado';
+      } catch (erro) {
+        if (numero !== this.numeroConsulta) return;
+        this.consulta.estado = {
+          CANCELADA: 'cancelada',
+          TEMPO_ESGOTADO: 'tempo-esgotado',
+        }[erro?.erro] || 'indisponivel';
+      } finally {
+        clearTimeout(avisoDemora);
+        if (numero === this.numeroConsulta) {
+          this.consulta.demorando = false;
+          this.controleConsulta = null;
+        }
       }
     },
+    cancelarConsulta() {
+      this.controleConsulta?.abort();
+    },
+
+    vazio(campo) {
+      if (campo === 'aplicacoes') return !this.aplicacoes.length;
+      const valor = this.form[campo];
+      return valor === '' || valor == null || (typeof valor === 'string' && !valor.trim());
+    },
     aplicarReferencia(ref) {
-      // Preenche só o que ainda está vazio, para não apagar o que o vendedor já digitou
-      const campos = ['titulo', 'descricao', 'idCategoria', 'marcaPeca', 'codigoOem', 'codigoEan', 'caracteristicas', 'condicao', 'origem'];
-      campos.forEach((campo) => {
-        const vazio = this.form[campo] === '' || this.form[campo] == null;
-        const padrao = (campo === 'condicao' || campo === 'origem') && this.form[campo] === formularioVazio()[campo];
-        if ((vazio || padrao) && ref[campo]) this.form[campo] = ref[campo];
+      const padrao = formularioVazio();
+      CAMPOS_REFERENCIA.forEach((campo) => {
+        let valor = ref[campo];
+        if (valor == null || valor === '') return;
+        if (campo === 'idCategoria') valor = String(valor);
+        const atual = this.form[campo];
+        // Só troca o que está vazio, no valor padrão, ou que ainda é o valor de uma consulta anterior.
+        // O que o vendedor digitou nunca é apagado.
+        const podeTrocar = this.vazio(campo)
+          || ((campo === 'condicao' || campo === 'origem') && atual === padrao[campo])
+          || (this.valoresConsulta[campo] !== undefined && atual === this.valoresConsulta[campo]);
+        if (!podeTrocar) return;
+        this.form[campo] = valor;
+        this.valoresConsulta[campo] = valor;
       });
+
+      // Peso e dimensões não têm campo próprio: entram nas características
+      const extras = [ref.pesoKg ? `${String(ref.pesoKg).replace('.', ',')} kg` : '', ref.dimensoes || ''].filter(Boolean);
+      const textoExtras = extras.join(' • ');
+      if (textoExtras && !this.form.caracteristicas.includes(textoExtras)) {
+        const daConsulta = this.valoresConsulta.caracteristicas !== undefined && this.form.caracteristicas === this.valoresConsulta.caracteristicas;
+        if (this.vazio('caracteristicas') || daConsulta) {
+          this.form.caracteristicas = [this.form.caracteristicas.trim(), textoExtras].filter(Boolean).join(' • ').slice(0, 255);
+          this.valoresConsulta.caracteristicas = this.form.caracteristicas;
+        }
+      }
+
       (ref.aplicacoes || []).forEach((a) => {
         if (!this.aplicacaoRepetida(a)) this.aplicacoes.push({ ...a, id: proximoIdLocal++ });
       });
+
+      // Dados incompletos: o que a base não trouxe e continua vazio fica destacado e passa a ser exigido
+      const faltantesDaApi = Array.isArray(ref.camposFaltantes) ? ref.camposFaltantes : null;
+      const candidatos = faltantesDaApi || CAMPOS_ESSENCIAIS.filter((campo) =>
+        (campo === 'aplicacoes' ? !(ref.aplicacoes || []).length : ref[campo] == null || ref[campo] === ''));
+      this.consulta.faltantes = candidatos.filter((campo) => campo in NOMES_CAMPOS && this.vazio(campo));
       this.erros = {};
     },
+
+    // Mostra "do catálogo" enquanto o campo mantém o valor que veio da consulta
+    doCatalogo(campo) {
+      return this.valoresConsulta[campo] !== undefined && this.form[campo] === this.valoresConsulta[campo];
+    },
+    // Campo que a base não trouxe e o vendedor ainda não preencheu
+    aCompletar(campo) {
+      return this.consulta.faltantes.includes(campo) && this.vazio(campo);
+    },
+    get textoFaltantes() {
+      const nomes = this.consulta.faltantes.map((campo) => NOMES_CAMPOS[campo]);
+      if (nomes.length <= 1) return nomes.join('');
+      return `${nomes.slice(0, -1).join(', ')} e ${nomes.at(-1)}`;
+    },
+    get faltantesPendentes() {
+      return this.consulta.faltantes.filter((campo) => this.vazio(campo)).length;
+    },
+
     continuarManual() {
-      document.getElementById('secao-informacoes')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      setTimeout(() => document.getElementById('titulo')?.focus({ preventScroll: true }), 400);
+      if (this.buscando) this.cancelarConsulta();
+      const primeiro = this.consulta.faltantes.find((campo) => this.vazio(campo));
+      const alvo = { aplicacoes: 'marcaVeiculo' }[primeiro] || primeiro || 'titulo';
+      const secao = alvo === 'marcaVeiculo' ? 'secao-compatibilidade' : 'secao-informacoes';
+      document.getElementById(secao)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      setTimeout(() => document.getElementById(alvo)?.focus({ preventScroll: true }), 400);
     },
 
     // ----- Etapa 2: dados -----
@@ -456,6 +560,10 @@ function paginaFormPeca() {
       if (!f.condicao) e.condicao = 'Escolha a condição.';
       if (!f.origem) e.origem = 'Escolha a origem.';
       if (!this.aplicacoes.length) e.aplicacoes = 'Adicione pelo menos uma aplicação verificada.';
+      // Dados incompletos da consulta (BP1-9, fluxo alternativo 3): o que faltou vira obrigatório
+      this.consulta.faltantes.forEach((campo) => {
+        if (this.vazio(campo) && !e[campo]) e[campo] = `Complete: a consulta pelo código não trouxe ${NOMES_CAMPOS[campo]}.`;
+      });
       if (!(moedaParaNumero(f.preco) > 0)) e.preco = 'Informe um preço maior que zero.';
       if (f.quantidade === '') e.quantidade = 'Informe a quantidade em estoque.';
       if (this.fotos.length < FOTOS_MINIMAS) {
@@ -602,6 +710,43 @@ function paginaFormPeca() {
       setTimeout(() => document.getElementById('quantidade')?.focus({ preventScroll: true }), 400);
     },
 
+    // ----- Excluir anúncio ou rascunho já salvo -----
+    get podeExcluir() {
+      return Boolean(this.idPeca) && ['ATIVO', 'PAUSADO', 'RASCUNHO'].includes(this.statusSalvo) && !this.publicado;
+    },
+    get textoExcluir() {
+      return this.statusSalvo === 'RASCUNHO' ? 'Excluir rascunho' : 'Excluir anúncio';
+    },
+    pedirExclusao() {
+      if (!this.podeExcluir || this.excluindo) return;
+      const anuncio = { ...this.anuncioAtual, status: this.statusSalvo };
+      const confirmacao = confirmacaoExclusao(anuncio);
+      this.abrirConfirmacao({
+        ...confirmacao,
+        focoNoCancelar: true, // ação sem volta: Enter não exclui por engano
+        aoConfirmar: () => this.excluir(anuncio),
+        alternativa: confirmacao.sugerePausar
+          ? { texto: 'Pausar em vez disso', acao: () => this.mudarStatus('pausar') }
+          : null,
+      });
+    },
+    async excluir(anuncio) {
+      this.excluindo = true;
+      this.avisoGeral = null;
+      try {
+        await excluirAnuncio(this.idPeca);
+        this.sujo = false; // não pergunta "sair sem salvar?" ao voltar para o painel
+        const parametros = new URLSearchParams({ excluido: anuncio.titulo, tipo: anuncio.status });
+        location.href = `painel.html?${parametros}`;
+      } catch (erro) {
+        const aviso = avisoErroStatus(erro, anuncio, `form-peca.html?id=${encodeURIComponent(this.idPeca)}`);
+        const link = erro?.status === 404 ? { href: 'painel.html', texto: 'Voltar para Minha Loja' } : aviso.link;
+        this.avisoGeral = { tipo: 'erro', texto: aviso.texto, link };
+        this.$nextTick(() => document.getElementById('aviso-geral')?.focus());
+        this.excluindo = false;
+      }
+    },
+
     // ----- Cancelar -----
     cancelar() {
       if (!this.sujo) {
@@ -622,8 +767,8 @@ function paginaFormPeca() {
     },
     abrirConfirmacao(opcoes) {
       this.elementoAntesDaJanela = document.activeElement;
-      this.confirmacao = { aberta: true, botaoCancelar: 'Cancelar', estilo: 'perigo', ...opcoes };
-      this.$nextTick(() => document.getElementById('botao-confirmar')?.focus());
+      this.confirmacao = { aberta: true, botaoCancelar: 'Cancelar', estilo: 'perigo', alternativa: null, ...opcoes };
+      this.$nextTick(() => document.getElementById(opcoes.focoNoCancelar ? 'botao-cancelar' : 'botao-confirmar')?.focus());
     },
     fecharConfirmacao() {
       this.confirmacao.aberta = false;
@@ -632,6 +777,11 @@ function paginaFormPeca() {
     confirmar() {
       const acao = this.confirmacao.aoConfirmar;
       this.confirmacao.aberta = false;
+      acao?.();
+    },
+    escolherAlternativa() {
+      const acao = this.confirmacao.alternativa?.acao;
+      this.fecharConfirmacao();
       acao?.();
     },
   };

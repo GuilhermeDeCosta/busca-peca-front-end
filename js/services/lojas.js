@@ -9,7 +9,7 @@
 //   3. Apague as funções simular*() do fim do arquivo e o import de ./simulacao.js.
 // Nenhuma outra mudança é necessária na tela.
 
-// import { api } from '../api.js';
+import { api } from '../api.js';
 import { esperar as esperarSimulacao, lojaSimulada, anunciosSimulados, pedidosSimulados, ultimaConversaSimulada,
   gerarVendasDoMes, gerarRecusadosDoMes, gerarMetricasDoMes } from './simulacao.js';
 
@@ -28,14 +28,14 @@ export async function criarLoja(dados) {
 }
 
 /**
- * Preenche cidade, UF, rua e bairro a partir do CEP, "quando disponível"
- * (Documentação do Front-end, Formulários). Ainda não há rota prevista no back-end;
- * enquanto isso devolve null e o usuário digita o endereço.
- * @returns {Promise<{logradouro, bairro, cidade, estado} | null>}
+ * GET /api/enderecos/cep/{cep} — preenche cidade, UF, rua e bairro a partir do CEP (BP1-7).
+ * Já usa a API de verdade, mesmo com USAR_SIMULACAO = true no resto do arquivo.
+ * Exige login. Se a API responder erro (CEP não encontrado, 401, fora do ar), devolve null
+ * e o usuário digita o endereço normalmente.
+ * @returns {Promise<{cep, logradouro, bairro, cidade, estado} | null>}
  */
 export async function buscarEnderecoPorCep(cep) {
-  if (USAR_SIMULACAO) return simularBuscarCep(cep);
-  return null; // trocar pela rota quando ela existir, ex.: api.get(`/enderecos/cep/${cep}`)
+  return api.get(`/enderecos/cep/${cep}`).catch(() => null);
 }
 
 /**

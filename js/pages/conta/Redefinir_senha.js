@@ -134,7 +134,7 @@
             mostrarAlerta(alertaResultado, 'atencao', 'Link expirado',
                 'Este link já foi usado ou passou de 30 minutos. Solicite um novo e-mail de recuperação.');
             botaoResultado.textContent = 'Solicitar novo link';
-            botaoResultado.href = 'recuperar-senha.html';
+            botaoResultado.href = 'recuperar_senha.html';
             botaoResultado.className = 'btn btn--contorno btn--bloco';
         }
  

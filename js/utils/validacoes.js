@@ -37,3 +37,35 @@ export function validarTelefone(valor) {
   const tamanho = somenteDigitos(valor).length;
   return tamanho === 10 || tamanho === 11;
 }
+
+// EAN/GTIN (8, 12, 13 ou 14 dígitos) com dígito verificador
+export function validarGtin(valor) {
+  const d = somenteDigitos(valor);
+  if (![8, 12, 13, 14].includes(d.length)) return false;
+  const corpo = d.slice(0, -1).split('').reverse();
+  const soma = corpo.reduce((acc, n, i) => acc + Number(n) * (i % 2 === 0 ? 3 : 1), 0);
+  return (10 - (soma % 10)) % 10 === Number(d.at(-1));
+}
+
+/**
+ * Formato do código usado na consulta por OEM, EAN ou SKU (BP1-9, passo 4).
+ * Recebe o código já normalizado (maiúsculas, sem espaços). Só deixa passar letras, números e
+ * poucos separadores, o que também barra scripts e caracteres estranhos antes de ir para a API.
+ * @returns {string} mensagem de erro, ou '' se o formato está certo
+ */
+export function validarCodigoPeca(tipo, codigo) {
+  if (!codigo) return 'Digite o código para buscar.';
+  if (tipo === 'EAN') {
+    if (![8, 12, 13, 14].includes(codigo.length)) return 'EAN deve ter 8, 12, 13 ou 14 números.';
+    if (!validarGtin(codigo)) return 'EAN inválido: o último número (dígito verificador) não confere. Confira o código de barras.';
+    return '';
+  }
+  if (tipo === 'OEM') {
+    if (!/^[A-Z0-9/]+$/.test(codigo)) return 'OEM aceita só letras, números e barra.';
+    if (codigo.length < 3) return 'OEM deve ter pelo menos 3 caracteres.';
+    return '';
+  }
+  if (!/^[A-Z0-9][A-Z0-9._\-/]*$/.test(codigo)) return 'SKU aceita letras, números, ponto, hífen, sublinhado e barra.';
+  if (codigo.length < 2) return 'SKU deve ter pelo menos 2 caracteres.';
+  return '';
+}

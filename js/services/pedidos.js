@@ -1,6 +1,10 @@
+<<<<<<< HEAD
 // Serviço de pedidos: uma função por rota de /api/compras e /api/pedidos (Documentação do Back-end v2, seção 5.8).
 // Junta o lado do VENDEDOR (Fluxo C, que já está na main) e o do COMPRADOR (Fluxo A: checkout,
 // confirmação, Meus pedidos e Detalhe do pedido). No merge do Fluxo A com a main, fique com ESTE arquivo.
+=======
+// Serviço de pedidos: uma função por rota de /api/pedidos (Documentação do Back-end v2, seção 5.8).
+>>>>>>> origin/main
 //
 // QUANDO A API ESTIVER PRONTA: troque USAR_SIMULACAO para false e apague o bloco
 // "SIMULAÇÃO" do fim do arquivo. listarPedidosRecebidos ainda tem a chamada
@@ -58,8 +62,11 @@ export async function listarPedidosRecebidos({ status = '', pagina = 1, tamanho 
  */
 export async function obterPedido(idPedido) {
   if (USAR_SIMULACAO) {
+<<<<<<< HEAD
     // Pedidos recebidos pela loja (Fluxo C) ficam em detalhesSimulados; os da Ana como compradora, no fim do arquivo
     if (!detalhesSimulados[Number(idPedido)]) return simularPedidoComprador(idPedido);
+=======
+>>>>>>> origin/main
     await esperar(500);
     return copia(buscarSimulado(idPedido));
   }
@@ -138,6 +145,7 @@ export function normalizarCodigo(codigo) {
 }
 
 // =========================================================================
+<<<<<<< HEAD
 // FLUXO A (comprador): checkout, confirmação, Meus pedidos e Detalhe do pedido
 // Com a API ligada, troque cada "if (USAR_SIMULACAO) …" pela linha comentada logo abaixo.
 // =========================================================================
@@ -287,6 +295,8 @@ export function linkRecibo(idPedido) {
 }
 
 // =========================================================================
+=======
+>>>>>>> origin/main
 // SIMULAÇÃO — apagar este bloco quando a API estiver pronta.
 // Os ids são os mesmos de pedidosSimulados (simulacao.js), para os links do
 // painel e de vendas abrirem um pedido. As mudanças ficam em memória.
@@ -369,6 +379,7 @@ async function simularMudanca(idPedido, permitidos, novoStatus, alterar = null, 
   const resumo = pedidosSimulados.find((x) => x.idPedido === p.idPedido);
   if (resumo) resumo.status = novoStatus;
   return copia(p);
+<<<<<<< HEAD
 }
 
 // =========================================================================
@@ -644,4 +655,6 @@ async function simularMudancaComprador(idPedido, permitidos, novoStatus, alterar
   alterar?.(o);
   gravarSobreposicao(idPedido, o);
   return simularPedidoComprador(idPedido);
+=======
+>>>>>>> origin/main
 }

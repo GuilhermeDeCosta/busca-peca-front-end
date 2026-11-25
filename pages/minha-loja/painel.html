@@ -93,6 +93,9 @@
     .tabela-painel .link-acao { background: none; border: 0; padding: 0; color: var(--bp-link); }
     .tabela-painel .link-acao:hover { text-decoration: underline; }
     .tabela-painel .link-acao:disabled { color: var(--bp-texto-suave); }
+    .tabela-painel .link-acao--perigo { color: #b42318; }
+    .btn-texto-azul { color: var(--bp-azul); font-weight: 600; text-decoration: none; }
+    .btn-texto-azul:hover { color: var(--bp-azul); text-decoration: underline; }
     .linha-anuncio { cursor: pointer; }
     .linha-anuncio:focus-within { outline: 2px solid var(--bp-link); outline-offset: -2px; }
     .linha-anuncio.selecionada > td { background: #eef4fb; }
@@ -362,10 +365,9 @@
                         <button type="button" class="link-acao" @click="reativar(a)" :disabled="emAcao === a.idPeca"
                                 :aria-label="'Reativar ' + a.titulo">reativar</button>
                       </template>
-                      <template x-if="a.status === 'RASCUNHO'">
-                        <button type="button" class="link-acao" @click="excluir(a)" :disabled="emAcao === a.idPeca"
-                                :aria-label="'Excluir ' + a.titulo">excluir</button>
-                      </template>
+                      <template x-if="a.status !== 'RASCUNHO'"><span> / </span></template>
+                      <button type="button" class="link-acao link-acao--perigo" @click="excluir(a)" :disabled="emAcao === a.idPeca"
+                              :aria-label="'Excluir ' + a.titulo">excluir</button>
                       <span x-show="emAcao === a.idPeca" x-cloak class="spinner-border spinner-border-sm text-secondary ms-1"
                             role="status"><span class="visually-hidden">Salvando</span></span>
                     </td>
@@ -458,9 +460,10 @@
               <div class="d-grid gap-3">
                 <button type="button" class="btn btn-contorno-azul py-2" @click="pausar()" :disabled="!podePausar || emAcao">Pausar anúncio selecionado</button>
                 <button type="button" class="btn btn-contorno-azul py-2" @click="reativar()" :disabled="!podeReativar || emAcao">Reativar anúncio pausado</button>
-                <button type="button" class="btn btn-perigo-suave py-2" @click="excluir()" :disabled="!podeExcluir || emAcao">Excluir rascunho</button>
+                <button type="button" class="btn btn-perigo-suave py-2" @click="excluir()" :disabled="!podeExcluir || emAcao"
+                        x-text="textoBotaoExcluir">Excluir anúncio selecionado</button>
               </div>
-              <p class="small text-secondary mt-3 mb-0">Pausar, reativar e excluir pedem confirmação. Pedidos existentes permanecem no histórico.</p>
+              <p class="small text-secondary mt-3 mb-0">Pausar, reativar e excluir pedem confirmação. Excluir não tem volta; pedidos e vendas permanecem no histórico.</p>
             </div>
           </section>
         </div>
@@ -506,7 +509,9 @@
             </div>
             <div id="texto-confirmacao" class="modal-body" x-text="confirmacao.texto"></div>
             <div class="modal-footer border-0 pt-0">
-              <button type="button" class="btn btn-contorno-azul" @click="fecharConfirmacao()" x-text="confirmacao.botaoCancelar"></button>
+              <button type="button" class="btn btn-link btn-texto-azul me-auto px-0" x-show="confirmacao.alternativa"
+                      @click="escolherAlternativa()" x-text="confirmacao.alternativa?.texto"></button>
+              <button type="button" id="botao-cancelar" class="btn btn-contorno-azul" @click="fecharConfirmacao()" x-text="confirmacao.botaoCancelar"></button>
               <button type="button" id="botao-confirmar" class="btn" @click="confirmar()" x-text="confirmacao.botao"
                       :class="confirmacao.estilo === 'primario' ? 'btn-primary' : 'btn-danger'"></button>
             </div>

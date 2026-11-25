@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Usuários • Administração • Busca Peças</title>
+  <meta name="robots" content="noindex, nofollow">
+
+  <!-- Bibliotecas por CDN com versão fixa (ADR-014) -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+  <!-- CSS do projeto -->
+  <link rel="stylesheet" href="../../css/variaveis.css">
+  <link rel="stylesheet" href="../../css/base.css">
+  <link rel="stylesheet" href="../../css/componentes.css">
+
+  <!-- Cabeçalho da área administrativa (vem antes do script da página, que usa window.Cabecalho) -->
+  <script src="../../js/components/cabecalho-admin.js" defer></script>
+
+  <!-- Estilos só desta tela (valores depois da vírgula em var() são o fallback) -->
+  <style>
+    :root {
+      --bp-azul: var(--azul-escuro, #0f3d68);
+      --bp-verde: var(--verde, #1f7a3a);
+      --bp-verde-hover: var(--verde-hover, #186130);
+      --bp-fundo: var(--cinza-fundo, #f3f5f8);
+      --bp-borda: var(--cinza-borda, #dfe4ea);
+      --bp-texto: var(--texto, #1d2733);
+      --bp-texto-suave: var(--texto-suave, #5b6878);
+      --bp-vermelho: #b42318;
+      --bp-ambar: #8a5a00;
+      --bp-cabecalho-tabela: #e8eef6;
+    }
+
+    body { background: var(--bp-fundo); }
+    .admin [hidden] { display: none !important; }
+
+    .admin .breadcrumb { font-size: .8125rem; }
+    .admin .breadcrumb a { color: var(--bp-texto-suave); text-decoration: none; }
+    .admin .breadcrumb a:hover { color: var(--bp-azul); text-decoration: underline; }
+    .admin .breadcrumb-item.active { color: var(--bp-texto-suave); }
+
+    .admin__titulo { color: var(--bp-azul); font-weight: 700; font-size: 2rem; }
+    .texto-suave { color: var(--bp-texto-suave); }
+    .texto-erro { color: var(--bp-vermelho); }
+
+    .cartao { background: #fff; border: 1px solid var(--bp-borda); border-radius: .75rem; padding: 1.25rem; }
+    @media (min-width: 768px) { .cartao { padding: 1.5rem; } }
+    .cartao__titulo { color: var(--bp-azul); font-weight: 700; font-size: 1.25rem; margin-bottom: 1rem; }
+    .cartao__titulo:focus-visible { outline: 3px solid #f2b705; outline-offset: 2px; }
+
+    /* Cartões de números */
+    .numero { background: #fff; border: 1px solid var(--bp-borda); border-radius: .75rem; padding: 1.25rem; height: 100%; }
+    .numero__rotulo { color: var(--bp-texto-suave); font-size: .8125rem; margin-bottom: .25rem; }
+    .numero__valor { color: var(--bp-azul); font-weight: 700; font-size: 1.75rem; line-height: 1.2; margin-bottom: .375rem; }
+    .numero__info { font-size: .75rem; margin: 0; min-height: 1.1em; }
+    .numero__info--verde { color: var(--bp-verde); }
+    .numero__info--ambar { color: var(--bp-ambar); }
+
+    .admin .form-label { font-size: .8125rem; font-weight: 600; color: var(--bp-texto); margin-bottom: .375rem; }
+    .admin .form-control, .admin .form-select { font-size: .875rem; border-color: var(--bp-borda); padding: .625rem .75rem; }
+    .admin .form-check-label { font-size: .875rem; }
+    .erro-campo { font-size: .75rem; color: var(--bp-vermelho); margin: .25rem 0 0; }
+
+    /* Tabelas */
+    .tabela { font-size: .8125rem; margin: 0; }
+    .tabela thead th { background: var(--bp-cabecalho-tabela); color: var(--bp-texto-suave); font-weight: 500; border: 0; padding: .875rem 1rem; white-space: nowrap; }
+    .tabela td { padding: 1rem; vertical-align: middle; border-color: var(--bp-borda); color: var(--bp-texto); }
+    .tabela .celula-email { max-width: 13rem; overflow-wrap: anywhere; }
+    /* No celular a tabela rola para o lado em vez de espremer as colunas */
+    .tabela--contas { min-width: 54rem; }
+    .tabela tr.linha--selecionada td { background: #eaf2fc; }
+
+    .link-acao { border: 0; background: none; padding: 0; color: var(--bp-texto); font-size: .8125rem; }
+    .link-acao:hover { color: var(--bp-azul); text-decoration: underline; }
+    .link-acao:focus-visible, .admin .btn:focus-visible, .admin .form-control:focus-visible, .admin .form-select:focus-visible,
+    .admin .form-check-input:focus-visible { outline: 3px solid #f2b705; outline-offset: 2px; }
+
+    .etiqueta { display: inline-block; border-radius: .375rem; padding: .25rem .55rem; font-size: .75rem; font-weight: 600; }
+    .etiqueta--sucesso { background: #e6f4ea; color: #17633a; }
+    .etiqueta--alerta { background: #fdf1d6; color: var(--bp-ambar); }
+    .etiqueta--erro { background: #fdecea; color: var(--bp-vermelho); }
+    .etiqueta--neutra { background: #eef1f5; color: var(--bp-texto-suave); }
+
+    /* Conta selecionada */
+    .lista-dados { margin: 0 0 1rem; font-size: .8125rem; }
+    .linha-dado { display: grid; grid-template-columns: 1fr; padding: .375rem 0; }
+    @media (min-width: 576px) { .linha-dado { grid-template-columns: 10rem 1fr; column-gap: 1rem; } }
+    .linha-dado dt { color: var(--bp-texto-suave); font-weight: 400; }
+    .linha-dado dd { margin: 0; font-weight: 500; overflow-wrap: anywhere; }
+
+    .historico { list-style: none; padding: 0; margin: 0; font-size: .8125rem; }
+    .historico__item { border-left: 3px solid var(--bp-borda); padding: .25rem 0 .25rem .75rem; margin-bottom: .75rem; }
+
+    /* Botões */
+    .admin .btn { font-weight: 600; font-size: .875rem; padding: .5rem 1rem; min-height: 2.5rem; border-radius: .375rem; }
+    .btn-verde {
+      --bs-btn-color: #fff; --bs-btn-bg: var(--bp-verde); --bs-btn-border-color: var(--bp-verde);
+      --bs-btn-hover-color: #fff; --bs-btn-hover-bg: var(--bp-verde-hover); --bs-btn-hover-border-color: var(--bp-verde-hover);
+      --bs-btn-active-color: #fff; --bs-btn-active-bg: var(--bp-verde-hover); --bs-btn-active-border-color: var(--bp-verde-hover);
+      --bs-btn-disabled-color: #fff; --bs-btn-disabled-bg: #8fb99c; --bs-btn-disabled-border-color: #8fb99c;
+      border-color: var(--bs-btn-border-color);
+    }
+    .btn-contorno-azul {
+      --bs-btn-color: var(--bp-azul); --bs-btn-bg: #fff; --bs-btn-border-color: var(--bp-borda);
+      --bs-btn-hover-color: var(--bp-azul); --bs-btn-hover-bg: #f4f7fb; --bs-btn-hover-border-color: #c9d3df;
+      --bs-btn-active-color: var(--bp-azul); --bs-btn-active-bg: #eef3f9; --bs-btn-active-border-color: #c9d3df;
+      --bs-btn-disabled-color: var(--bp-texto-suave); --bs-btn-disabled-bg: #fff; --bs-btn-disabled-border-color: var(--bp-borda);
+      border-color: var(--bs-btn-border-color);
+    }
+    .btn-contorno-vermelho {
+      --bs-btn-color: var(--bp-vermelho); --bs-btn-bg: #fff; --bs-btn-border-color: var(--bp-vermelho);
+      --bs-btn-hover-color: var(--bp-vermelho); --bs-btn-hover-bg: #fdf3f2; --bs-btn-hover-border-color: var(--bp-vermelho);
+      --bs-btn-active-color: var(--bp-vermelho); --bs-btn-active-bg: #fbe4e1; --bs-btn-active-border-color: var(--bp-vermelho);
+      border-color: var(--bs-btn-border-color);
+    }
+    .btn-vermelho {
+      --bs-btn-color: #fff; --bs-btn-bg: var(--bp-vermelho); --bs-btn-border-color: var(--bp-vermelho);
+      --bs-btn-hover-color: #fff; --bs-btn-hover-bg: #912018; --bs-btn-hover-border-color: #912018;
+      --bs-btn-active-color: #fff; --bs-btn-active-bg: #912018; --bs-btn-active-border-color: #912018;
+      --bs-btn-disabled-color: #fff; --bs-btn-disabled-bg: #d98880; --bs-btn-disabled-border-color: #d98880;
+      border-color: var(--bs-btn-border-color);
+    }
+
+    .aviso { border-radius: .5rem; padding: .875rem 1rem; font-size: .8125rem; }
+    .aviso--info { background: #e8f0fb; color: #1f4f7f; }
+    .aviso--sucesso { background: #e6f4ea; color: #17633a; }
+    .aviso--alerta { background: #fdf1d6; color: var(--bp-ambar); }
+    .aviso--erro { background: #fdecea; color: var(--bp-vermelho); }
+    .caixa-banimento { background: #fdecea; border-radius: .5rem; padding: 1rem; color: var(--bp-vermelho); font-size: .8125rem; }
+  </style>
+</head>
+<body class="d-flex flex-column min-vh-100">
+
+  <!-- Cabeçalho: preenchido por js/components/cabecalho-admin.js ("Usuários" fica marcado pela página) -->
+  <header id="cabecalho"></header>
+
+  <!-- Área administrativa • Fluxo E • BP1-49, 56 • /api/admin/usuarios e /api/admin/papeis -->
+  <main id="conteudo" class="admin flex-grow-1 py-4">
+    <div class="container-fluid px-3 px-lg-4">
+
+      <nav aria-label="Você está em">
+        <ol class="breadcrumb mb-4">
+          <li class="breadcrumb-item"><a href="usuarios.html">Administração</a></li>
+          <li class="breadcrumb-item active" aria-current="page">Usuários</li>
+        </ol>
+      </nav>
+
+      <h1 class="admin__titulo mb-1">Usuários</h1>
+      <p class="texto-suave mb-4">Busque contas, altere o status e atribua papéis administrativos.</p>
+
+      <!-- Sem login de admin ou sem permissão -->
+      <div id="acesso-restrito" class="aviso aviso--alerta" role="alert" hidden>
+        <p class="mb-2 fw-semibold">Acesso restrito</p>
+        <p class="mb-0"></p>
+      </div>
+
+      <div id="conteudo-admin">
+
+        <!-- Números -->
+        <section class="row g-3 mb-4" aria-label="Resumo das contas">
+          <div class="col-6 col-lg-3">
+            <div class="numero">
+              <p class="numero__rotulo">Contas ativas</p>
+              <p class="numero__valor" id="resumo-ativas">…</p>
+              <p class="numero__info numero__info--verde" id="resumo-ativas-info"></p>
+            </div>
+          </div>
+          <div class="col-6 col-lg-3">
+            <div class="numero">
+              <p class="numero__rotulo">Lojas ativas</p>
+              <p class="numero__valor" id="resumo-lojas">…</p>
+              <p class="numero__info numero__info--verde" id="resumo-lojas-info"></p>
+            </div>
+          </div>
+          <div class="col-6 col-lg-3">
+            <div class="numero">
+              <p class="numero__rotulo">Suspensas</p>
+              <p class="numero__valor" id="resumo-suspensas">…</p>
+              <p class="numero__info numero__info--ambar" id="resumo-suspensas-info"></p>
+            </div>
+          </div>
+          <div class="col-6 col-lg-3">
+            <div class="numero">
+              <p class="numero__rotulo">Banidas</p>
+              <p class="numero__valor" id="resumo-banidas">…</p>
+              <p class="numero__info texto-suave">—</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- Filtros -->
+        <form class="row g-3 mb-4" role="search" aria-label="Filtrar contas" onsubmit="return false">
+          <div class="col-md-4">
+            <label class="form-label" for="campo-busca">Buscar conta</label>
+            <input type="search" class="form-control" id="campo-busca" placeholder="Nome, e-mail, CNPJ ou loja" autocomplete="off" maxlength="120">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label" for="filtro-status">Status</label>
+            <select class="form-select" id="filtro-status">
+              <option value="">Todos os status</option>
+              <option value="ATIVO">Ativa</option>
+              <option value="BLOQUEADO">Suspensa</option>
+              <option value="BANIDO">Banida</option>
+              <option value="INATIVO">Inativa</option>
+            </select>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label" for="filtro-papel">Papel</label>
+            <select class="form-select" id="filtro-papel">
+              <option value="">Todos os papéis</option>
+              <option value="COMPRADOR">Usuário</option>
+              <option value="VENDEDOR">Vendedor</option>
+              <option value="ADMINISTRADOR">Administrador geral</option>
+              <option value="MODERADOR">Moderador</option>
+              <option value="SUPORTE">Suporte</option>
+            </select>
+          </div>
+        </form>
+
+        <!-- Tabela de contas -->
+        <section class="cartao mb-4" id="cartao-contas" aria-labelledby="titulo-contas" aria-busy="true">
+          <h2 class="cartao__titulo" id="titulo-contas">Contas</h2>
+          <div class="aviso aviso--erro mb-3" id="erro-lista" role="alert" hidden>
+            <span id="erro-lista-texto"></span>
+            <button type="button" class="btn btn-link btn-sm p-0 ms-1 align-baseline fw-semibold texto-erro" id="botao-tentar-lista">Tentar de novo</button>
+          </div>
+          <div class="table-responsive">
+            <table class="table tabela tabela--contas">
+              <caption class="visually-hidden">Contas cadastradas, com loja, papéis, status e ações</caption>
+              <thead>
+                <tr>
+                  <th scope="col">Nome</th><th scope="col">E-mail</th><th scope="col">Loja</th><th scope="col">Papéis</th>
+                  <th scope="col">Status</th><th scope="col">Desde</th><th scope="col">Ações</th>
+                </tr>
+              </thead>
+              <tbody id="corpo-tabela"></tbody>
+            </table>
+          </div>
+          <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mt-3">
+            <p class="small texto-suave mb-0" id="rodape-tabela" aria-live="polite"></p>
+            <nav class="d-flex align-items-center gap-2" id="paginacao" aria-label="Páginas da lista de contas" hidden>
+              <button type="button" class="btn btn-contorno-azul btn-sm" id="botao-pagina-anterior">Anterior</button>
+              <span class="small texto-suave" id="pagina-atual"></span>
+              <button type="button" class="btn btn-contorno-azul btn-sm" id="botao-pagina-proxima">Próxima</button>
+            </nav>
+          </div>
+        </section>
+
+        <div class="row g-4">
+
+          <!-- Conta selecionada -->
+          <div class="col-lg-6">
+            <section class="cartao h-100" id="cartao-conta" aria-labelledby="titulo-conta">
+              <h2 class="cartao__titulo" id="titulo-conta" tabindex="-1">Conta selecionada</h2>
+              <div id="aviso-conta" class="aviso mb-3" role="status" aria-live="polite" hidden></div>
+
+              <p class="small texto-suave mb-0" id="conta-vazia">Escolha uma conta na tabela (“Ver”) para conferir os detalhes e registrar uma ação.</p>
+
+              <div id="conta-detalhe" hidden>
+                <p class="small texto-suave mb-3" id="conta-situacao"></p>
+                <dl class="lista-dados" id="conta-dados"></dl>
+
+                <p class="aviso aviso--info mb-3" id="conta-sem-acao" hidden></p>
+
+                <form id="form-acao" novalidate hidden>
+                  <div class="mb-3">
+                    <label class="form-label" for="nova-acao">Nova ação</label>
+                    <select class="form-select" id="nova-acao"></select>
+                  </div>
+
+                  <fieldset class="mb-3" id="grupo-papeis" hidden>
+                    <legend class="form-label">Papéis internos da conta</legend>
+                    <div id="lista-papeis-conta"></div>
+                    <p class="small texto-suave mt-1 mb-0">Usuário e Vendedor não mudam aqui: vêm do cadastro e da criação da loja.</p>
+                    <p class="erro-campo" id="erro-papeis" hidden></p>
+                  </fieldset>
+
+                  <div class="mb-3">
+                    <label class="form-label" for="justificativa">Justificativa (obrigatória)</label>
+                    <textarea class="form-control" id="justificativa" rows="3" maxlength="500" required
+                      placeholder="Explique o motivo. O texto fica no histórico da conta." aria-describedby="erro-justificativa contador-justificativa"></textarea>
+                    <div class="d-flex justify-content-between">
+                      <p class="erro-campo" id="erro-justificativa" hidden></p>
+                      <span class="small texto-suave ms-auto mt-1" id="contador-justificativa" aria-live="polite"></span>
+                    </div>
+                  </div>
+
+                  <div class="d-flex flex-wrap gap-2" id="botoes-acao">
+                    <button type="submit" class="btn btn-verde" id="botao-confirmar-acao">Confirmar ação</button>
+                    <button type="button" class="btn btn-contorno-vermelho" id="botao-banir">Banir conta</button>
+                    <button type="button" class="btn btn-contorno-azul" id="botao-cancelar">Cancelar</button>
+                  </div>
+
+                  <!-- Confirmação do banimento (definitivo) -->
+                  <div class="caixa-banimento" id="confirmacao-banimento" role="alertdialog" aria-labelledby="titulo-banimento" aria-describedby="texto-banimento" hidden>
+                    <p class="fw-bold mb-1" id="titulo-banimento">Confirmar banimento</p>
+                    <p class="mb-3" id="texto-banimento"></p>
+                    <div class="d-flex flex-wrap gap-2">
+                      <button type="button" class="btn btn-vermelho" id="botao-confirmar-banimento">Confirmar banimento</button>
+                      <button type="button" class="btn btn-contorno-azul" id="botao-voltar-banimento">Voltar</button>
+                    </div>
+                  </div>
+                </form>
+
+                <div class="d-flex flex-wrap gap-3 mt-3">
+                  <button type="button" class="btn btn-link btn-sm p-0 fw-semibold text-decoration-none" id="botao-historico"
+                    aria-expanded="false" aria-controls="bloco-historico" style="color: var(--bp-azul); min-height: 0;">Ver histórico da conta</button>
+                  <button type="button" class="btn btn-link btn-sm p-0 fw-semibold text-decoration-none" id="botao-fechar-conta"
+                    style="color: var(--bp-texto-suave); min-height: 0;" hidden>Fechar</button>
+                </div>
+                <div id="bloco-historico" class="mt-3" hidden>
+                  <h3 class="h6 fw-bold" style="color: var(--bp-azul);">Histórico administrativo</h3>
+                  <ul class="historico" id="lista-historico"></ul>
+                </div>
+              </div>
+            </section>
+          </div>
+
+          <!-- Papéis e permissões -->
+          <div class="col-lg-6">
+            <section class="cartao h-100" aria-labelledby="titulo-papeis">
+              <h2 class="cartao__titulo mb-2" id="titulo-papeis">Papéis e permissões</h2>
+              <p class="small texto-suave mb-3">Defina o que cada papel interno pode fazer. Papéis não podem ser escolhidos no cadastro público.</p>
+              <div id="aviso-papeis" class="aviso mb-3" role="status" aria-live="polite" hidden></div>
+
+              <div class="table-responsive" id="tabela-papeis">
+                <table class="table tabela">
+                  <caption class="visually-hidden">Papéis internos, permissões e quantidade de pessoas</caption>
+                  <thead><tr><th scope="col">Papel</th><th scope="col">Permissões</th><th scope="col">Pessoas</th></tr></thead>
+                  <tbody id="corpo-papeis">
+                    <tr><td colspan="3" class="texto-suave small"><span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>Carregando papéis…</td></tr>
+                  </tbody>
+                </table>
+              </div>
+              <div class="d-flex flex-wrap gap-2 mt-3" id="botoes-papeis">
+                <button type="button" class="btn btn-contorno-azul" id="botao-editar-permissoes">Editar permissões</button>
+                <button type="button" class="btn btn-contorno-azul" id="botao-atribuir-papel">Atribuir papel a uma conta</button>
+              </div>
+
+              <!-- Edição das permissões de um papel -->
+              <form id="form-permissoes" novalidate hidden>
+                <div class="mb-3">
+                  <label class="form-label" for="papel-editado">Papel</label>
+                  <select class="form-select" id="papel-editado"></select>
+                </div>
+                <p class="aviso aviso--info mb-3" id="nota-admin-geral" hidden>O Administrador geral sempre tem todas as permissões, para ninguém perder o acesso à administração.</p>
+                <fieldset class="mb-3">
+                  <legend class="form-label">Permissões</legend>
+                  <div id="lista-permissoes"></div>
+                </fieldset>
+                <div class="mb-3">
+                  <label class="form-label" for="justificativa-permissoes">Justificativa (obrigatória)</label>
+                  <textarea class="form-control" id="justificativa-permissoes" rows="2" maxlength="500"></textarea>
+                </div>
+                <p class="erro-campo mb-3" id="erro-permissoes" role="alert" hidden></p>
+                <div class="d-flex flex-wrap gap-2">
+                  <button type="submit" class="btn btn-verde" id="botao-salvar-permissoes">Salvar permissões</button>
+                  <button type="button" class="btn btn-contorno-azul" id="botao-cancelar-permissoes">Cancelar</button>
+                </div>
+              </form>
+            </section>
+          </div>
+        </div>
+      </div>
+
+      <p class="aviso aviso--info mt-4 mb-0">Toda ação administrativa fica registrada no histórico da conta, com responsável, data e justificativa.</p>
+    </div>
+  </main>
+
+  <!-- Rodapé (conteúdo provisório, igual às outras telas) -->
+  <footer id="rodape" class="rodape py-4 mt-4">
+    <div class="container-fluid px-3 px-lg-4">
+      <p class="mb-2">Ambiente demonstrativo • lojas, preços e estoques fictícios</p>
+      <p class="mb-0">
+        <a href="../institucional/sobre.html">Busca Peça</a> •
+        <a href="../institucional/sobre.html#contato">Contato</a> •
+        <a href="../institucional/termos-de-uso.html">Termos de uso</a> •
+        <a href="../institucional/termos-de-uso.html#politica-de-privacidade">Privacidade</a>
+      </p>
+    </div>
+  </footer>
+
+  <script type="module" src="../../js/pages/admin/usuarios.js"></script>
+</body>
+</html>

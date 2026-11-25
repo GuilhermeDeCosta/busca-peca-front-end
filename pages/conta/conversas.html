@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Conversas • Busca Peças</title>
+  <meta name="description" content="Converse com lojas e compradores sobre seus pedidos no Busca Peças.">
+
+  <!-- Bibliotecas por CDN com versão fixa (ADR-014) -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+  <!-- CSS do projeto -->
+  <link rel="stylesheet" href="../../css/variaveis.css">
+  <link rel="stylesheet" href="../../css/base.css">
+  <link rel="stylesheet" href="../../css/componentes.css">
+
+  <!-- Componente do cabeçalho (vem antes do script da página, que usa window.Cabecalho) -->
+  <script src="../../js/components/cabecalho.js" defer></script>
+
+  <!-- Estilos só desta tela (valores depois da vírgula em var() são o fallback) -->
+  <style>
+    :root {
+      --bp-azul: var(--azul-escuro, #0f3d68);
+      --bp-verde: var(--verde, #1f7a3a);
+      --bp-verde-hover: var(--verde-hover, #186130);
+      --bp-fundo: var(--cinza-fundo, #f3f5f8);
+      --bp-borda: var(--cinza-borda, #dfe4ea);
+      --bp-texto: var(--texto, #1d2733);
+      --bp-texto-suave: var(--texto-suave, #5b6878);
+      --bp-selecionado: #eaf2fc;
+    }
+
+    body { background: var(--bp-fundo); }
+    /* Garante que "hidden" esconde mesmo com o display do .btn em componentes.css */
+    .conversas [hidden] { display: none !important; }
+
+    .conversas .breadcrumb { font-size: .8125rem; }
+    .conversas .breadcrumb a { color: var(--bp-texto-suave); text-decoration: none; }
+    .conversas .breadcrumb a:hover { color: var(--bp-azul); text-decoration: underline; }
+    .conversas .breadcrumb-item.active { color: var(--bp-texto-suave); }
+
+    .conversas__titulo { color: var(--bp-azul); font-weight: 700; font-size: 2rem; }
+    .texto-suave { color: var(--bp-texto-suave); }
+
+    .cartao { background: #fff; border: 1px solid var(--bp-borda); border-radius: .75rem; padding: 1.25rem; }
+    @media (min-width: 768px) { .cartao { padding: 1.5rem; } }
+
+    .conversas .form-label { font-size: .8125rem; font-weight: 600; color: var(--bp-texto); margin-bottom: .375rem; }
+    .conversas .form-control { font-size: .875rem; border-color: var(--bp-borda); padding: .625rem .75rem; }
+    .conversas .btn:focus-visible, .conversas .form-control:focus-visible, .filtro:focus-visible,
+    .item-conversa:focus-visible, .conversa__nome:focus-visible, .area-mensagens:focus-visible {
+      outline: 3px solid #f2b705; outline-offset: 2px;
+    }
+
+    /* Filtros */
+    .filtro {
+      border: 0; border-radius: .375rem; background: #eef1f5; color: var(--bp-texto);
+      font-size: .75rem; font-weight: 500; padding: .375rem .625rem; min-height: 2rem;
+    }
+    .filtro:hover { background: #e2e7ee; }
+    .filtro--ativo, .filtro--ativo:hover { background: #e6f4ea; color: #17633a; font-weight: 600; }
+
+    /* Lista de conversas */
+    .lista-conversas { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: .75rem; }
+    @media (min-width: 992px) { .lista-conversas { max-height: 38rem; overflow-y: auto; padding: 2px; } }
+    .item-conversa {
+      display: block; width: 100%; text-align: left; background: #fff;
+      border: 1px solid var(--bp-borda); border-radius: .5rem; padding: .875rem 1rem; color: var(--bp-texto);
+    }
+    button.item-conversa:hover { border-color: #c9d3df; background: #fafbfd; }
+    .item-conversa--ativa, .item-conversa--ativa:hover { background: var(--bp-selecionado); border-color: var(--bp-azul); }
+    .item-conversa__topo { display: flex; justify-content: space-between; align-items: baseline; gap: .5rem; margin-bottom: .25rem; }
+    .item-conversa__nome { color: var(--bp-azul); font-weight: 600; font-size: .875rem; }
+    .item-conversa__hora { color: var(--bp-texto-suave); font-size: .75rem; white-space: nowrap; }
+    .item-conversa__meta { display: block; color: var(--bp-texto-suave); font-size: .75rem; margin-bottom: .375rem;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .item-conversa__previa { display: block; font-size: .8125rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .item-conversa--nao-lida .item-conversa__previa { font-weight: 600; }
+    .item-conversa__novas {
+      display: inline-block; margin-top: .5rem; background: #e6f4ea; color: #17633a;
+      border-radius: .375rem; padding: .2rem .5rem; font-size: .75rem; font-weight: 600;
+    }
+
+    /* Conversa aberta */
+    .conversa__nome { color: var(--bp-azul); font-weight: 700; font-size: 1.25rem; margin: 0 0 .25rem; }
+    .conversa__sub { color: var(--bp-texto-suave); font-size: .8125rem; margin: 0; }
+    .conversas hr { border-color: var(--bp-borda); opacity: 1; margin: 1rem 0; }
+
+    .area-mensagens { height: 26rem; overflow-y: auto; padding-right: .25rem; }
+    @media (max-width: 991.98px) { .area-mensagens { height: 55vh; } }
+    .mensagens { display: flex; flex-direction: column; gap: 1rem; }
+    .separador-dia { color: var(--bp-texto-suave); font-size: .75rem; margin: .25rem 0 0; }
+    .balao { background: #e9edf2; border-radius: .5rem; padding: .75rem 1rem; max-width: 65%; align-self: flex-start; }
+    @media (max-width: 575.98px) { .balao { max-width: 88%; } }
+    .balao--minha { background: #e8f0fb; align-self: flex-end; }
+    .balao__texto { font-size: .8125rem; color: var(--bp-texto); margin: 0 0 .375rem; white-space: pre-wrap; overflow-wrap: anywhere; }
+    .balao__meta { font-size: .6875rem; color: var(--bp-texto-suave); margin: 0; }
+
+    .btn-verde {
+      --bs-btn-color: #fff; --bs-btn-bg: var(--bp-verde); --bs-btn-border-color: var(--bp-verde);
+      --bs-btn-hover-color: #fff; --bs-btn-hover-bg: var(--bp-verde-hover); --bs-btn-hover-border-color: var(--bp-verde-hover);
+      --bs-btn-active-color: #fff; --bs-btn-active-bg: var(--bp-verde-hover); --bs-btn-active-border-color: var(--bp-verde-hover);
+      --bs-btn-disabled-color: #fff; --bs-btn-disabled-bg: #8fb99c; --bs-btn-disabled-border-color: #8fb99c;
+      border-color: var(--bs-btn-border-color);
+    }
+    .btn-contorno-azul {
+      --bs-btn-color: var(--bp-azul); --bs-btn-bg: #fff; --bs-btn-border-color: var(--bp-borda);
+      --bs-btn-hover-color: var(--bp-azul); --bs-btn-hover-bg: #f4f7fb; --bs-btn-hover-border-color: #c9d3df;
+      --bs-btn-active-color: var(--bp-azul); --bs-btn-active-bg: #eef3f9; --bs-btn-active-border-color: #c9d3df;
+      border-color: var(--bs-btn-border-color);
+    }
+    .conversas .btn { font-weight: 600; font-size: .875rem; padding: .5rem 1rem; min-height: 2.5rem; border-radius: .375rem; white-space: nowrap; }
+    .erro-campo { font-size: .75rem; color: #b42318; margin: .25rem 0 0; }
+
+    .aviso { border-radius: .5rem; padding: .875rem 1rem; font-size: .8125rem; }
+    .aviso--info { background: #e8f0fb; color: #1f4f7f; }
+    .aviso--erro { background: #fdecea; color: #b42318; }
+    .aviso--alerta { background: #fdf1d6; color: #8a5a00; }
+    .link-erro { color: #b42318; }
+
+    /* Celular: uma coisa de cada vez (lista OU conversa) */
+    @media (max-width: 991.98px) {
+      .layout-conversas.mostrando-conversa .coluna-lista { display: none; }
+      .layout-conversas:not(.mostrando-conversa) .coluna-conversa { display: none; }
+    }
+  </style>
+</head>
+<body class="d-flex flex-column min-vh-100">
+
+  <!-- Cabeçalho: preenchido por js/components/cabecalho.js (data-ativo="nenhum": nenhum item do menu fica marcado) -->
+  <header id="cabecalho" data-ativo="nenhum"></header>
+
+  <!-- Página logada • Fluxo C • BP1-28 • /api/conversas -->
+  <main id="conteudo" class="conversas flex-grow-1 py-4">
+    <div class="container-fluid px-3 px-lg-4">
+
+      <nav aria-label="Você está em">
+        <ol class="breadcrumb mb-4">
+          <li class="breadcrumb-item"><a href="../busca/main.html">Início</a></li>
+          <li class="breadcrumb-item active" aria-current="page">Conversas</li>
+        </ol>
+      </nav>
+
+      <h1 class="conversas__titulo mb-1">Conversas</h1>
+      <p class="texto-suave mb-4">Fale com lojas e compradores sobre seus pedidos. Cada conversa fica ligada a um pedido.</p>
+
+      <div class="row g-4 layout-conversas" id="layout-conversas">
+
+        <!-- Lista -->
+        <div class="col-lg-4 coluna-lista">
+          <section class="cartao" id="cartao-lista" aria-labelledby="titulo-lista" aria-busy="true">
+            <h2 id="titulo-lista" class="visually-hidden">Suas conversas</h2>
+            <label class="form-label" for="campo-busca">Buscar conversa</label>
+            <input type="search" class="form-control mb-3" id="campo-busca" placeholder="Loja, comprador ou pedido" autocomplete="off">
+
+            <div id="filtros" class="d-flex flex-wrap gap-2 mb-3" role="group" aria-label="Filtrar conversas">
+              <button type="button" class="filtro filtro--ativo" data-filtro="todas" aria-pressed="true">Todas</button>
+              <button type="button" class="filtro" data-filtro="compras" aria-pressed="false">Compras</button>
+              <button type="button" class="filtro" data-filtro="minha-loja" aria-pressed="false">Minha Loja</button>
+              <button type="button" class="filtro" data-filtro="nao-lidas" aria-pressed="false">Não lidas<span id="contador-nao-lidas"></span></button>
+            </div>
+
+            <ul class="lista-conversas" id="lista-conversas"></ul>
+            <div id="estado-lista" hidden></div>
+          </section>
+        </div>
+
+        <!-- Conversa aberta -->
+        <div class="col-lg-8 coluna-conversa">
+          <section class="cartao" aria-label="Conversa aberta">
+            <button type="button" class="btn btn-link p-0 mb-3 d-lg-none text-decoration-none fw-semibold" id="botao-voltar" style="color: var(--bp-azul); min-height: 0;">
+              <i class="bi bi-arrow-left me-1" aria-hidden="true"></i>Conversas
+            </button>
+
+            <div id="conversa-vazia">
+              <p class="texto-suave small text-center my-5">Escolha uma conversa para ver as mensagens.</p>
+            </div>
+
+            <div id="conversa-aberta" hidden>
+              <div class="d-flex flex-wrap justify-content-between align-items-start gap-3">
+                <div class="flex-grow-1" style="min-width: 0;">
+                  <h2 class="conversa__nome" id="conversa-nome" tabindex="-1"></h2>
+                  <p class="conversa__sub" id="conversa-sub"></p>
+                </div>
+                <a class="btn btn-contorno-azul" id="link-ver-pedido" href="#">Ver pedido</a>
+              </div>
+              <hr>
+
+              <div class="area-mensagens" id="area-mensagens" tabindex="0" aria-label="Mensagens">
+                <div class="text-center mb-3">
+                  <button type="button" class="btn btn-link btn-sm fw-semibold text-decoration-none" id="botao-anteriores" style="color: var(--bp-azul);" hidden>Carregar mensagens anteriores</button>
+                </div>
+                <div class="aviso aviso--erro mb-3" id="erro-mensagens" role="alert" hidden>
+                  Não foi possível carregar as mensagens.
+                  <button type="button" class="btn btn-link btn-sm p-0 align-baseline fw-semibold link-erro" id="botao-tentar-mensagens">Tentar de novo</button>
+                </div>
+                <div class="mensagens" id="mensagens" role="log" aria-live="polite"></div>
+              </div>
+              <hr>
+
+              <form id="form-mensagem" novalidate>
+                <label class="form-label" for="campo-mensagem">Sua mensagem</label>
+                <div class="d-flex gap-2">
+                  <input type="text" class="form-control" id="campo-mensagem" maxlength="2000" autocomplete="off"
+                    placeholder="Escreva para a loja" aria-describedby="erro-envio dica-seguranca">
+                  <button type="submit" class="btn btn-verde" id="botao-enviar">Enviar</button>
+                </div>
+                <div class="d-flex justify-content-between">
+                  <p class="erro-campo" id="erro-envio" role="alert" hidden></p>
+                  <span class="small texto-suave ms-auto mt-1" id="contador-mensagem" aria-live="polite"></span>
+                </div>
+                <p class="small texto-suave mt-2 mb-0" id="dica-seguranca">Não compartilhe senhas ou dados de cartão. Combine pagamento e entrega com segurança.</p>
+              </form>
+            </div>
+          </section>
+        </div>
+      </div>
+
+      <!-- Só aparece enquanto o service usa dados simulados (USAR_SIMULACAO = true) -->
+      <p class="aviso aviso--info mt-4 mb-0" id="aviso-demonstracao" hidden>Conversa demonstrativa, sem envio real de mensagens.</p>
+    </div>
+  </main>
+
+  <!-- Rodapé (conteúdo provisório, igual às outras telas) -->
+  <footer id="rodape" class="rodape py-4 mt-4">
+    <div class="container-fluid px-3 px-lg-4">
+      <p class="mb-2">Ambiente demonstrativo • lojas, preços e estoques fictícios</p>
+      <p class="mb-0">
+        <a href="../institucional/sobre.html">Busca Peça</a> •
+        <a href="../institucional/sobre.html#contato">Contato</a> •
+        <a href="../institucional/termos-de-uso.html">Termos de uso</a> •
+        <a href="../institucional/termos-de-uso.html#politica-de-privacidade">Privacidade</a>
+      </p>
+    </div>
+  </footer>
+
+  <script type="module" src="../../js/pages/conta/conversas.js"></script>
+</body>
+</html>

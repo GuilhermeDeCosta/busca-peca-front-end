@@ -1,4 +1,4 @@
-// Textos de pausar e reativar anúncio (BP1-46), usados no painel e no formulário de peça.
+// Textos de pausar, reativar (BP1-46) e excluir anúncio, usados no painel e no formulário de peça.
 // Só textos e leitura de erros: quem decide se a ação vale é a API.
 
 /** Conteúdo da janela de confirmação. `anuncio` precisa de titulo e, se houver, codigoSku. */
@@ -24,6 +24,40 @@ export function confirmacaoStatus(acao, anuncio) {
   };
 }
 
+/**
+ * Confirmação de exclusão. Rascunho: texto simples. Anúncio publicado: avisa que não dá para
+ * desfazer e, se estiver ativo, oferece pausar no lugar (a janela mostra o botão "Pausar em vez disso").
+ */
+export function confirmacaoExclusao(anuncio) {
+  const nome = anuncio.codigoSku ? `${anuncio.titulo} (${anuncio.codigoSku})` : anuncio.titulo;
+  if (anuncio.status === 'RASCUNHO') {
+    return {
+      titulo: 'Excluir rascunho?',
+      texto: `${nome} será removido da sua lista. O rascunho nunca foi publicado, então nenhum comprador o viu.`,
+      botao: 'Excluir rascunho',
+      botaoCancelar: 'Manter rascunho',
+      estilo: 'perigo',
+    };
+  }
+  return {
+    titulo: 'Excluir anúncio?',
+    texto: `${nome} sai da sua loja e das buscas, e não poderá ser reativado. Pedidos já feitos e o histórico de vendas continuam guardados. `
+      + (anuncio.status === 'ATIVO'
+        ? 'Se a peça só está indisponível por um tempo, pause em vez de excluir.'
+        : 'Esta ação não pode ser desfeita.'),
+    botao: 'Excluir anúncio',
+    botaoCancelar: 'Manter anúncio',
+    estilo: 'perigo',
+    sugerePausar: anuncio.status === 'ATIVO',
+  };
+}
+
+export function mensagemSucessoExclusao(anuncio) {
+  return anuncio.status === 'RASCUNHO'
+    ? `Rascunho excluído. ${anuncio.titulo} saiu da sua lista.`
+    : `Anúncio excluído. ${anuncio.titulo} saiu da sua loja e das buscas.`;
+}
+
 export function mensagemSucessoStatus(acao, anuncio) {
   return acao === 'pausar'
     ? `Anúncio pausado. ${anuncio.titulo} não aparece mais para os compradores.`
@@ -33,7 +67,8 @@ export function mensagemSucessoStatus(acao, anuncio) {
 /**
  * Traduz o erro da API em aviso para a tela.
  * 409 ESTOQUE_ZERADO: oferece o atalho para atualizar o estoque.
- * 409 STATUS_INVALIDO: o anúncio mudou em outra aba; a tela recarrega a lista.
+ * 409 PEDIDOS_EM_ANDAMENTO (excluir): oferece o atalho para os pedidos recebidos.
+ * 409 STATUS_INVALIDO ou 404: o anúncio mudou em outra aba; a tela recarrega a lista.
  * @returns {{ texto: string, link?: { href: string, texto: string }, recarregar: boolean }}
  */
 export function avisoErroStatus(erro, anuncio, linkEditar) {
@@ -41,6 +76,13 @@ export function avisoErroStatus(erro, anuncio, linkEditar) {
     return {
       texto: erro.mensagem || 'Atualize o estoque antes de reativar este anúncio.',
       link: { href: `${linkEditar}#secao-estoque`, texto: 'Atualizar estoque' },
+      recarregar: false,
+    };
+  }
+  if (erro?.erro === 'PEDIDOS_EM_ANDAMENTO') {
+    return {
+      texto: erro.mensagem || 'Esta peça tem pedidos em andamento. Conclua ou recuse antes de excluir, ou pause o anúncio.',
+      link: { href: 'pedidos.html', texto: 'Ver pedidos recebidos' },
       recarregar: false,
     };
   }

@@ -283,7 +283,7 @@
                     </template>
                     <template x-for="v in (carregandoVendas || erroVendas ? [] : vendas)" :key="v.idPedido">
                       <tr>
-                        <td class="text-nowrap"><a :href="'pedidos.html?id=' + v.idPedido" class="text-decoration-none" x-text="v.codigo"></a></td>
+                        <td class="text-nowrap"><a :href="'pedido-recebido.html?id=' + v.idPedido" class="text-decoration-none" x-text="v.codigo"></a></td>
                         <td x-text="diaMes(v.data)"></td>
                         <td x-text="v.comprador"></td>
                         <td x-text="v.peca"></td>

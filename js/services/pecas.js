@@ -6,7 +6,7 @@
 //   3. Apague as funções simular*() do fim do arquivo.
 
 // import { api } from '../api.js';
-import { esperar, anunciosSimulados, referenciasSimuladas, gerarHistoricoPreco } from './simulacao.js';
+import { esperar, anunciosSimulados, pedidosSimulados, referenciasSimuladas, gerarHistoricoPreco } from './simulacao.js';
 
 const USAR_SIMULACAO = true;
 
@@ -42,25 +42,58 @@ export async function reativarAnuncio(idPeca) {
   // return api.patch(`/pecas/${idPeca}/reativar`);
 }
 
-/** DELETE /api/pecas/{id} — exclusão lógica (BP1-44) */
+/**
+ * DELETE /api/pecas/{id} — exclui um anúncio ativo, pausado ou rascunho. Responde 204, sem corpo.
+ * Exclusão lógica (Documentação do Back-end): a peça sai da loja e das buscas, mas pedidos,
+ * avaliações e o histórico de vendas continuam apontando para ela. Fica registrada em log_auditoria.
+ * Rejeita com 409 PEDIDOS_EM_ANDAMENTO se houver pedido aguardando aceite, aceito, pronto ou em entrega,
+ * e com 404 se o anúncio já foi excluído (por exemplo, em outra aba).
+ */
 export async function excluirAnuncio(idPeca) {
   if (USAR_SIMULACAO) return simularExcluir(idPeca);
   // return api.delete(`/pecas/${idPeca}`);
 }
 
 /**
- * GET /api/pecas/autopreenchimento?codigo=&tipo= — consulta a base externa de códigos (BP1-9, BP1-63).
- * @param {'OEM'|'EAN'|'SKU'} tipo
- * @returns {Promise<object|null>} dados de referência, ou null quando o código não é encontrado.
- * Rejeita com { status: 503 | 504 } quando a base externa está fora do ar ou demora (ADR-012).
+ * Tempo máximo que a tela espera a consulta por código. A API espera a base externa por 3 s
+ * (ADR-012) e responde 504; os 8 s daqui cobrem essa espera mais a rede, e garantem que a tela
+ * nunca fica presa em "Buscando…" se a própria API travar. Mover para config.js quando ele existir.
  */
-export async function consultarReferencia(tipo, codigo) {
-  if (USAR_SIMULACAO) return simularReferencia(tipo, codigo);
+export const TEMPO_LIMITE_CONSULTA_MS = 8000;
+
+/**
+ * GET /api/pecas/autopreenchimento?tipo=&codigo= — consulta a base externa de códigos (BP1-9, BP1-63, ADR-002).
+ * @param {'OEM'|'EAN'|'SKU'} tipo
+ * @param {string} codigo já normalizado e validado
+ * @param {{ signal?: AbortSignal }} opcoes signal para cancelar ("Continuar com preenchimento manual")
+ * @returns {Promise<object|null>} dados de referência, ou null quando o código não é encontrado (404).
+ *   Formato: { titulo, descricao, idCategoria, marcaPeca, codigoOem, codigoEan, caracteristicas,
+ *   condicao, origem, pesoKg, dimensoes, aplicacoes: [{ marca, modelo, anoInicial, anoFinal, versao }],
+ *   camposFaltantes?: string[] }. Campos sem informação vêm nulos (dados incompletos, fluxo alternativo 3).
+ * Rejeita com:
+ *   { erro: 'TEMPO_ESGOTADO' } — a API respondeu 504 ou passou de TEMPO_LIMITE_CONSULTA_MS;
+ *   { erro: 'BASE_INDISPONIVEL' } — a API respondeu 502/503 ou outro erro;
+ *   { erro: 'CANCELADA' } — o vendedor cancelou para preencher à mão.
+ */
+export async function consultarReferencia(tipo, codigo, { signal } = {}) {
+  const controle = new AbortController();
+  const cancelar = () => controle.abort();
+  signal?.addEventListener('abort', cancelar);
+  let estourou = false;
+  const relogio = setTimeout(() => { estourou = true; controle.abort(); }, TEMPO_LIMITE_CONSULTA_MS);
+
   try {
-    return await api.get(`/pecas/autopreenchimento?${new URLSearchParams({ tipo, codigo })}`);
+    if (USAR_SIMULACAO) return await simularReferencia(tipo, codigo, controle.signal);
+    // api.js precisa repassar o signal ao fetch: fetch(url, { ..., signal })
+    return await api.get(`/pecas/autopreenchimento?${new URLSearchParams({ tipo, codigo })}`, { signal: controle.signal });
   } catch (erro) {
+    if (signal?.aborted) throw { status: 0, erro: 'CANCELADA' };
+    if (estourou || erro?.status === 504) throw { status: 504, erro: 'TEMPO_ESGOTADO', mensagem: 'A consulta demorou demais.' };
     if (erro?.status === 404) return null;
-    throw erro;
+    throw { status: erro?.status || 0, erro: 'BASE_INDISPONIVEL', mensagem: erro?.mensagem || 'Consulta indisponível.' };
+  } finally {
+    clearTimeout(relogio);
+    signal?.removeEventListener('abort', cancelar);
   }
 }
 
@@ -175,18 +208,47 @@ async function simularMudarStatus(idPeca, novoStatus) {
   return { idPeca: peca.idPeca, status: peca.status, atualizadoEm: peca.atualizadoEm };
 }
 
+const STATUS_EM_ANDAMENTO = ['AGUARDANDO_ACEITE', 'ACEITO', 'PRONTO_RETIRADA', 'EM_ENTREGA'];
+
 async function simularExcluir(idPeca) {
-  await esperar(400);
-  const indice = anunciosSimulados.findIndex((p) => p.idPeca === idPeca);
-  if (indice === -1) throw { status: 404, mensagem: 'Anúncio não encontrado.' };
-  anunciosSimulados.splice(indice, 1);
+  await esperar(500);
+  const indice = anunciosSimulados.findIndex((p) => p.idPeca === Number(idPeca));
+  if (indice === -1) throw { status: 404, erro: 'NAO_ENCONTRADO', mensagem: 'Este anúncio já foi excluído. A lista foi atualizada.' };
+  // A mesma regra que a API vai aplicar
+  const emAndamento = pedidosSimulados.filter((p) => STATUS_EM_ANDAMENTO.includes(p.status) && p.idPecas?.includes(Number(idPeca)));
+  if (emAndamento.length) {
+    const codigos = emAndamento.map((p) => p.codigo).join(', ');
+    throw {
+      status: 409,
+      erro: 'PEDIDOS_EM_ANDAMENTO',
+      mensagem: `Esta peça tem ${emAndamento.length === 1 ? 'um pedido' : 'pedidos'} em andamento (${codigos}). Conclua ou recuse antes de excluir, ou pause o anúncio.`,
+    };
+  }
+  console.info('[simulação] DELETE /api/pecas/' + idPeca);
+  anunciosSimulados.splice(indice, 1); // na API é exclusão lógica: anuncio_ativo = falso
 }
 
-async function simularReferencia(tipo, codigo) {
-  await esperar(900);
+// Espera que pode ser interrompida (cancelar ou tempo limite), como um fetch real
+function esperarCancelavel(ms, signal) {
+  return new Promise((resolver, rejeitar) => {
+    const relogio = setTimeout(resolver, ms);
+    signal?.addEventListener('abort', () => { clearTimeout(relogio); rejeitar(new DOMException('Abortado', 'AbortError')); }, { once: true });
+  });
+}
+
+// Códigos para testar sem API:
+//   OEM 0124325163    → dados completos (alternador Bosch)
+//   EAN 7891234567895 → dados incompletos (sem categoria, descrição e aplicação)
+//   OEM 999           → base externa fora do ar (503)
+//   OEM 888           → API não responde; a tela desiste em TEMPO_LIMITE_CONSULTA_MS
+//   qualquer outro    → código não encontrado (404)
+async function simularReferencia(tipo, codigo, signal) {
   console.info('[simulação] GET /api/pecas/autopreenchimento', { tipo, codigo });
-  // Para testar a base externa fora do ar, use o código 999.
-  if (codigo === '999') throw { status: 504, mensagem: 'Base externa sem resposta.' };
+  if (codigo === '888') {
+    await esperarCancelavel(60000, signal);
+  }
+  await esperarCancelavel(codigo === '999' ? 1200 : 900, signal);
+  if (codigo === '999') throw { status: 503, erro: 'BASE_INDISPONIVEL', mensagem: 'Base externa fora do ar.' };
   const referencia = referenciasSimuladas[codigo];
   return referencia ? structuredClone(referencia) : null;
 }

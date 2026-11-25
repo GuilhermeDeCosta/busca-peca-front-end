@@ -188,7 +188,11 @@ form.addEventListener('submit', async (e) => {
     }
  
     // 400 ou 409: marca os campos que a API devolveu e mantém o que foi digitado
-    const campos = (corpo && corpo.campos) || {};
+    // A API manda campos como lista [{ campo, mensagem }] com os nomes em camelCase;
+    // aqui vira objeto { nome_do_campo_na_tela: mensagem }
+    const nomesNaTela = { nomeExibicao: 'nome_exibicao', aceiteTermos: 'aceite_termos' };
+    const campos = Object.fromEntries(((corpo && corpo.campos) || [])
+        .map(c => [nomesNaTela[c.campo] || c.campo, c.mensagem]));
     if (status === 409 && !campos.email) {
         campos.email = 'Este e-mail já tem uma conta. Entre ou recupere sua senha.';
     }

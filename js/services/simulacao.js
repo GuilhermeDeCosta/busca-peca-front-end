@@ -47,12 +47,13 @@ export const anunciosSimulados = [
 ];
 
 // status: AGUARDANDO_ACEITE | ACEITO | RECUSADO | PRONTO_RETIRADA | EM_ENTREGA | CONCLUIDO | CANCELADO
+// idPecas: peças do pedido (usado para impedir a exclusão de peça com pedido em andamento)
 export const pedidosSimulados = [
-  { idPedido: 2081, codigo: 'BP-2081', comprador: 'Oficina Rumo Certo', resumoItens: '1 alternador Bosch', data: '2026-10-16T09:12:00-03:00', valorItens: 749.0, status: 'AGUARDANDO_ACEITE', idConversa: 501 },
-  { idPedido: 2080, codigo: 'BP-2080', comprador: 'Mecânica Boa Vista', resumoItens: '2 filtros de ar', data: '2026-10-16T08:40:00-03:00', valorItens: 85.8, status: 'ACEITO', idConversa: 502 },
-  { idPedido: 2079, codigo: 'BP-2079', comprador: 'Centro Automotivo Lima', resumoItens: '1 kit embreagem VW', data: '2026-10-15T16:05:00-03:00', valorItens: 689.0, status: 'AGUARDANDO_ACEITE', idConversa: null },
-  { idPedido: 2078, codigo: 'BP-2078', comprador: 'Auto Center Parque', resumoItens: '1 retrovisor', data: '2026-10-15T11:30:00-03:00', valorItens: 219.9, status: 'PRONTO_RETIRADA', idConversa: 503 },
-  { idPedido: 2077, codigo: 'BP-2077', comprador: 'Garagem São Jorge', resumoItens: '4 velas de ignição', data: '2026-10-14T14:20:00-03:00', valorItens: 96.0, status: 'CONCLUIDO', idConversa: null },
+  { idPedido: 2081, codigo: 'BP-2081', idPecas: [101], comprador: 'Oficina Rumo Certo', resumoItens: '1 alternador Bosch', data: '2026-10-16T09:12:00-03:00', valorItens: 749.0, status: 'AGUARDANDO_ACEITE', idConversa: 501 },
+  { idPedido: 2080, codigo: 'BP-2080', idPecas: [103], comprador: 'Mecânica Boa Vista', resumoItens: '2 filtros de ar', data: '2026-10-16T08:40:00-03:00', valorItens: 85.8, status: 'ACEITO', idConversa: 502 },
+  { idPedido: 2079, codigo: 'BP-2079', idPecas: [110], comprador: 'Centro Automotivo Lima', resumoItens: '1 kit embreagem VW', data: '2026-10-15T16:05:00-03:00', valorItens: 689.0, status: 'AGUARDANDO_ACEITE', idConversa: null },
+  { idPedido: 2078, codigo: 'BP-2078', idPecas: [102], comprador: 'Auto Center Parque', resumoItens: '1 retrovisor', data: '2026-10-15T11:30:00-03:00', valorItens: 219.9, status: 'PRONTO_RETIRADA', idConversa: 503 },
+  { idPedido: 2077, codigo: 'BP-2077', idPecas: [111], comprador: 'Garagem São Jorge', resumoItens: '4 velas de ignição', data: '2026-10-14T14:20:00-03:00', valorItens: 96.0, status: 'CONCLUIDO', idConversa: null },
 ];
 
 export const ultimaConversaSimulada = {
@@ -97,7 +98,25 @@ export const referenciasSimuladas = {
     caracteristicas: '12 V • 90 A • polia 6 canais • conector padrão GM',
     condicao: 'NOVA',
     origem: 'NACIONAL',
+    pesoKg: 5.2,
+    dimensoes: '18 × 15 × 14 cm',
     aplicacoes: [{ marca: 'Chevrolet', modelo: 'Corsa', anoInicial: 2002, anoFinal: 2012, versao: '1.0 / 1.4 • confirmar OEM' }],
+  },
+  // Dados incompletos (BP1-9, fluxo alternativo 3): a base não tem categoria, descrição nem aplicação
+  '7891234567895': {
+    titulo: 'Pastilha de freio dianteira Cobreq N-1185',
+    descricao: null,
+    idCategoria: null,
+    marcaPeca: 'Cobreq',
+    codigoOem: 'N1185',
+    codigoEan: '7891234567895',
+    caracteristicas: 'Jogo com 4 pastilhas • com sensor de desgaste',
+    condicao: 'NOVA',
+    origem: 'NACIONAL',
+    pesoKg: null,
+    dimensoes: null,
+    aplicacoes: [],
+    camposFaltantes: ['idCategoria', 'descricao', 'aplicacoes'],
   },
 };
 

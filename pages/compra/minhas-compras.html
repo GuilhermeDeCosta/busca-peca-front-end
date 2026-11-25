@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Meus pedidos • Busca Peças</title>
+
+  <!-- Bibliotecas por CDN com versão fixa (ADR-014) -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+  <!-- CSS do projeto (os estilos desta tela estão em base.css, seção "MEUS PEDIDOS") -->
+  <link rel="stylesheet" href="../../css/variaveis.css">
+  <link rel="stylesheet" href="../../css/base.css">
+  <link rel="stylesheet" href="../../css/componentes.css">
+  <style>[x-cloak] { display: none !important; }</style>
+
+  <!-- Componente do cabeçalho -->
+  <script src="../../js/components/cabecalho.js" defer></script>
+</head>
+<body class="d-flex flex-column min-vh-100">
+
+  <!-- Cabeçalho: preenchido por js/components/cabecalho.js -->
+  <header id="cabecalho"></header>
+
+  <!-- Página logada • BP1-20, BP1-27 • GET /api/compras • Fluxo A, A10 (etapa 09) -->
+  <main id="conteudo" class="meus-pedidos container-fluid px-3 px-lg-4 py-4 flex-grow-1" x-data="meusPedidos">
+
+    <nav aria-label="Você está aqui">
+      <ol class="breadcrumb resultados__trilha">
+        <li class="breadcrumb-item"><a href="../../index.html">Início</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Meus pedidos</li>
+      </ol>
+    </nav>
+
+    <h1 class="resultados__titulo">Meus pedidos</h1>
+    <p class="resultados__resumo">Acompanhe suas compras, uma loja de cada vez.</p>
+
+    <!-- ===== Filtros ===== -->
+    <form class="detalhe-caixa meus-pedidos-filtros" role="search" aria-label="Filtrar pedidos" @submit.prevent="buscarAgora()">
+      <div>
+        <label class="form-label" for="filtro-busca">Buscar pedido</label>
+        <input id="filtro-busca" type="search" class="form-control" placeholder="Código, loja ou peça" maxlength="100"
+               x-ref="busca" x-model="filtros.q" @input="aoDigitarBusca()" autocomplete="off">
+      </div>
+      <div>
+        <label class="form-label" for="filtro-status">Status</label>
+        <select id="filtro-status" class="form-select" x-model="filtros.status" @change="carregar()">
+          <option value="">Todos os status</option>
+          <template x-for="o in OPCOES_STATUS" :key="o.valor">
+            <option :value="o.valor" :selected="filtros.status === o.valor" x-text="o.texto"></option>
+          </template>
+        </select>
+      </div>
+      <div>
+        <label class="form-label" for="filtro-periodo">Período</label>
+        <select id="filtro-periodo" class="form-select" x-model="filtros.periodo" @change="carregar()">
+          <option value="">Todos os períodos</option>
+          <template x-for="o in OPCOES_PERIODO" :key="o.valor">
+            <option :value="o.valor" :selected="filtros.periodo === o.valor" x-text="o.texto"></option>
+          </template>
+        </select>
+      </div>
+    </form>
+
+    <!-- Resumo de todos os pedidos (não muda com o filtro) -->
+    <ul class="meus-pedidos-chips" x-show="chipsResumo.length" x-cloak aria-label="Resumo dos seus pedidos">
+      <template x-for="chip in chipsResumo" :key="chip.texto">
+        <li class="meus-pedidos-chip" :class="chip.classe" x-text="chip.texto"></li>
+      </template>
+    </ul>
+
+    <!-- Leitor de tela: avisa quantos pedidos há depois de filtrar -->
+    <p class="visually-hidden" aria-live="polite" x-text="textoQuantidade"></p>
+
+    <!-- ===== Histórico ===== -->
+    <section class="detalhe-caixa meus-pedidos-historico" aria-labelledby="titulo-historico">
+      <h2 id="titulo-historico" class="carrinho-loja__nome">Histórico de pedidos</h2>
+
+      <!-- Carregando -->
+      <div class="placeholder-glow" x-show="carregando" aria-hidden="true">
+        <template x-for="n in 5" :key="n"><span class="placeholder w-100 rounded mb-2" style="height:44px"></span></template>
+      </div>
+
+      <!-- Erro da API -->
+      <div class="resultados-estado" x-show="!carregando && erro" x-cloak role="alert">
+        <i class="bi bi-exclamation-circle" aria-hidden="true"></i>
+        <h3 class="h4" x-text="erro"></h3>
+        <button type="button" class="btn btn--contorno" @click="carregar()">Tentar novamente</button>
+      </div>
+
+      <!-- Nenhum pedido (BP1-20, fluxo alternativo) -->
+      <div class="resultados-estado" x-show="vazio && !temFiltro" x-cloak>
+        <i class="bi bi-bag" aria-hidden="true"></i>
+        <h3 class="h4">Nenhum pedido encontrado.</h3>
+        <p>Quando você confirmar uma compra, cada pedido aparece aqui com o status da loja.</p>
+        <a class="btn btn--verde" :href="linkBuscar">Buscar peças</a>
+      </div>
+      <div class="resultados-estado" x-show="vazio && temFiltro" x-cloak>
+        <i class="bi bi-search" aria-hidden="true"></i>
+        <h3 class="h4">Nenhum pedido encontrado com esses filtros.</h3>
+        <p>Confira o código ou escolha outro status ou período.</p>
+        <button type="button" class="btn btn--contorno" @click="limparFiltros()">Limpar filtros</button>
+      </div>
+
+      <div class="meus-pedidos-tabela-caixa" x-show="!carregando && !erro && pedidos.length" x-cloak>
+        <table class="table meus-pedidos-tabela mb-0">
+          <caption class="visually-hidden">Seus pedidos, do mais recente para o mais antigo</caption>
+          <thead>
+            <tr>
+              <th scope="col">Pedido</th>
+              <th scope="col">Loja / itens</th>
+              <th scope="col">Data</th>
+              <th scope="col">Valor dos itens</th>
+              <th scope="col">Código de retirada</th>
+              <th scope="col">Status • ver detalhe</th>
+            </tr>
+          </thead>
+          <tbody>
+            <template x-for="p in pedidos" :key="p.idPedido">
+              <tr>
+                <th scope="row" class="meus-pedidos-tabela__codigo" x-text="p.codigo"></th>
+                <td data-rotulo="Loja / itens" x-text="lojaItens(p)"></td>
+                <td data-rotulo="Data" x-text="data(p)"></td>
+                <td data-rotulo="Valor dos itens" x-text="moeda(p.subtotal)"></td>
+                <td data-rotulo="Código de retirada" x-text="codigoRetirada(p)"></td>
+                <td data-rotulo="Status">
+                  <a :class="classeLinkStatus(p.status)" :href="linkPedido(p)" data-link-pedido
+                     :aria-label="`${rotuloStatus(p.status)}: ver detalhe do pedido ${p.codigo}`" x-text="rotuloStatus(p.status)"></a>
+                </td>
+              </tr>
+            </template>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <p class="detalhe-nota-azul meus-pedidos-nota">
+      <i class="bi bi-info-circle" aria-hidden="true"></i>
+      <span>Pagamento e entrega são combinados diretamente com cada loja. O valor exibido corresponde apenas aos itens.</span>
+    </p>
+
+    <p class="detalhe-erro" x-show="erroMais" x-cloak role="alert" x-text="erroMais"></p>
+    <button type="button" class="btn btn--contorno detalhe-botao" x-show="!carregando && !erro && temMais" x-cloak
+            @click="carregarMais()" :disabled="carregandoMais">
+      <span class="spinner-border spinner-border-sm" x-show="carregandoMais" aria-hidden="true"></span>
+      <span x-text="carregandoMais ? 'Carregando…' : 'Carregar mais pedidos'"></span>
+    </button>
+  </main>
+
+  <!-- Rodapé: provisório até existir js/components/rodape.js -->
+  <footer id="rodape" class="rodape mt-5">
+    <div class="container-fluid px-3 px-lg-4 py-4">
+      <p class="mb-1">Ambiente demonstrativo • lojas, preços e estoques fictícios</p>
+      <p class="mb-0">
+        <a href="../institucional/sobre.html">Busca Peça</a> •
+        <a href="mailto:contato@buscapeca.example.com">Contato</a> •
+        <a href="../institucional/termos-de-uso.html">Termos de uso</a> •
+        <a href="../institucional/termos-de-uso.html#politica-de-privacidade">Privacidade</a>
+      </p>
+    </div>
+  </footer>
+
+  <!-- O módulo da página vem ANTES do Alpine, para registrar o componente no alpine:init. -->
+  <script type="module" src="../../js/pages/compra/minhas-compras.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js"></script>
+</body>
+</html>

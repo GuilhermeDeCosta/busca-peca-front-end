@@ -12,10 +12,14 @@ export const PAGINAS = {
   comparar: 'pages/busca/comparar.html',
   login: 'pages/conta/login.html',
   favoritos: 'pages/conta/favoritos.html',
-  buscasSalvas: 'pages/conta/favoritos.html#buscas-salvas',
+  buscasSalvas: 'pages/conta/favoritos.html#buscas-salvas', // A06: favoritos e buscas salvas na mesma página
   conversas: 'pages/conta/conversas.html',
   carrinho: 'pages/compra/carrinho.html',
   checkout: 'pages/compra/checkout.html',
+  confirmacao: 'pages/compra/confirmacao.html',
+  minhasCompras: 'pages/compra/minhas-compras.html', // "Meus pedidos" no menu
+  detalhePedido: 'pages/compra/detalhe-pedido.html',
+  perfil: 'pages/conta/perfil.html',
   criarLoja: 'pages/minha-loja/criar-loja.html',
   painelLoja: 'pages/minha-loja/painel.html',
   novaPeca: 'pages/minha-loja/form-peca.html',

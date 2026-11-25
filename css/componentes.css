@@ -497,3 +497,35 @@ input:focus-visible {
 .paginacao__botao:disabled { background: #e9edf2; border-color: #e9edf2; color: var(--texto-suave); cursor: not-allowed; }
 .paginacao__botao:focus-visible { outline: 3px solid #f2b705; outline-offset: 2px; }
 .paginacao__reticencias { padding: 0 4px; color: var(--texto-suave); }
+
+/* =========================================================
+   ETAPAS DA COMPRA • "1. Carrinho → 2. Revisão → 3. Confirmação"
+   Usado no carrinho, na revisão (checkout) e na confirmação (Fluxo A).
+   ========================================================= */
+.etapas-compra { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 0; list-style: none; padding: 0; margin: 0 0 24px; font-size: 13px; }
+.etapas-compra__item { color: var(--texto-suave); font-weight: 600; }
+.etapas-compra__item + .etapas-compra__item::before { content: "→"; margin: 0 10px; color: var(--texto-suave); font-weight: 400; }
+.etapas-compra__item--atual,
+.etapas-compra__item--feita { color: var(--verde); }
+.etapas-compra__item--atual { text-decoration: underline; text-underline-offset: 4px; }
+
+/* =========================================================
+   STATUS DO PEDIDO (etiqueta)
+   Textos e classes em js/utils/status-pedido.js.
+   Usado em Pedidos enviados (A09), Meus pedidos e Detalhe do pedido.
+   ========================================================= */
+.status-pedido {
+    display: inline-block;
+    flex-shrink: 0;
+    border-radius: 6px;
+    padding: 4px 10px;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.4;
+    white-space: nowrap;
+}
+.status-pedido--alerta { background: #fdf1d6; color: #7a5200; }
+.status-pedido--info { background: #e8f0fb; color: #1f4f7f; }
+.status-pedido--sucesso { background: #e6f4ea; color: #17633a; }
+.status-pedido--erro { background: #fdecea; color: #b42318; }
+.status-pedido--neutro { background: #eef1f4; color: var(--texto-suave); }

@@ -225,3 +225,4 @@ export async function removerBuscaSalva(idBuscaSalva) {
   }
   // return api.delete(`/busca/salvas/${idBuscaSalva}`);
 }
+

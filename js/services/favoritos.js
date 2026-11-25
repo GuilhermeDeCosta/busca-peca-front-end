@@ -54,3 +54,4 @@ export async function listarFavoritos() {
   }
   // return api.get('/favoritos');
 }
+

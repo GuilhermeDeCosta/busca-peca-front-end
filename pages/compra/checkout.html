@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Revise seus pedidos • Busca Peças</title>
+
+  <!-- Bibliotecas por CDN com versão fixa (ADR-014) -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+  <!-- CSS do projeto (os estilos desta tela estão em base.css, seção "REVISE SEUS PEDIDOS") -->
+  <link rel="stylesheet" href="../../css/variaveis.css">
+  <link rel="stylesheet" href="../../css/base.css">
+  <link rel="stylesheet" href="../../css/componentes.css">
+  <style>[x-cloak] { display: none !important; }</style>
+
+  <!-- Componente do cabeçalho -->
+  <script src="../../js/components/cabecalho.js" defer></script>
+</head>
+<body class="d-flex flex-column min-vh-100">
+
+  <!-- Cabeçalho: preenchido por js/components/cabecalho.js -->
+  <header id="cabecalho"></header>
+
+  <!-- Página logada • BP1-24, BP1-23 • POST /api/compras • Fluxo A, A08 (etapa 07) -->
+  <main id="conteudo" class="checkout container-fluid px-3 px-lg-4 py-4 flex-grow-1" x-data="revisarPedidos">
+
+    <nav aria-label="Você está aqui">
+      <ol class="breadcrumb resultados__trilha">
+        <li class="breadcrumb-item"><a href="../../index.html">Início</a></li>
+        <li class="breadcrumb-item"><a href="carrinho.html">Meu carrinho</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Revise seus pedidos</li>
+      </ol>
+    </nav>
+
+    <h1 class="resultados__titulo">Revise seus pedidos</h1>
+    <p class="resultados__resumo mb-2">Confira endereço, itens e condições antes de enviar para as lojas.</p>
+
+    <ol class="etapas-compra" aria-label="Etapas da compra">
+      <li class="etapas-compra__item etapas-compra__item--feita"><a href="carrinho.html">1. Carrinho</a></li>
+      <li class="etapas-compra__item etapas-compra__item--atual" aria-current="step">2. Revisão</li>
+      <li class="etapas-compra__item">3. Confirmação</li>
+    </ol>
+
+    <!-- Carregando -->
+    <div class="row g-4 placeholder-glow" x-show="carregando" aria-hidden="true">
+      <div class="col-lg-8"><span class="placeholder w-100 rounded" style="height:260px"></span></div>
+      <div class="col-lg-4"><span class="placeholder w-100 rounded" style="height:260px"></span></div>
+    </div>
+
+    <!-- Erro da API -->
+    <div class="resultados-estado" x-show="!carregando && erro" x-cloak role="alert">
+      <i class="bi bi-exclamation-circle" aria-hidden="true"></i>
+      <h2 class="h3" x-text="erro"></h2>
+      <button type="button" class="btn btn--contorno" @click="init()">Tentar novamente</button>
+    </div>
+
+    <!-- Carrinho vazio (ex.: os pedidos já foram enviados em outra aba) -->
+    <div class="resultados-estado" x-show="vazio" x-cloak>
+      <i class="bi bi-cart3" aria-hidden="true"></i>
+      <h2 class="h3">Não há itens para revisar</h2>
+      <p>Seu carrinho está vazio. Se você acabou de confirmar, acompanhe os pedidos em Meus pedidos.</p>
+      <a class="btn btn--verde" :href="linkCarrinho">Voltar ao carrinho</a>
+    </div>
+
+    <div class="row g-4" x-show="!carregando && !erro && !vazio" x-cloak>
+      <div class="col-lg-8 d-flex flex-column gap-4">
+
+        <!-- ===== Endereço e contato (BP1-24, passos 4 e 5) ===== -->
+        <section class="detalhe-caixa" aria-labelledby="titulo-endereco">
+          <h2 id="titulo-endereco" class="carrinho-loja__nome">Endereço e contato</h2>
+          <template x-if="usuario">
+            <p class="checkout-endereco__nome" x-text="nomeContato"></p>
+          </template>
+
+          <template x-if="enderecoEscolhido && !editandoEndereco">
+            <div class="checkout-endereco__dados">
+              <p x-text="linhaRua(enderecoEscolhido)"></p>
+              <p x-text="linhaCidade(enderecoEscolhido)"></p>
+            </div>
+          </template>
+          <p class="checkout-endereco__contato" x-show="contato" x-text="contato"></p>
+
+          <!-- Mais de um endereço: escolhe aqui -->
+          <div class="mb-3" x-show="enderecos.length > 1 && !editandoEndereco">
+            <label class="form-label" for="escolher-endereco">Endereço de entrega</label>
+            <select id="escolher-endereco" class="form-select" x-model.number="idEndereco">
+              <template x-for="e in enderecos" :key="e.idEndereco">
+                <option :value="e.idEndereco" :selected="e.idEndereco === idEndereco" x-text="rotuloEndereco(e)"></option>
+              </template>
+            </select>
+          </div>
+
+          <p class="detalhe-erro mb-2" x-show="tentouConfirmar && faltaEndereco" :data-pendente="tentouConfirmar && faltaEndereco ? 'true' : null" tabindex="-1">
+            Cadastre um endereço para as lojas com entrega.
+          </p>
+          <p class="checkout-endereco__ajuda" x-show="!precisaEndereco && !editandoEndereco">
+            Todas as lojas estão com retirada: o endereço só é usado se você escolher entrega.
+          </p>
+
+          <button type="button" class="btn btn--contorno detalhe-botao mt-0" x-ref="botaoEditarEndereco"
+                  x-show="!editandoEndereco" @click="abrirNovoEndereco()">
+            <span x-text="enderecos.length ? 'Alterar endereço' : 'Cadastrar endereço'"></span>
+          </button>
+
+          <!-- Novo endereço (BP1-24, fluxo alternativo; campos de EnderecoRequest da API) -->
+          <form class="checkout-endereco-form" x-show="editandoEndereco" x-cloak @submit.prevent="salvarNovoEndereco()" novalidate
+                aria-label="Novo endereço">
+            <div class="row g-3">
+              <div class="col-sm-4">
+                <label class="form-label" for="novo-cep">CEP</label>
+                <input id="novo-cep" class="form-control" inputmode="numeric" autocomplete="postal-code" maxlength="9" placeholder="00000-000"
+                       x-ref="cepNovo" x-model="novoEndereco.cep" @input="aoDigitarCepNovo()" :class="{ 'is-invalid': errosEndereco.cep }"
+                       aria-describedby="erro-novo-cep">
+                <div id="erro-novo-cep" class="invalid-feedback" x-text="errosEndereco.cep"></div>
+                <small class="form-text" x-show="buscandoCep">Buscando o endereço…</small>
+              </div>
+              <div class="col-sm-8">
+                <label class="form-label" for="novo-identificacao">Identificação <span class="fw-normal">(opcional)</span></label>
+                <input id="novo-identificacao" class="form-control" maxlength="40" placeholder="Ex.: Oficina, Depósito" x-model="novoEndereco.identificacao">
+              </div>
+              <div class="col-sm-8">
+                <label class="form-label" for="novo-rua">Rua</label>
+                <input id="novo-rua" class="form-control" maxlength="150" autocomplete="address-line1" x-ref="ruaNovo"
+                       x-model="novoEndereco.logradouro" :class="{ 'is-invalid': errosEndereco.logradouro }" aria-describedby="erro-novo-rua">
+                <div id="erro-novo-rua" class="invalid-feedback" x-text="errosEndereco.logradouro"></div>
+              </div>
+              <div class="col-sm-4">
+                <label class="form-label" for="novo-numero">Número</label>
+                <input id="novo-numero" class="form-control" maxlength="10" x-ref="numeroNovo"
+                       x-model="novoEndereco.numero" :class="{ 'is-invalid': errosEndereco.numero }" aria-describedby="erro-novo-numero">
+                <div id="erro-novo-numero" class="invalid-feedback" x-text="errosEndereco.numero"></div>
+              </div>
+              <div class="col-sm-6">
+                <label class="form-label" for="novo-complemento">Complemento <span class="fw-normal">(opcional)</span></label>
+                <input id="novo-complemento" class="form-control" maxlength="80" autocomplete="address-line2" x-model="novoEndereco.complemento">
+              </div>
+              <div class="col-sm-6">
+                <label class="form-label" for="novo-bairro">Bairro</label>
+                <input id="novo-bairro" class="form-control" maxlength="80"
+                       x-model="novoEndereco.bairro" :class="{ 'is-invalid': errosEndereco.bairro }" aria-describedby="erro-novo-bairro">
+                <div id="erro-novo-bairro" class="invalid-feedback" x-text="errosEndereco.bairro"></div>
+              </div>
+              <div class="col-sm-8">
+                <label class="form-label" for="novo-cidade">Cidade</label>
+                <input id="novo-cidade" class="form-control" maxlength="80" autocomplete="address-level2"
+                       x-model="novoEndereco.cidade" :class="{ 'is-invalid': errosEndereco.cidade }" aria-describedby="erro-novo-cidade">
+                <div id="erro-novo-cidade" class="invalid-feedback" x-text="errosEndereco.cidade"></div>
+              </div>
+              <div class="col-sm-4">
+                <label class="form-label" for="novo-uf">UF</label>
+                <select id="novo-uf" class="form-select" x-model="novoEndereco.estado" :class="{ 'is-invalid': errosEndereco.estado }"
+                        aria-describedby="erro-novo-uf">
+                  <option value="">Escolha</option>
+                  <template x-for="uf in UFS" :key="uf"><option :value="uf" :selected="novoEndereco.estado === uf" x-text="uf"></option></template>
+                </select>
+                <div id="erro-novo-uf" class="invalid-feedback" x-text="errosEndereco.estado"></div>
+              </div>
+            </div>
+            <div class="form-check mt-3">
+              <input class="form-check-input" type="checkbox" id="novo-principal" x-model="novoEndereco.principal">
+              <label class="form-check-label" for="novo-principal">Usar como endereço principal da conta</label>
+            </div>
+            <div class="d-flex flex-wrap gap-2 mt-3">
+              <button type="submit" class="btn btn--verde detalhe-botao mt-0" :disabled="salvandoEndereco">
+                <span class="spinner-border spinner-border-sm" x-show="salvandoEndereco" aria-hidden="true"></span>
+                <span x-text="salvandoEndereco ? 'Salvando…' : 'Salvar endereço'"></span>
+              </button>
+              <button type="button" class="btn btn--contorno detalhe-botao mt-0" x-show="enderecos.length" @click="cancelarNovoEndereco()">Cancelar</button>
+            </div>
+          </form>
+        </section>
+
+        <!-- ===== Uma caixa por loja = um pedido (ADR-009) ===== -->
+        <template x-for="grupo in carrinho.lojas" :key="grupo.loja.idLoja">
+          <section class="detalhe-caixa checkout-loja" :aria-label="`Pedido para ${grupo.loja.nomeLoja}`">
+            <h2 class="carrinho-loja__nome" x-text="grupo.loja.nomeLoja"></h2>
+            <ul class="checkout-loja__itens">
+              <template x-for="item in grupo.itens" :key="item.idItem"><li x-text="linhaItem(item)"></li></template>
+            </ul>
+
+            <label class="form-label" :for="`recebimento-${grupo.loja.idLoja}`">Recebimento</label>
+            <select class="form-select" :id="`recebimento-${grupo.loja.idLoja}`" x-model="escolhas[grupo.loja.idLoja].modalidade">
+              <template x-for="o in opcoesRecebimento(grupo.loja)" :key="o.valor">
+                <option :value="o.valor" :selected="escolhas[grupo.loja.idLoja].modalidade === o.valor" x-text="o.texto"></option>
+              </template>
+            </select>
+            <p class="checkout-loja__prazo" x-text="textoPrazo(grupo)"></p>
+            <p class="checkout-loja__entrega" x-show="escolhas[grupo.loja.idLoja].modalidade === 'ENTREGA' && enderecoEscolhido">
+              Entregar em <span x-text="enderecoEscolhido ? linhaRua(enderecoEscolhido) : ''"></span>.
+            </p>
+            <p class="checkout-loja__subtotal"><strong x-text="`Subtotal ${moeda(grupo.subtotal)} • frete a combinar`"></strong></p>
+
+            <label class="form-label" :for="`observacao-${grupo.loja.idLoja}`">Observação para a loja <span class="fw-normal">(opcional)</span></label>
+            <textarea class="form-control" rows="3" :id="`observacao-${grupo.loja.idLoja}`" :maxlength="OBSERVACAO_MAXIMO"
+                      x-model="escolhas[grupo.loja.idLoja].observacao" :placeholder="placeholderObservacao(grupo.loja.idLoja)"></textarea>
+            <small class="form-text" x-text="`${escolhas[grupo.loja.idLoja].observacao.length} de ${OBSERVACAO_MAXIMO} caracteres`"></small>
+
+            <!-- BP1-24, passo 8. Não vem marcada (ADR-013: aceite explícito) -->
+            <div class="form-check checkout-loja__ciencia" :class="{ 'checkout-loja__ciencia--erro': tentouConfirmar && !escolhas[grupo.loja.idLoja].ciente }">
+              <input class="form-check-input" type="checkbox" :id="`ciente-${grupo.loja.idLoja}`" x-model="escolhas[grupo.loja.idLoja].ciente"
+                     :data-pendente="tentouConfirmar && !escolhas[grupo.loja.idLoja].ciente ? 'true' : null"
+                     :aria-invalid="tentouConfirmar && !escolhas[grupo.loja.idLoja].ciente ? 'true' : null">
+              <label class="form-check-label" :for="`ciente-${grupo.loja.idLoja}`">
+                Li as condições desta loja e entendi que o pagamento é direto com o vendedor.
+              </label>
+            </div>
+          </section>
+        </template>
+      </div>
+
+      <!-- ===== Resumo por loja ===== -->
+      <aside class="col-lg-4">
+        <div class="carrinho-resumo">
+          <section class="detalhe-caixa" aria-labelledby="titulo-resumo">
+            <h2 id="titulo-resumo" class="carrinho-loja__nome">Resumo por loja</h2>
+            <dl class="carrinho-resumo__lista">
+              <template x-for="grupo in carrinho.lojas" :key="grupo.loja.idLoja">
+                <div><dt x-text="grupo.loja.nomeLoja"></dt><dd x-text="moeda(grupo.subtotal)"></dd></div>
+              </template>
+            </dl>
+            <div class="carrinho-resumo__total">
+              <span>Total dos itens</span>
+              <strong x-text="moeda(carrinho.total)"></strong>
+            </div>
+            <p class="carrinho-resumo__frete">Frete a combinar com cada loja.</p>
+            <p class="carrinho-aviso carrinho-aviso--amarelo">
+              <i class="bi bi-info-circle" aria-hidden="true"></i>
+              <span>Combine o pagamento diretamente com a loja, fora da plataforma.</span>
+            </p>
+            <p class="carrinho-resumo__divisao" x-text="avisoDivisao"></p>
+
+            <!-- Erro ao confirmar (409: preço ou estoque mudou; nada foi gravado) -->
+            <div class="carrinho-aviso carrinho-aviso--vermelho mt-3" x-show="erroConfirmar" x-cloak role="alert" tabindex="-1" x-ref="erroConfirmar">
+              <i class="bi bi-exclamation-circle" aria-hidden="true"></i>
+              <span><span x-text="erroConfirmar"></span>
+                <a class="d-block fw-bold mt-1" :href="linkCarrinho" x-show="mudouNoCarrinho">Voltar ao carrinho</a></span>
+            </div>
+            <p class="detalhe-erro mt-2" x-show="tentouConfirmar && faltaCiencia" x-cloak>
+              Marque a confirmação de cada loja para enviar.
+            </p>
+
+            <button type="button" class="btn btn--verde w-100 detalhe-botao" @click="confirmar()" :disabled="confirmando">
+              <span class="spinner-border spinner-border-sm" x-show="confirmando" aria-hidden="true"></span>
+              <span x-text="textoBotao"></span>
+            </button>
+          </section>
+          <p class="detalhe-nota-azul mt-0">
+            <i class="bi bi-info-circle" aria-hidden="true"></i>
+            <span>Ao confirmar, você envia uma solicitação. Aguarde o aceite de cada loja antes de combinar os próximos passos.</span>
+          </p>
+        </div>
+      </aside>
+    </div>
+  </main>
+
+  <!-- Rodapé: provisório até existir js/components/rodape.js -->
+  <footer id="rodape" class="rodape mt-5">
+    <div class="container-fluid px-3 px-lg-4 py-4">
+      <p class="mb-1">Ambiente demonstrativo • lojas, preços e estoques fictícios</p>
+      <p class="mb-0">
+        <a href="../institucional/sobre.html">Busca Peça</a> •
+        <a href="mailto:contato@buscapeca.example.com">Contato</a> •
+        <a href="../institucional/termos-de-uso.html">Termos de uso</a> •
+        <a href="../institucional/termos-de-uso.html#politica-de-privacidade">Privacidade</a>
+      </p>
+    </div>
+  </footer>
+
+  <!-- O módulo da página vem ANTES do Alpine, para registrar o componente no alpine:init. -->
+  <script type="module" src="../../js/pages/compra/checkout.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js"></script>
+</body>
+</html>
